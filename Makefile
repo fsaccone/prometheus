@@ -1,0 +1,3 @@
+.POSIX:
+
+include config.mk

@@ -23,15 +23,19 @@ die(const char *m, ...)
 void
 usage(void)
 {
-	die("usage: %s [-u] package ...", argv0);
+	die("usage: %s [-u [-r]] package ...", argv0);
 }
 
 int
 main(int argc, char *argv[])
 {
-	int uninstall = 0;
+	int uninstall = 0,
+	    recuninstall = 0;
 
 	ARGBEGIN {
+	case 'r':
+		recuninstall = 1;
+		break;
 	case 'u':
 		uninstall = 1;
 		break;
@@ -40,6 +44,10 @@ main(int argc, char *argv[])
 	} ARGEND
 
 	if (!argc) {
+		usage();
+	}
+
+	if (recuninstall && !uninstall) {
 		usage();
 	}
 

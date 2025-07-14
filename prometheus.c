@@ -23,13 +23,20 @@ die(const char *m, ...)
 void
 usage(void)
 {
-	die("usage: %s package ...", argv0);
+	die("usage: %s [-u] package ...", argv0);
 }
 
 int
 main(int argc, char *argv[])
 {
+	int uninstall = 0;
+
 	ARGBEGIN {
+	case 'u':
+		uninstall = 1;
+		break;
+	default:
+		usage();
 	} ARGEND
 
 	if (!argc) {

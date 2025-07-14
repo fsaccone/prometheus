@@ -4,10 +4,12 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "arg.h"
 
 static void die(const char *m, ...);
+static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
 static void sigcleanup(int sig);
 static void usage(void);
@@ -21,6 +23,13 @@ die(const char *m, ...)
 	putc('\n', stderr);
 	va_end(va);
 	exit(EXIT_FAILURE);
+}
+
+unsigned int
+fileexists(const char *f)
+{
+	struct stat buf;
+	return (stat(f, &buf) == 0);
 }
 
 void

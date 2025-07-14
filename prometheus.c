@@ -23,7 +23,7 @@ die(const char *m, ...)
 void
 usage(void)
 {
-	die("usage: %s [-u [-r]] package ...", argv0);
+	die("usage: %s [-u [-r]] [-p prefix] package ...", argv0);
 }
 
 int
@@ -31,8 +31,12 @@ main(int argc, char *argv[])
 {
 	int uninstall = 0,
 	    recuninstall = 0;
+	char *prefix = "";
 
 	ARGBEGIN {
+	case 'p':
+		prefix = EARGF(usage());
+		break;
 	case 'r':
 		recuninstall = 1;
 		break;

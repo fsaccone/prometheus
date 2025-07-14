@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 
+#include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,7 @@
 #include "arg.h"
 
 static void die(const char *m, ...);
+static void handlesignals(void(*hdl)(int));
 static void sigcleanup(int sig);
 static void usage(void);
 
@@ -19,6 +21,20 @@ die(const char *m, ...)
 	putc('\n', stderr);
 	va_end(va);
 	exit(EXIT_FAILURE);
+}
+
+void
+handlesignals(void(*hdl)(int))
+{
+	struct sigaction sa = {
+		.sa_handler = hdl,
+	};
+
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGTERM, &sa, NULL);
+	sigaction(SIGHUP, &sa, NULL);
+	sigaction(SIGINT, &sa, NULL);
+	sigaction(SIGQUIT, &sa, NULL);
 }
 
 void
@@ -61,6 +77,8 @@ main(int argc, char *argv[])
 	if (recuninstall && !uninstall) {
 		usage();
 	}
+
+	handlesignals(sigcleanup);
 
 	return EXIT_SUCCESS;
 }

@@ -13,7 +13,7 @@
 static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
-static unsigned int packageexists(char *p);
+static unsigned int packageexists(char *pname);
 static char **readlines(const char *f, size_t *lcount);
 static void sigcleanup(int sig);
 static void usage(void);
@@ -51,29 +51,29 @@ handlesignals(void(*hdl)(int))
 }
 
 unsigned int
-packageexists(char *p)
+packageexists(char *pname)
 {
 	char f[1024];
 
-	snprintf(f, sizeof(f), "%s/%s/retrieve", pkgsrepopath, p);
+	snprintf(f, sizeof(f), "%s/%s/retrieve", pkgsrepopath, pname);
 	if (!fileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/configure", pkgsrepopath, p);
+	snprintf(f, sizeof(f), "%s/%s/configure", pkgsrepopath, pname);
 	if (!fileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepopath, p);
+	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepopath, pname);
 	if (!fileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/test", pkgsrepopath, p);
+	snprintf(f, sizeof(f), "%s/%s/test", pkgsrepopath, pname);
 	if (!fileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/install", pkgsrepopath, p);
+	snprintf(f, sizeof(f), "%s/%s/install", pkgsrepopath, pname);
 	if (!fileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepopath, p);
+	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepopath, pname);
 	if (!fileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/isinstalled", pkgsrepopath, p);
+	snprintf(f, sizeof(f), "%s/%s/isinstalled", pkgsrepopath, pname);
 	if (!fileexists(f)) return 0;
 
 	return 1;

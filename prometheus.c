@@ -4,7 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "arg.h"
+
 static void die(const char *m, ...);
+static void usage(void);
 
 void
 die(const char *m, ...)
@@ -15,6 +18,12 @@ die(const char *m, ...)
 	putc('\n', stderr);
 	va_end(va);
 	exit(EXIT_FAILURE);
+}
+
+void
+usage(void)
+{
+	die("usage: %s package ...", argv0);
 }
 
 int

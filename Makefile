@@ -4,6 +4,8 @@ include config.mk
 
 BIN = prometheus
 
+all: $(BIN)
+
 $(BIN): config.h prometheus.c
 	$(CC) $(CFLAGS) -o $@ prometheus.c
 

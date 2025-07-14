@@ -1,0 +1,37 @@
+Prometheus
+==========
+
+The package manager of the Arcadia Linux distribution.
+
+The main package repository is Olympus, available at
+<git://git.francescosaccone.com/olympus>.
+
+Structure of a package repository
+---------------------------------
+
+The repository tree must have a set of directories, each named after the
+package it represents: each of these directories must contain the following
+POSIX shell scripts:
+
+- retrieve:    Fetches and verifies the source of the package.
+- configure:   Sets the necessary configurations up before building.
+- build:       Compiles the source.
+- test:        Tests the build and returns error on failure.
+- install:     Installs the built package.
+
+All these scripts will be called in this order with the $prefix variable
+exported.
+
+Two other scripts must exist for every package:
+
+- uninstall:   Uninstalls the built package.
+- isinstalled: Returns error when the package is not installed.
+
+These will be called with the $prefix variable exported too.
+
+In addition, package directories may also contain a dependencies file, which
+must list a package name on each line: every package in this file will be
+built prior to the package that contains the file.
+
+Every file inside each package directory will be copied to the temporary
+working directory where the package is built.

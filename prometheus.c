@@ -7,6 +7,7 @@
 #include "arg.h"
 
 static void die(const char *m, ...);
+static void sigcleanup(int sig);
 static void usage(void);
 
 void
@@ -18,6 +19,12 @@ die(const char *m, ...)
 	putc('\n', stderr);
 	va_end(va);
 	exit(EXIT_FAILURE);
+}
+
+void
+sigcleanup(int sig)
+{
+	exit(1);
 }
 
 void

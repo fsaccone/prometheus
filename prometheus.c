@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "arg.h"
@@ -13,6 +14,7 @@ static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
 static unsigned int packageexists(char *p);
+static char **readlines(const char *f, size_t *lcount);
 static void sigcleanup(int sig);
 static void usage(void);
 
@@ -75,6 +77,47 @@ packageexists(char *p)
 	if (!fileexists(f)) return 0;
 
 	return 1;
+}
+
+char **
+readlines(const char *f, size_t *lcount)
+{
+	FILE *fp;
+	char **l;
+	size_t cap, lsize;
+
+	fp = fopen(f, "r");
+	if (!fp) return NULL;
+
+	*lcount = 0;
+	cap = 8;
+	if(!(l = malloc(cap * sizeof(char *)))) {
+		fclose(fp);
+		perror("malloc");
+		exit(1);
+	};
+
+	lsize = 0;
+	while (getline(&l[*lcount], &lsize, fp) != -1) {
+		size_t llen = strlen(l[*lcount]);
+		if (llen > 0 && l[*lcount][llen - 1] == '\n') {
+			l[*lcount][llen - 1] = '\0';
+		}
+
+		if (*lcount >= cap) {
+			cap *= 2;
+			if(!(l = realloc(l, cap * sizeof(char *)))) {
+				fclose(fp);
+				perror("malloc");
+				exit(1);
+			};
+		}
+
+		(*lcount)++;
+	}
+
+	fclose(fp);
+	return l;
 }
 
 void

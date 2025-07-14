@@ -12,8 +12,12 @@ $(BIN): config.h prometheus.c
 config.h: config.def.h
 	cp $^ $@
 
+install: all
+	mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp -f $(BIN) $(DESTDIR)$(PREFIX)/bin
+
 clean:
 	rm -f $(BIN) config.h
 
 .PHONY:
-	clean
+	clean install

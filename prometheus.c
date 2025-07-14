@@ -120,5 +120,11 @@ main(int argc, char *argv[])
 
 	handlesignals(sigcleanup);
 
+	for (; *argv; argc--, argv++) {
+		if (!packageexists(*argv)) {
+			die("%s: package %s does not exist", argv0, *argv);
+		}
+	}
+
 	return EXIT_SUCCESS;
 }

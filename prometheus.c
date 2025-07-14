@@ -7,10 +7,12 @@
 #include <sys/stat.h>
 
 #include "arg.h"
+#include "config.h"
 
 static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
+static unsigned int packageexists(char *p);
 static void sigcleanup(int sig);
 static void usage(void);
 
@@ -44,6 +46,35 @@ handlesignals(void(*hdl)(int))
 	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
+}
+
+unsigned int
+packageexists(char *p)
+{
+	char f[1024];
+
+	snprintf(f, sizeof(f), "%s/%s/retrieve", pkgsrepopath, p);
+	if (!fileexists(f)) return 0;
+
+	snprintf(f, sizeof(f), "%s/%s/configure", pkgsrepopath, p);
+	if (!fileexists(f)) return 0;
+
+	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepopath, p);
+	if (!fileexists(f)) return 0;
+
+	snprintf(f, sizeof(f), "%s/%s/test", pkgsrepopath, p);
+	if (!fileexists(f)) return 0;
+
+	snprintf(f, sizeof(f), "%s/%s/install", pkgsrepopath, p);
+	if (!fileexists(f)) return 0;
+
+	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepopath, p);
+	if (!fileexists(f)) return 0;
+
+	snprintf(f, sizeof(f), "%s/%s/isinstalled", pkgsrepopath, p);
+	if (!fileexists(f)) return 0;
+
+	return 1;
 }
 
 void

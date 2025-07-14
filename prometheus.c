@@ -29,5 +29,12 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
+	ARGBEGIN {
+	} ARGEND
+
+	if (!argc) {
+		usage();
+	}
+
 	return EXIT_SUCCESS;
 }

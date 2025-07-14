@@ -19,7 +19,7 @@
 #ifndef ARG_H
 #define ARG_H
 
-extern char *argv0;
+char *argv0;
 
 /* int main(int argc, char *argv[]) */
 #define ARGBEGIN for (argv0 = *argv, *argv ? (argc--, argv++) : ((void *)0);      \

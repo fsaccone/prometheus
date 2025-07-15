@@ -1,15 +1,18 @@
 /* See LICENSE file for copyright and license details. */
 
+#include <errno.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "arg.h"
 #include "config.h"
 
+static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
@@ -17,6 +20,51 @@ static unsigned int packageexists(char *pname);
 static char **readlines(const char *f, size_t *lcount);
 static void sigcleanup(int sig);
 static void usage(void);
+
+char *
+chdirtotmp(char *pname, char *prefix)
+{
+	char tmp[256], cmd[512], *dir, *resdir;
+
+	snprintf(tmp, sizeof(tmp), "%s/tmp", prefix);
+	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
+		perror("mkdir");
+		exit(1);
+	}
+
+	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus", prefix);
+	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
+		perror("mkdir");
+		exit(1);
+	}
+
+	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus/%s-XXXXXX", prefix,
+	                                                          pname);
+	if (!(dir = mkdtemp(tmp))) {
+		perror("mkdtemp");
+		exit(1);
+	}
+
+	snprintf(cmd, sizeof(cmd), "cp -rf '%s/%s'/* %s", pkgsrepopath, pname,
+	                                                  dir);
+	if (system(cmd) == -1) {
+		perror("system");
+		exit(1);
+	}
+
+	if (chdir(dir) != 0) {
+		perror("chdir");
+		exit(1);
+	}
+
+	if (!(resdir = malloc(strlen(dir) + 1))) {
+		perror("malloc");
+		exit(1);
+	}
+	strcpy(resdir, dir);
+
+	return resdir;
+}
 
 void
 die(const char *m, ...)

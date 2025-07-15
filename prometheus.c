@@ -20,8 +20,8 @@ struct Node {
 
 static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
+static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
-static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *cc, char *prefix,
                            char *tmp);
@@ -88,6 +88,15 @@ die(const char *m, ...)
 	exit(EXIT_FAILURE);
 }
 
+unsigned int
+execfileexists(const char *f)
+{
+	struct stat buf;
+	if (stat(f, &buf) != 0) return 0;
+	if (buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) return 1;
+	return 0;
+}
+
 char *
 expandtilde(const char *f)
 {
@@ -115,13 +124,6 @@ expandtilde(const char *f)
 	strcat(res, f + 1); /* skip ~ */
 
 	return res;
-}
-
-unsigned int
-fileexists(const char *f)
-{
-	struct stat buf;
-	return (stat(f, &buf) == 0);
 }
 
 void
@@ -254,25 +256,25 @@ packageexists(char *pname)
 	char f[1024];
 
 	snprintf(f, sizeof(f), "%s/%s/retrieve", pkgsrepopath, pname);
-	if (!fileexists(f)) return 0;
+	if (!execfileexists(f)) return 0;
 
 	snprintf(f, sizeof(f), "%s/%s/configure", pkgsrepopath, pname);
-	if (!fileexists(f)) return 0;
+	if (!execfileexists(f)) return 0;
 
 	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepopath, pname);
-	if (!fileexists(f)) return 0;
+	if (!execfileexists(f)) return 0;
 
 	snprintf(f, sizeof(f), "%s/%s/test", pkgsrepopath, pname);
-	if (!fileexists(f)) return 0;
+	if (!execfileexists(f)) return 0;
 
 	snprintf(f, sizeof(f), "%s/%s/install", pkgsrepopath, pname);
-	if (!fileexists(f)) return 0;
+	if (!execfileexists(f)) return 0;
 
 	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepopath, pname);
-	if (!fileexists(f)) return 0;
+	if (!execfileexists(f)) return 0;
 
 	snprintf(f, sizeof(f), "%s/%s/isinstalled", pkgsrepopath, pname);
-	if (!fileexists(f)) return 0;
+	if (!execfileexists(f)) return 0;
 
 	return 1;
 }

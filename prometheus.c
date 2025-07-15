@@ -233,8 +233,9 @@ runpscript(char *prefix, char *tmp, char *script)
 	int c;
 	char cmd[1024];
 
-	snprintf(cmd, sizeof(cmd), "/bin/sh %s > %s.log 2>&1",
-	                           script, script);
+	snprintf(cmd, sizeof(cmd),
+	         "PATH=\"%s/bin:$PATH\" /bin/sh %s > %s.log 2>&1",
+	         prefix, script, script);
 
 	if(chdir(tmp)) {
 		perror("chdir");

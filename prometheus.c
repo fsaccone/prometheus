@@ -404,6 +404,11 @@ main(int argc, char *argv[])
 
 	handlesignals(sigcleanup);
 
+	if (!direxists(prefix) && mkdir(prefix, 0700) == -1) {
+		perror("mkdir");
+		exit(1);
+	}
+
 	for (; *argv; argc--, argv++) {
 		char *tmp;
 		struct Node *dep, *pkgs;

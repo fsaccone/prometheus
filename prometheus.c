@@ -370,7 +370,7 @@ main(int argc, char *argv[])
 		cc = EARGF(usage());
 		break;
 	case 'p':
-		prefix = EARGF(usage());
+		prefix = expandtilde(EARGF(usage()));
 		break;
 	case 'r':
 		recuninstall = 1;

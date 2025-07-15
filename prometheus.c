@@ -174,8 +174,10 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	}
 
 	for (dep = readlines("dependencies"); dep; dep = dep->n) {
+		char *tmp = chdirtotmp(dep->v, prefix);
 		printf("+ found dependency %s for %s\n", dep->v, pname);
-		installpackage(dep->v, cc, prefix, chdirtotmp(dep->v, prefix));
+		installpackage(dep->v, cc, prefix, tmp);
+		free(tmp);
 	}
 
 	if(chdir(tmp)) {
@@ -395,9 +397,13 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 
 	for (pkg = pkgs; pkg; pkg = pkg->n) {
 		struct Node *pd;
+		char *dir;
 
-		chdirtotmp(pkg->v, prefix);
-		if (runpscript(prefix, cc, tmp, "isinstalled")) continue;
+		dir = chdirtotmp(pkg->v, prefix);
+		if (runpscript(prefix, cc, tmp, "isinstalled")) {
+			free(dir);
+			continue;
+		}
 
 		for (pd = readlines("dependencies"); pd; pd = pd->n) {
 			if (pd->v == pname) {
@@ -451,8 +457,9 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	printf("+ uninstalled %s\n", pname);
 
 	for (dep = ideps; dep; dep = dep->n) {
-		uninstallpackage(dep->v, cc, prefix,
-		                 chdirtotmp(dep->v, prefix), rec, pkgs);
+		char *dir = chdirtotmp(dep->v, prefix);
+		uninstallpackage(dep->v, cc, prefix, dir, rec, pkgs);
+		free(dir);
 	}
 }
 
@@ -517,6 +524,8 @@ main(int argc, char *argv[])
 			                 recuninstall, listdirs(pkgsrepopath));
 		else
 			installpackage(*argv, cc, prefix, tmp);
+
+		free(tmp);
 	}
 
 	return EXIT_SUCCESS;

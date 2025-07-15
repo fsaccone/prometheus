@@ -536,9 +536,8 @@ main(int argc, char *argv[])
 	if (printinst && uninstall)
 		usage();
 
-	if (recuninstall && !uninstall) {
+	if (recuninstall && !uninstall)
 		usage();
-	}
 
 	handlesignals(sigcleanup);
 

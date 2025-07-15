@@ -469,6 +469,8 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 		uninstallpackage(dep->v, cc, prefix, dir, rec, pkgs);
 		free(dir);
 	}
+
+	freelinkedlist(ideps);
 }
 
 void

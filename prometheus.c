@@ -420,6 +420,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 			}
 		}
 
+		free(dir);
 		freelinkedlist(pdeps);
 	}
 

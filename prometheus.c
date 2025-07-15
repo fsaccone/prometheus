@@ -22,11 +22,12 @@ static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
-static void installpackage(char *pname, char *prefix, char *tmp);
+static void installpackage(char *pname, char *cc, char *prefix,
+                           char *tmp);
 static struct Node *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
 static struct Node *readlines(const char *f);
-static int runpscript(char *prefix, char *tmp, char *script);
+static int runpscript(char *prefix, char *cc, char *tmp, char *script);
 static void sigcleanup(int sig);
 static void usage(void);
 
@@ -108,9 +109,9 @@ handlesignals(void(*hdl)(int))
 }
 
 void
-installpackage(char *pname, char *prefix, char *tmp)
+installpackage(char *pname, char *cc, char *prefix, char *tmp)
 {
-	if (!runpscript(prefix, tmp, "isinstalled")) {
+	if (!runpscript(prefix, cc, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is already installed", pname);
 		return;
 	}
@@ -120,7 +121,7 @@ installpackage(char *pname, char *prefix, char *tmp)
 		exit(1);
 	}
 	printf("- retrieving %s\n", pname);
-	if (runpscript(prefix, tmp, "retrieve"))
+	if (runpscript(prefix, cc, tmp, "retrieve"))
 		die("%s: failed to retrieve %s, see %s/retrieve.log",
 		    argv0, pname, tmp);
 	printf("+ retrieved %s\n", pname);
@@ -130,7 +131,7 @@ installpackage(char *pname, char *prefix, char *tmp)
 		exit(1);
 	}
 	printf("- configuring %s\n", pname);
-	if (runpscript(prefix, tmp, "configure"))
+	if (runpscript(prefix, cc, tmp, "configure"))
 		die("%s: failed to configure %s, see %s/configure.log",
 		    argv0, pname, tmp);
 	printf("+ configured %s\n", pname);
@@ -140,7 +141,7 @@ installpackage(char *pname, char *prefix, char *tmp)
 		exit(1);
 	}
 	printf("- building %s\n", pname);
-	if (runpscript(prefix, tmp, "build"))
+	if (runpscript(prefix, cc, tmp, "build"))
 		die("%s: failed to build %s, see %s/build.log",
 		    argv0, pname, tmp);
 	printf("+ built %s\n", pname);
@@ -150,7 +151,7 @@ installpackage(char *pname, char *prefix, char *tmp)
 		exit(1);
 	}
 	printf("- testing %s\n", pname);
-	if (runpscript(prefix, tmp, "test"))
+	if (runpscript(prefix, cc, tmp, "test"))
 		die("%s: failed to test %s, see %s/test.log",
 		    argv0, pname, tmp);
 	printf("+ tested %s\n", pname);
@@ -160,7 +161,7 @@ installpackage(char *pname, char *prefix, char *tmp)
 		exit(1);
 	}
 	printf("- installing %s\n", pname);
-	if (runpscript(prefix, tmp, "install"))
+	if (runpscript(prefix, cc, tmp, "install"))
 		die("%s: failed to install %s, see %s/install.log",
 		    argv0, pname, tmp);
 	printf("+ installed %s\n", pname);
@@ -288,16 +289,17 @@ readlines(const char *f)
 }
 
 int
-runpscript(char *prefix, char *tmp, char *script)
+runpscript(char *prefix, char *cc, char *tmp, char *script)
 {
 	int c;
 	char cmd[1024];
 
 	snprintf(cmd, sizeof(cmd),
+	         "cc=\"%s\" "
 	         "prefix=\"%s\" "
 	         "PATH=\"%s/bin:$PATH\" "
 	         "/bin/sh %s > %s.log 2>&1",
-	         prefix, prefix, script, script);
+	         cc, prefix, prefix, script, script);
 
 	if(chdir(tmp)) {
 		perror("chdir");
@@ -330,12 +332,12 @@ main(int argc, char *argv[])
 {
 	int uninstall = 0,
 	    recuninstall = 0;
-	char *ccompiler = "cc",
+	char *cc = "cc",
 	     *prefix = "";
 
 	ARGBEGIN {
 	case 'c':
-		ccompiler = EARGF(usage());
+		cc = EARGF(usage());
 		break;
 	case 'p':
 		prefix = EARGF(usage());

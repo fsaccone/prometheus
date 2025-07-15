@@ -522,11 +522,14 @@ main(int argc, char *argv[])
 
 		tmp = chdirtotmp(*argv, prefix);
 
-		if (uninstall)
+		if (uninstall) {
+			struct Node *pkgs = listdirs(pkgsrepopath);
 			uninstallpackage(*argv, cc, prefix, tmp,
-			                 recuninstall, listdirs(pkgsrepopath));
-		else
+			                 recuninstall, pkgs);
+			freelinkedlist(pkgs);
+		} else {
 			installpackage(*argv, cc, prefix, tmp);
+		}
 
 		free(tmp);
 	}

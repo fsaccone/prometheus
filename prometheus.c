@@ -550,6 +550,12 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
+	if (printinst) {
+		struct Node *pkgs = listdirs(pkgsrepodir);
+		printinstalled(cc, prefix, pkgs);
+		freelinkedlist(pkgs);
+	}
+
 	for (; *argv; argc--, argv++) {
 		char *tmp;
 

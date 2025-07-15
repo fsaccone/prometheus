@@ -165,9 +165,16 @@ handlesignals(void(*hdl)(int))
 void
 installpackage(char *pname, char *cc, char *prefix, char *tmp)
 {
+	struct Node *dep;
+
 	if (!runpscript(prefix, cc, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is already installed", pname);
 		return;
+	}
+
+	for (dep = readlines("dependencies"); dep; dep = dep->n) {
+		printf("+ found dependency %s for %s\n", dep->v, pname);
+		installpackage(dep->v, cc, prefix, chdirtotmp(dep->v, prefix));
 	}
 
 	if(chdir(tmp)) {

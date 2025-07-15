@@ -271,7 +271,7 @@ main(int argc, char *argv[])
 
 	for (; *argv; argc--, argv++) {
 		char *tmp;
-		struct Node *dep;
+		struct Node *dep, *pkgs;
 
 		if (!packageexists(*argv)) {
 			die("%s: package %s does not exist", argv0, *argv);
@@ -279,6 +279,7 @@ main(int argc, char *argv[])
 
 		tmp = chdirtotmp(*argv, prefix);
 		dep = readlines("dependencies");
+		pkgs = listdirs(pkgsrepopath);
 	}
 
 	return EXIT_SUCCESS;

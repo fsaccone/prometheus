@@ -23,6 +23,7 @@ static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
+static void freelinkedlist(struct Node *n);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *cc, char *prefix,
                            char *tmp);
@@ -134,6 +135,17 @@ expandtilde(const char *f)
 	strcat(res, f + 1); /* skip ~ */
 
 	return res;
+}
+
+void
+freelinkedlist(struct Node *n)
+{
+	while (n) {
+		struct Node *nn = n->n;
+		free(n->v);
+		free(n);
+		n = nn;
+	}
 }
 
 void

@@ -526,7 +526,8 @@ main(int argc, char *argv[])
 	if (prefix[strlen(prefix) - 1] == '/')
 		prefix[strlen(prefix) - 1] = '\0';
 
-	if (!direxists(prefix) && mkdir(prefix, 0700) == -1) {
+	if (strlen(prefix) && !direxists(prefix)
+	                   && mkdir(prefix, 0700) == -1) {
 		perror("mkdir");
 		exit(1);
 	}

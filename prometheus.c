@@ -544,11 +544,8 @@ main(int argc, char *argv[])
 	if (prefix[strlen(prefix) - 1] == '/')
 		prefix[strlen(prefix) - 1] = '\0';
 
-	if (strlen(prefix) && !direxists(prefix)
-	                   && mkdir(prefix, 0700) == -1) {
-		perror("mkdir");
-		exit(1);
-	}
+	if (strlen(prefix) && !direxists(prefix))
+		die("%s: prefix %s does not exist", argv0, prefix);
 
 	if (printinst) {
 		struct Node *pkgs = listdirs(pkgsrepodir);

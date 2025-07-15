@@ -44,37 +44,37 @@ chdirtotmp(char *pname, char *prefix)
 	snprintf(tmp, sizeof(tmp), "%s/tmp", prefix);
 	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
 		perror("mkdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus", prefix);
 	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
 		perror("mkdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus/%s-XXXXXX", prefix,
 	                                                          pname);
 	if (!(dir = mkdtemp(tmp))) {
 		perror("mkdtemp");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	snprintf(cmd, sizeof(cmd), "cp -rf '%s/%s'/* %s", pkgsrepodir, pname,
 	                                                  dir);
 	if (system(cmd) == -1) {
 		perror("system");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if (chdir(dir) != 0) {
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if (!(resdir = malloc(strlen(dir) + 1))) {
 		perror("malloc");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	strcpy(resdir, dir);
 
@@ -118,7 +118,7 @@ expandtilde(const char *f)
 	if (f[0] != '~') {
 		if (!(res = malloc(strlen(f) + 1))) {
 			perror("malloc");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		strcpy(res, f);
 		return res;
@@ -130,7 +130,7 @@ expandtilde(const char *f)
 	/* -~ +\0 */
 	if (!(res = malloc(strlen(home) + strlen(f)))) {
 		perror("malloc");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	strcpy(res, home);
@@ -186,7 +186,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 
 	if(chdir(tmp)) {
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	printf("- retrieving %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "retrieve"))
@@ -196,7 +196,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 
 	if(chdir(tmp)) {
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	printf("- configuring %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "configure"))
@@ -206,7 +206,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 
 	if(chdir(tmp)) {
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	printf("- building %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "build"))
@@ -216,7 +216,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 
 	if(chdir(tmp)) {
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	printf("- testing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "test"))
@@ -226,7 +226,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 
 	if(chdir(tmp)) {
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	printf("- installing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "install"))
@@ -259,14 +259,14 @@ listdirs(const char *f)
 			if (!(n = malloc(sizeof(struct Node)))) {
 				closedir(d);
 				perror("malloc");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 
 			if (!(n->v = malloc(strlen(e->d_name) + 1))) {
 				free(n);
 				closedir(d);
 				perror("malloc");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 
 			strcpy(n->v, e->d_name);
@@ -343,7 +343,7 @@ readlines(const char *f)
 		if (!newl) {
 			fclose(fp);
 			perror("malloc");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		buf[strcspn(buf, "\n")] = '\0';
@@ -351,7 +351,7 @@ readlines(const char *f)
 			free(newl);
 			fclose(fp);
 			perror("malloc");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		strcpy(newl->v, buf);
 
@@ -384,12 +384,12 @@ runpscript(char *prefix, char *cc, char *tmp, char *script)
 
 	if(chdir(tmp)) {
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if ((c = system(cmd)) == -1) {
 		perror("system");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	return WEXITSTATUS(c);
@@ -398,7 +398,7 @@ runpscript(char *prefix, char *cc, char *tmp, char *script)
 void
 sigcleanup(int sig)
 {
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 void
@@ -446,12 +446,12 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 
 			if (!(newidep = malloc(sizeof(struct Node)))) {
 				perror("malloc");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			if (!(newidep->v = malloc(strlen(dep->v) + 1))) {
 				free(newidep);
 				perror("malloc");
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			strcpy(newidep->v, dep->v);
 
@@ -471,7 +471,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	if(chdir(tmp)) {
 		freelinkedlist(ideps);
 		perror("chdir");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	printf("- uninstalling %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "uninstall"))

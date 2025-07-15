@@ -556,6 +556,7 @@ main(int argc, char *argv[])
 		freelinkedlist(pkgs);
 	}
 
+	/* will not be evaluated when printinst is 1 */
 	for (; *argv; argc--, argv++) {
 		char *tmp;
 

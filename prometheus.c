@@ -459,6 +459,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	}
 
 	if(chdir(tmp)) {
+		freelinkedlist(ideps);
 		perror("chdir");
 		exit(1);
 	}

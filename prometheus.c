@@ -321,7 +321,8 @@ sigcleanup(int sig)
 void
 usage(void)
 {
-	die("usage: %s [-u [-r]] [-p prefix] package ...", argv0);
+	die("usage: %s [-u [-r]] [-c ccompiler] "
+	    "[-p prefix] package ...", argv0);
 }
 
 int
@@ -329,9 +330,13 @@ main(int argc, char *argv[])
 {
 	int uninstall = 0,
 	    recuninstall = 0;
-	char *prefix = "";
+	char *ccompiler = "cc",
+	     *prefix = "";
 
 	ARGBEGIN {
+	case 'c':
+		ccompiler = EARGF(usage());
+		break;
 	case 'p':
 		prefix = EARGF(usage());
 		break;

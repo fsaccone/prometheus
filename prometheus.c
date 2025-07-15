@@ -411,7 +411,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 		pdeps = readlines("dependencies");
 
 		for (pd = pdeps; pd; pd = pd->n) {
-			if (pd->v == pname) {
+			if (!strcmp(pd->v, pname)) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
 				free(dir);

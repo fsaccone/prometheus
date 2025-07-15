@@ -411,15 +411,12 @@ main(int argc, char *argv[])
 
 	for (; *argv; argc--, argv++) {
 		char *tmp;
-		struct Node *deps, *pkgs;
 
 		if (!packageexists(*argv)) {
 			die("%s: package %s does not exist", argv0, *argv);
 		}
 
 		tmp = chdirtotmp(*argv, prefix);
-		deps = readlines("dependencies");
-		pkgs = listdirs(pkgsrepopath);
 	}
 
 	return EXIT_SUCCESS;

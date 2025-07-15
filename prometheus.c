@@ -477,13 +477,16 @@ main(int argc, char *argv[])
 	    recuninstall = 0;
 	char *cc = "cc",
 	     *prefix = "";
+	unsigned int expprefix = 0;
 
 	ARGBEGIN {
 	case 'c':
 		cc = EARGF(usage());
 		break;
 	case 'p':
-		prefix = expandtilde(EARGF(usage()));
+		char *arg = EARGF(usage());
+		prefix = expandtilde(arg);
+		if (arg != prefix) expprefix = 1;
 		break;
 	case 'r':
 		recuninstall = 1;
@@ -527,6 +530,8 @@ main(int argc, char *argv[])
 
 		free(tmp);
 	}
+
+	if (expprefix) free(prefix);
 
 	return EXIT_SUCCESS;
 }

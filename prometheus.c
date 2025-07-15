@@ -491,7 +491,7 @@ main(int argc, char *argv[])
 	int uninstall = 0,
 	    recuninstall = 0;
 	char *cc = "cc",
-	     *prefix = "";
+	     *prefix = defaultprefix;
 	unsigned int expprefix = 0;
 
 	ARGBEGIN {

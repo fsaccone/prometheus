@@ -20,6 +20,7 @@ struct Node {
 
 static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
+static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
 static void handlesignals(void(*hdl)(int));
@@ -86,6 +87,15 @@ die(const char *m, ...)
 	putc('\n', stderr);
 	va_end(va);
 	exit(EXIT_FAILURE);
+}
+
+unsigned int
+direxists(const char *f)
+{
+	struct stat buf;
+	if (stat(f, &buf) != 0) return 0;
+	if (S_ISDIR(buf.st_mode)) return 1;
+	return 0;
 }
 
 unsigned int

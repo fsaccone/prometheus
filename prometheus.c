@@ -22,6 +22,7 @@ static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
+static void installpackage(char *pname, char *prefix, char *tmp);
 static struct Node *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
 static struct Node *readlines(const char *f);
@@ -104,6 +105,65 @@ handlesignals(void(*hdl)(int))
 	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
+}
+
+void
+installpackage(char *pname, char *prefix, char *tmp)
+{
+	if (!runpscript(prefix, tmp, "isinstalled")) {
+		printf("+ skipping %s since it is already installed", pname);
+		return;
+	}
+
+	if(chdir(tmp)) {
+		perror("chdir");
+		exit(1);
+	}
+	printf("- retrieving %s\n", pname);
+	if (runpscript(prefix, tmp, "retrieve"))
+		die("%s: failed to retrieve %s, see %s/retrieve.log",
+		    argv0, pname, tmp);
+	printf("+ retrieved %s\n", pname);
+
+	if(chdir(tmp)) {
+		perror("chdir");
+		exit(1);
+	}
+	printf("- configuring %s\n", pname);
+	if (runpscript(prefix, tmp, "configure"))
+		die("%s: failed to configure %s, see %s/configure.log",
+		    argv0, pname, tmp);
+	printf("+ configured %s\n", pname);
+
+	if(chdir(tmp)) {
+		perror("chdir");
+		exit(1);
+	}
+	printf("- building %s\n", pname);
+	if (runpscript(prefix, tmp, "build"))
+		die("%s: failed to build %s, see %s/build.log",
+		    argv0, pname, tmp);
+	printf("+ built %s\n", pname);
+
+	if(chdir(tmp)) {
+		perror("chdir");
+		exit(1);
+	}
+	printf("- testing %s\n", pname);
+	if (runpscript(prefix, tmp, "test"))
+		die("%s: failed to test %s, see %s/test.log",
+		    argv0, pname, tmp);
+	printf("+ tested %s\n", pname);
+
+	if(chdir(tmp)) {
+		perror("chdir");
+		exit(1);
+	}
+	printf("- installing %s\n", pname);
+	if (runpscript(prefix, tmp, "install"))
+		die("%s: failed to install %s, see %s/install.log",
+		    argv0, pname, tmp);
+	printf("+ installed %s\n", pname);
 }
 
 struct Node *

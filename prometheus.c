@@ -20,6 +20,7 @@ struct Node {
 
 static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
+static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *cc, char *prefix,
@@ -85,6 +86,35 @@ die(const char *m, ...)
 	putc('\n', stderr);
 	va_end(va);
 	exit(EXIT_FAILURE);
+}
+
+char *
+expandtilde(const char *f)
+{
+	char *home, *res;
+
+	if (f[0] != '~') {
+		if (!(res = malloc(strlen(f) + 1))) {
+			perror("malloc");
+			exit(1);
+		}
+		strcpy(res, f);
+		return res;
+	}
+
+	if (!(home = getenv("HOME")))
+		die("%s: cannot expand tilde since HOME is undefined", argv0);
+
+	/* -~ +\0 */
+	if (!(res = malloc(strlen(home) + strlen(f)))) {
+		perror("malloc");
+		exit(1);
+	}
+
+	strcpy(res, home);
+	strcat(res, f + 1); /* skip ~ */
+
+	return res;
 }
 
 unsigned int

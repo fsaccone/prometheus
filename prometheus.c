@@ -166,19 +166,22 @@ handlesignals(void(*hdl)(int))
 void
 installpackage(char *pname, char *cc, char *prefix, char *tmp)
 {
-	struct Node *dep;
+	struct Node *deps = readlines("dependencies"), *dep;
 
 	if (!runpscript(prefix, cc, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is already installed\n", pname);
+		freelinkedlist(deps);
 		return;
 	}
 
-	for (dep = readlines("dependencies"); dep; dep = dep->n) {
+	for (dep = deps; dep; dep = dep->n) {
 		char *tmp = chdirtotmp(dep->v, prefix);
 		printf("+ found dependency %s for %s\n", dep->v, pname);
 		installpackage(dep->v, cc, prefix, tmp);
 		free(tmp);
 	}
+
+	freelinkedlist(deps);
 
 	if(chdir(tmp)) {
 		perror("chdir");
@@ -396,7 +399,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	}
 
 	for (pkg = pkgs; pkg; pkg = pkg->n) {
-		struct Node *pd;
+		struct Node *pdeps = readlines("dependencies"), *pd;
 		char *dir;
 
 		dir = chdirtotmp(pkg->v, prefix);
@@ -405,19 +408,22 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 			continue;
 		}
 
-		for (pd = readlines("dependencies"); pd; pd = pd->n) {
+		for (pd = pdeps; pd; pd = pd->n) {
 			if (pd->v == pname) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
 				return;
 			}
 		}
+
+		freelinkedlist(pdeps);
 	}
 
 	if (rec) {
-		struct Node *idepstail = NULL;
+		struct Node *deps = readlines("dependencies"),
+		            *idepstail = NULL;
 
-		for (dep = readlines("dependencies"); dep; dep = dep->n) {
+		for (dep = deps; dep; dep = dep->n) {
 			struct Node *newidep;
 
 			printf("+ found dependency %s for %s\n",
@@ -444,6 +450,8 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 
 			idepstail = newidep;
 		}
+
+		freelinkedlist(deps);
 	}
 
 	if(chdir(tmp)) {

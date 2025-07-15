@@ -12,12 +12,17 @@
 #include "arg.h"
 #include "config.h"
 
+struct Node {
+	char *v;
+	struct Node *n;
+};
+
 static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
 static unsigned int packageexists(char *pname);
-static char **readlines(const char *f, size_t *lcount);
+static struct Node *readlines(const char *f);
 static void sigcleanup(int sig);
 static void usage(void);
 
@@ -127,45 +132,45 @@ packageexists(char *pname)
 	return 1;
 }
 
-char **
-readlines(const char *f, size_t *lcount)
+struct Node *
+readlines(const char *f)
 {
+	struct Node *head = NULL, *tail = NULL;
 	FILE *fp;
-	char **l;
-	size_t cap, lsize;
+	char buf[1024];
 
 	fp = fopen(f, "r");
 	if (!fp) return NULL;
 
-	*lcount = 0;
-	cap = 8;
-	if(!(l = malloc(cap * sizeof(char *)))) {
-		fclose(fp);
-		perror("malloc");
-		exit(1);
-	};
-
-	lsize = 0;
-	while (getline(&l[*lcount], &lsize, fp) != -1) {
-		size_t llen = strlen(l[*lcount]);
-		if (llen > 0 && l[*lcount][llen - 1] == '\n') {
-			l[*lcount][llen - 1] = '\0';
+	while (fgets(buf,sizeof(buf), fp) != NULL) {
+		struct Node *newl = malloc(sizeof(struct Node));
+		if (!newl) {
+			fclose(fp);
+			perror("malloc");
+			exit(1);
 		}
 
-		if (*lcount >= cap) {
-			cap *= 2;
-			if(!(l = realloc(l, cap * sizeof(char *)))) {
-				fclose(fp);
-				perror("malloc");
-				exit(1);
-			};
+		buf[strcspn(buf, "\n")] = '\0';
+		if (!(newl->v = malloc(strlen(buf) + 1))) {
+			free(newl);
+			fclose(fp);
+			perror("malloc");
+			exit(1);
 		}
+		strcpy(newl->v, buf);
 
-		(*lcount)++;
+		newl->n = NULL;
+
+		if (!head)
+			head = newl;
+		else
+			tail->n = newl;
+
+		tail = newl;
 	}
 
 	fclose(fp);
-	return l;
+	return head;
 }
 
 void

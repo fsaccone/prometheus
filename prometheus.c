@@ -217,9 +217,13 @@ main(int argc, char *argv[])
 	handlesignals(sigcleanup);
 
 	for (; *argv; argc--, argv++) {
+		char *tmp;
+
 		if (!packageexists(*argv)) {
 			die("%s: package %s does not exist", argv0, *argv);
 		}
+
+		tmp = chdirtotmp(*argv, prefix);
 	}
 
 	return EXIT_SUCCESS;

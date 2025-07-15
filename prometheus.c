@@ -168,7 +168,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	struct Node *dep;
 
 	if (!runpscript(prefix, cc, tmp, "isinstalled")) {
-		printf("+ skipping %s since it is already installed", pname);
+		printf("+ skipping %s since it is already installed\n", pname);
 		return;
 	}
 

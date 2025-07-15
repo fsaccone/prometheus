@@ -414,6 +414,8 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 			if (pd->v == pname) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
+				free(dir);
+				freelinkedlist(pdeps);
 				return;
 			}
 		}

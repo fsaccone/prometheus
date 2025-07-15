@@ -399,7 +399,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	}
 
 	for (pkg = pkgs; pkg; pkg = pkg->n) {
-		struct Node *pdeps = readlines("dependencies"), *pd;
+		struct Node *pdeps, *pd;
 		char *dir;
 
 		dir = chdirtotmp(pkg->v, prefix);
@@ -407,6 +407,8 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 			free(dir);
 			continue;
 		}
+
+		pdeps = readlines("dependencies");
 
 		for (pd = pdeps; pd; pd = pd->n) {
 			if (pd->v == pname) {

@@ -25,8 +25,7 @@ static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
 static void freelinkedlist(struct Node *n);
 static void handlesignals(void(*hdl)(int));
-static void installpackage(char *pname, char *cc, char *prefix,
-                           char *tmp);
+static void installpackage(char *pname, char *cc, char *prefix, char *tmp);
 static struct Node *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
 static struct Node *readlines(const char *f);

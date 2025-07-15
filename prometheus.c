@@ -28,6 +28,7 @@ static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *cc, char *prefix, char *tmp);
 static struct Node *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
+static void printinstalled(char *cc, char *prefix, struct Node *pkgs);
 static struct Node *readlines(const char *f);
 static int runpscript(char *prefix, char *cc, char *tmp, char *script);
 static void sigcleanup(int sig);
@@ -312,6 +313,19 @@ packageexists(char *pname)
 	if (!execfileexists(f)) return 0;
 
 	return 1;
+}
+
+void
+printinstalled(char *cc, char *prefix, struct Node *pkgs)
+{
+	struct Node *p;
+
+	for (p = pkgs; p; p = p->n) {
+		char *dir = chdirtotmp(p->v, prefix);
+		if (!runpscript(prefix, cc, dir, "isinstalled"))
+			printf("%s\n", p->v);
+		free(dir);
+	}
 }
 
 struct Node *

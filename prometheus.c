@@ -403,15 +403,11 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 		char *dir;
 
 		dir = chdirtotmp(pkg->v, prefix);
-		if (!runpscript(prefix, cc, tmp, "isinstalled")) {
-			free(dir);
-			continue;
-		}
-
 		pdeps = readlines("dependencies");
 
 		for (pd = pdeps; pd; pd = pd->n) {
-			if (!strcmp(pd->v, pname)) {
+			if (!strcmp(pd->v, pname)
+			    && !runpscript(prefix, cc, tmp, "isinstalled")) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
 				free(dir);

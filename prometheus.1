@@ -10,6 +10,11 @@
 .Op Fl c Ar ccompiler
 .Op Fl p Ar prefix
 .Ar package ...
+.Nm
+.Op Fl l
+.Op Fl c Ar ccompiler
+.Op Fl p Ar prefix
+.Ar package ...
 .Sh DESCRIPTION
 .Nm
 is the package manager for the Arcadia distribution. It works by pairing it to
@@ -26,6 +31,8 @@ Uninstall
 .Ar package
 and all its dependencies. Requires
 .Fl u .
+.It Fl l
+List installed packages.
 .It Fl c Ar ccompiler
 Use
 .Ar ccompiler

@@ -491,15 +491,16 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 void
 usage(void)
 {
-	die("usage: %s [-u [-r]] [-c ccompiler] "
-	    "[-p prefix] package ...", argv0);
+	die("usage: %s [-u [-r]] [-c ccompiler] [-p prefix] package ...\n"
+	    "       %s [-l] [-c ccompiler] [-p prefix]", argv0, argv0);
 }
 
 int
 main(int argc, char *argv[])
 {
 	int uninstall = 0,
-	    recuninstall = 0;
+	    recuninstall = 0,
+	    printinst = 0;
 	char *cc = "cc",
 	     *prefix = defaultprefix;
 	unsigned int expprefix = 0;
@@ -507,6 +508,9 @@ main(int argc, char *argv[])
 	ARGBEGIN {
 	case 'c':
 		cc = EARGF(usage());
+		break;
+	case 'l':
+		printinst = 1;
 		break;
 	case 'p':
 		char *arg = EARGF(usage());
@@ -523,9 +527,14 @@ main(int argc, char *argv[])
 		usage();
 	} ARGEND
 
-	if (!argc) {
+	if (printinst && argc)
 		usage();
-	}
+
+	if (!printinst && !argc)
+		usage();
+
+	if (printinst && uninstall)
+		usage();
 
 	if (recuninstall && !uninstall) {
 		usage();

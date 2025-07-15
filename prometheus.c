@@ -190,7 +190,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	}
 	printf("- retrieving %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "retrieve"))
-		die("%s: failed to retrieve %s, see %s/retrieve.log",
+		die("+ failed to retrieve %s, see %s/retrieve.log",
 		    argv0, pname, tmp);
 	printf("+ retrieved %s\n", pname);
 
@@ -200,7 +200,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	}
 	printf("- configuring %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "configure"))
-		die("%s: failed to configure %s, see %s/configure.log",
+		die("+ failed to configure %s, see %s/configure.log",
 		    argv0, pname, tmp);
 	printf("+ configured %s\n", pname);
 
@@ -210,7 +210,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	}
 	printf("- building %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "build"))
-		die("%s: failed to build %s, see %s/build.log",
+		die("+ failed to build %s, see %s/build.log",
 		    argv0, pname, tmp);
 	printf("+ built %s\n", pname);
 
@@ -220,7 +220,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	}
 	printf("- testing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "test"))
-		die("%s: failed to test %s, see %s/test.log",
+		die("+ failed to test %s, see %s/test.log",
 		    argv0, pname, tmp);
 	printf("+ tested %s\n", pname);
 
@@ -230,7 +230,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	}
 	printf("- installing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "install"))
-		die("%s: failed to install %s, see %s/install.log",
+		die("+ failed to install %s, see %s/install.log",
 		    argv0, pname, tmp);
 	printf("+ installed %s\n", pname);
 }
@@ -475,7 +475,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	}
 	printf("- uninstalling %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "uninstall"))
-		die("%s: failed to uninstall %s, see %s/uninstall.log",
+		die("+ failed to uninstall %s, see %s/uninstall.log",
 		    argv0, pname, tmp);
 	printf("+ uninstalled %s\n", pname);
 

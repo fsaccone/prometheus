@@ -31,6 +31,8 @@ static unsigned int packageexists(char *pname);
 static struct Node *readlines(const char *f);
 static int runpscript(char *prefix, char *cc, char *tmp, char *script);
 static void sigcleanup(int sig);
+static void uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
+                             unsigned int rec, struct Node *pkgs);
 static void usage(void);
 
 char *
@@ -378,6 +380,80 @@ void
 sigcleanup(int sig)
 {
 	exit(1);
+}
+
+void
+uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
+                 unsigned int rec, struct Node *pkgs)
+{
+	struct Node *dep, *pkg, *ideps = NULL;
+
+	if (runpscript(prefix, cc, tmp, "isinstalled")) {
+		printf("+ skipping %s since it is not installed\n", pname);
+		return;
+	}
+
+	for (pkg = pkgs; pkg; pkg = pkg->n) {
+		struct Node *pd;
+
+		chdirtotmp(pkg->v, prefix);
+		if (runpscript(prefix, cc, tmp, "isinstalled")) continue;
+
+		for (pd = readlines("dependencies"); pd; pd = pd->n) {
+			if (pd->v == pname) {
+				printf("+ skipping %s since %s depends on "
+				       "it\n", pname, pkg->v);
+				return;
+			}
+		}
+	}
+
+	if (rec) {
+		struct Node *idepstail = NULL;
+
+		for (dep = readlines("dependencies"); dep; dep = dep->n) {
+			struct Node *newidep;
+
+			printf("+ found dependency %s for %s\n",
+			       dep->v, pname);
+
+			if (!(newidep = malloc(sizeof(struct Node)))) {
+				perror("malloc");
+				exit(1);
+			}
+			if (!(newidep->v = malloc(strlen(dep->v) + 1))) {
+				free(newidep);
+				perror("malloc");
+				exit(1);
+			}
+			strcpy(newidep->v, dep->v);
+			free(dep->v);
+
+			newidep->n = NULL;
+
+			if (!ideps)
+				ideps = newidep;
+			else
+				idepstail->n = newidep;
+
+			idepstail = newidep;
+		}
+	}
+
+	if(chdir(tmp)) {
+		perror("chdir");
+		exit(1);
+	}
+	printf("- uninstalling %s\n", pname);
+	if (runpscript(prefix, cc, tmp, "uninstall"))
+		die("%s: failed to uninstall %s, see %s/uninstall.log",
+		    argv0, pname, tmp);
+	printf("+ uninstalled %s\n", pname);
+
+	for (dep = ideps; dep; dep = dep->n) {
+		uninstallpackage(dep->v, cc, prefix,
+		                 chdirtotmp(dep->v, prefix), rec, pkgs);
+	}
 }
 
 void

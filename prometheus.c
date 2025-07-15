@@ -31,7 +31,7 @@ static unsigned int packageexists(char *pname);
 static void printinstalled(char *cc, char *prefix, struct Node *pkgs);
 static struct Node *readlines(const char *f);
 static int runpscript(char *prefix, char *cc, char *tmp, char *script);
-static void sigcleanup(int sig);
+static void sigcleanup();
 static void uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
                              unsigned int rec, struct Node *pkgs);
 static void usage(void);
@@ -396,7 +396,7 @@ runpscript(char *prefix, char *cc, char *tmp, char *script)
 }
 
 void
-sigcleanup(int sig)
+sigcleanup()
 {
 	exit(EXIT_FAILURE);
 }

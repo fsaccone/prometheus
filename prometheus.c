@@ -403,7 +403,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 		char *dir;
 
 		dir = chdirtotmp(pkg->v, prefix);
-		if (runpscript(prefix, cc, tmp, "isinstalled")) {
+		if (!runpscript(prefix, cc, tmp, "isinstalled")) {
 			free(dir);
 			continue;
 		}

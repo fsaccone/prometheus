@@ -1,5 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 
+#include <dirent.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdarg.h>
@@ -21,6 +22,7 @@ static char *chdirtotmp(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int fileexists(const char *f);
 static void handlesignals(void(*hdl)(int));
+static struct Node *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
 static struct Node *readlines(const char *f);
 static void sigcleanup(int sig);
@@ -101,6 +103,57 @@ handlesignals(void(*hdl)(int))
 	sigaction(SIGHUP, &sa, NULL);
 	sigaction(SIGINT, &sa, NULL);
 	sigaction(SIGQUIT, &sa, NULL);
+}
+
+struct Node *
+listdirs(const char *f)
+{
+	DIR *d;
+	struct dirent *e;
+	struct stat s;
+	struct Node *head = NULL, *tail = NULL, *n;
+
+	if(!(d = opendir(f))) return NULL;
+
+	while ((e = readdir(d))) {
+		if (e->d_name[0] == '.' || !strcmp(e->d_name, ".")
+		                        || !strcmp(e->d_name, "..")) {
+			continue;
+		}
+
+		char path[1024];
+
+		snprintf(path, sizeof(path), "%s/%s", f, e->d_name);
+
+		if (!stat(path, &s) && S_ISDIR(s.st_mode)) {
+			if (!(n = malloc(sizeof(struct Node)))) {
+				closedir(d);
+				perror("malloc");
+				exit(1);
+			}
+
+			if (!(n->v = malloc(strlen(e->d_name) + 1))) {
+				free(n);
+				closedir(d);
+				perror("malloc");
+				exit(1);
+			}
+
+			strcpy(n->v, e->d_name);
+
+			n->n = NULL;
+
+			if (!head)
+				head = n;
+			else
+				tail->n = n;
+
+			tail = n;
+		}
+	}
+
+	closedir(d);
+	return head;
 }
 
 unsigned int

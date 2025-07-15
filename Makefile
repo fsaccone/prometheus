@@ -7,7 +7,7 @@ BIN = prometheus
 all: $(BIN)
 
 $(BIN): config.h prometheus.c
-	$(CC) $(CFLAGS) -o $@ prometheus.c
+	$(CC) $(CFLAGS) -o $@ $^
 
 config.h: config.def.h
 	cp $^ $@

@@ -443,7 +443,6 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 				exit(1);
 			}
 			strcpy(newidep->v, dep->v);
-			free(dep->v);
 
 			newidep->n = NULL;
 

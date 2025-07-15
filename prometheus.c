@@ -25,6 +25,7 @@ static void handlesignals(void(*hdl)(int));
 static struct Node *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
 static struct Node *readlines(const char *f);
+static int runpscript(char *prefix, char *tmp, char *script);
 static void sigcleanup(int sig);
 static void usage(void);
 
@@ -224,6 +225,28 @@ readlines(const char *f)
 
 	fclose(fp);
 	return head;
+}
+
+int
+runpscript(char *prefix, char *tmp, char *script)
+{
+	int c;
+	char cmd[1024];
+
+	snprintf(cmd, sizeof(cmd), "/bin/sh %s > %s.log 2>&1",
+	                           script, script);
+
+	if(chdir(tmp)) {
+		perror("chdir");
+		exit(1);
+	}
+
+	if ((c = system(cmd)) == -1) {
+		perror("system");
+		exit(1);
+	}
+
+	return WEXITSTATUS(c);
 }
 
 void

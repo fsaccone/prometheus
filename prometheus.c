@@ -511,6 +511,12 @@ main(int argc, char *argv[])
 		}
 
 		tmp = chdirtotmp(*argv, prefix);
+
+		if (uninstall)
+			uninstallpackage(*argv, cc, prefix, tmp,
+			                 recuninstall, listdirs(pkgsrepopath));
+		else
+			installpackage(*argv, cc, prefix, tmp);
 	}
 
 	return EXIT_SUCCESS;

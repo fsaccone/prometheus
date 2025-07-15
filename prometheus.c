@@ -59,7 +59,7 @@ chdirtotmp(char *pname, char *prefix)
 		exit(1);
 	}
 
-	snprintf(cmd, sizeof(cmd), "cp -rf '%s/%s'/* %s", pkgsrepopath, pname,
+	snprintf(cmd, sizeof(cmd), "cp -rf '%s/%s'/* %s", pkgsrepodir, pname,
 	                                                  dir);
 	if (system(cmd) == -1) {
 		perror("system");
@@ -290,25 +290,25 @@ packageexists(char *pname)
 {
 	char f[1024];
 
-	snprintf(f, sizeof(f), "%s/%s/retrieve", pkgsrepopath, pname);
+	snprintf(f, sizeof(f), "%s/%s/retrieve", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/configure", pkgsrepopath, pname);
+	snprintf(f, sizeof(f), "%s/%s/configure", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepopath, pname);
+	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/test", pkgsrepopath, pname);
+	snprintf(f, sizeof(f), "%s/%s/test", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/install", pkgsrepopath, pname);
+	snprintf(f, sizeof(f), "%s/%s/install", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepopath, pname);
+	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/isinstalled", pkgsrepopath, pname);
+	snprintf(f, sizeof(f), "%s/%s/isinstalled", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
 	return 1;
@@ -538,7 +538,7 @@ main(int argc, char *argv[])
 		tmp = chdirtotmp(*argv, prefix);
 
 		if (uninstall) {
-			struct Node *pkgs = listdirs(pkgsrepopath);
+			struct Node *pkgs = listdirs(pkgsrepodir);
 			uninstallpackage(*argv, cc, prefix, tmp,
 			                 recuninstall, pkgs);
 			freelinkedlist(pkgs);

@@ -184,50 +184,30 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 
 	freelinkedlist(deps);
 
-	if(chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
 	printf("- retrieving %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "retrieve"))
 		die("+ failed to retrieve %s, see %s/retrieve.log",
 		    pname, tmp);
 	printf("+ retrieved %s\n", pname);
 
-	if(chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
 	printf("- configuring %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "configure"))
 		die("+ failed to configure %s, see %s/configure.log",
 		    pname, tmp);
 	printf("+ configured %s\n", pname);
 
-	if(chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
 	printf("- building %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "build"))
 		die("+ failed to build %s, see %s/build.log",
 		    pname, tmp);
 	printf("+ built %s\n", pname);
 
-	if(chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
 	printf("- testing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "test"))
 		die("+ failed to test %s, see %s/test.log",
 		    pname, tmp);
 	printf("+ tested %s\n", pname);
 
-	if(chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
 	printf("- installing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "install"))
 		die("+ failed to install %s, see %s/install.log",
@@ -468,11 +448,6 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 		freelinkedlist(deps);
 	}
 
-	if(chdir(tmp)) {
-		freelinkedlist(ideps);
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
 	printf("- uninstalling %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "uninstall"))
 		die("+ failed to uninstall %s, see %s/uninstall.log",

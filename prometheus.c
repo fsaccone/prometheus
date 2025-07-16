@@ -25,14 +25,14 @@ static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
 static void freelinkedlist(struct Node *n);
 static void handlesignals(void(*hdl)(int));
-static void installpackage(char *pname, char *cc, char *prefix, char *tmp);
+static void installpackage(char *pname, char *prefix, char *tmp);
 static struct Node *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
-static void printinstalled(char *cc, char *prefix, struct Node *pkgs);
+static void printinstalled(char *prefix, struct Node *pkgs);
 static struct Node *readlines(const char *f);
-static int runpscript(char *prefix, char *cc, char *tmp, char *script);
+static int runpscript(char *prefix, char *tmp, char *script);
 static void sigcleanup();
-static void uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
+static void uninstallpackage(char *pname, char *prefix, char *tmp,
                              unsigned int rec, struct Node *pkgs);
 static void usage(void);
 
@@ -165,11 +165,11 @@ handlesignals(void(*hdl)(int))
 }
 
 void
-installpackage(char *pname, char *cc, char *prefix, char *tmp)
+installpackage(char *pname, char *prefix, char *tmp)
 {
 	struct Node *deps = readlines("dependencies"), *dep;
 
-	if (!runpscript(prefix, cc, tmp, "isinstalled")) {
+	if (!runpscript(prefix, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is already installed\n", pname);
 		freelinkedlist(deps);
 		return;
@@ -178,38 +178,38 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	for (dep = deps; dep; dep = dep->n) {
 		char *tmp = chdirtotmp(dep->v, prefix);
 		printf("+ found dependency %s for %s\n", dep->v, pname);
-		installpackage(dep->v, cc, prefix, tmp);
+		installpackage(dep->v, prefix, tmp);
 		free(tmp);
 	}
 
 	freelinkedlist(deps);
 
 	printf("- retrieving %s\n", pname);
-	if (runpscript(prefix, cc, tmp, "retrieve"))
+	if (runpscript(prefix, tmp, "retrieve"))
 		die("+ failed to retrieve %s, see %s/retrieve.log",
 		    pname, tmp);
 	printf("+ retrieved %s\n", pname);
 
 	printf("- configuring %s\n", pname);
-	if (runpscript(prefix, cc, tmp, "configure"))
+	if (runpscript(prefix, tmp, "configure"))
 		die("+ failed to configure %s, see %s/configure.log",
 		    pname, tmp);
 	printf("+ configured %s\n", pname);
 
 	printf("- building %s\n", pname);
-	if (runpscript(prefix, cc, tmp, "build"))
+	if (runpscript(prefix, tmp, "build"))
 		die("+ failed to build %s, see %s/build.log",
 		    pname, tmp);
 	printf("+ built %s\n", pname);
 
 	printf("- testing %s\n", pname);
-	if (runpscript(prefix, cc, tmp, "test"))
+	if (runpscript(prefix, tmp, "test"))
 		die("+ failed to test %s, see %s/test.log",
 		    pname, tmp);
 	printf("+ tested %s\n", pname);
 
 	printf("- installing %s\n", pname);
-	if (runpscript(prefix, cc, tmp, "install"))
+	if (runpscript(prefix, tmp, "install"))
 		die("+ failed to install %s, see %s/install.log",
 		    pname, tmp);
 	printf("+ installed %s\n", pname);
@@ -296,13 +296,13 @@ packageexists(char *pname)
 }
 
 void
-printinstalled(char *cc, char *prefix, struct Node *pkgs)
+printinstalled(char *prefix, struct Node *pkgs)
 {
 	struct Node *p;
 
 	for (p = pkgs; p; p = p->n) {
 		char *dir = chdirtotmp(p->v, prefix);
-		if (!runpscript(prefix, cc, dir, "isinstalled"))
+		if (!runpscript(prefix, dir, "isinstalled"))
 			printf("%s\n", p->v);
 		free(dir);
 	}
@@ -350,17 +350,16 @@ readlines(const char *f)
 }
 
 int
-runpscript(char *prefix, char *cc, char *tmp, char *script)
+runpscript(char *prefix, char *tmp, char *script)
 {
 	int c;
 	char cmd[1024];
 
 	snprintf(cmd, sizeof(cmd),
-	         "cc=\"%s\" "
 	         "prefix=\"%s\" "
 	         "PATH=\"%s/bin:$PATH\" "
 	         "/bin/sh %s > %s.log 2>&1",
-	         cc, prefix, prefix, script, script);
+	         prefix, prefix, script, script);
 
 	if(chdir(tmp)) {
 		perror("chdir");
@@ -382,12 +381,12 @@ sigcleanup()
 }
 
 void
-uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
+uninstallpackage(char *pname, char *prefix, char *tmp,
                  unsigned int rec, struct Node *pkgs)
 {
 	struct Node *dep, *pkg, *ideps = NULL;
 
-	if (runpscript(prefix, cc, tmp, "isinstalled")) {
+	if (runpscript(prefix, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is not installed\n", pname);
 		return;
 	}
@@ -401,7 +400,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 
 		for (pd = pdeps; pd; pd = pd->n) {
 			if (!strcmp(pd->v, pname)
-			    && !runpscript(prefix, cc, dir, "isinstalled")) {
+			    && !runpscript(prefix, dir, "isinstalled")) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
 				free(dir);
@@ -449,14 +448,14 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	}
 
 	printf("- uninstalling %s\n", pname);
-	if (runpscript(prefix, cc, tmp, "uninstall"))
+	if (runpscript(prefix, tmp, "uninstall"))
 		die("+ failed to uninstall %s, see %s/uninstall.log",
 		    pname, tmp);
 	printf("+ uninstalled %s\n", pname);
 
 	for (dep = ideps; dep; dep = dep->n) {
 		char *dir = chdirtotmp(dep->v, prefix);
-		uninstallpackage(dep->v, cc, prefix, dir, rec, pkgs);
+		uninstallpackage(dep->v, prefix, dir, rec, pkgs);
 		free(dir);
 	}
 
@@ -466,8 +465,8 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 void
 usage(void)
 {
-	die("usage: %s [-u [-r]] [-c ccompiler] [-p prefix] package ...\n"
-	    "       %s [-l] [-c ccompiler] [-p prefix]", argv0, argv0);
+	die("usage: %s [-u [-r]] [-p prefix] package ...\n"
+	    "       %s [-l] [-p prefix]", argv0, argv0);
 }
 
 int
@@ -476,14 +475,10 @@ main(int argc, char *argv[])
 	int uninstall = 0,
 	    recuninstall = 0,
 	    printinst = 0;
-	char *cc = "cc",
-	     *prefix = defaultprefix;
+	char *prefix = defaultprefix;
 	unsigned int expprefix = 0;
 
 	ARGBEGIN {
-	case 'c':
-		cc = EARGF(usage());
-		break;
 	case 'l':
 		printinst = 1;
 		break;
@@ -524,7 +519,7 @@ main(int argc, char *argv[])
 
 	if (printinst) {
 		struct Node *pkgs = listdirs(pkgsrepodir);
-		printinstalled(cc, prefix, pkgs);
+		printinstalled(prefix, pkgs);
 		freelinkedlist(pkgs);
 	}
 
@@ -540,11 +535,11 @@ main(int argc, char *argv[])
 
 		if (uninstall) {
 			struct Node *pkgs = listdirs(pkgsrepodir);
-			uninstallpackage(*argv, cc, prefix, tmp,
+			uninstallpackage(*argv, prefix, tmp,
 			                 recuninstall, pkgs);
 			freelinkedlist(pkgs);
 		} else {
-			installpackage(*argv, cc, prefix, tmp);
+			installpackage(*argv, prefix, tmp);
 		}
 
 		free(tmp);

@@ -191,7 +191,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	printf("- retrieving %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "retrieve"))
 		die("+ failed to retrieve %s, see %s/retrieve.log",
-		    argv0, pname, tmp);
+		    pname, tmp);
 	printf("+ retrieved %s\n", pname);
 
 	if(chdir(tmp)) {
@@ -201,7 +201,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	printf("- configuring %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "configure"))
 		die("+ failed to configure %s, see %s/configure.log",
-		    argv0, pname, tmp);
+		    pname, tmp);
 	printf("+ configured %s\n", pname);
 
 	if(chdir(tmp)) {
@@ -211,7 +211,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	printf("- building %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "build"))
 		die("+ failed to build %s, see %s/build.log",
-		    argv0, pname, tmp);
+		    pname, tmp);
 	printf("+ built %s\n", pname);
 
 	if(chdir(tmp)) {
@@ -221,7 +221,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	printf("- testing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "test"))
 		die("+ failed to test %s, see %s/test.log",
-		    argv0, pname, tmp);
+		    pname, tmp);
 	printf("+ tested %s\n", pname);
 
 	if(chdir(tmp)) {
@@ -231,7 +231,7 @@ installpackage(char *pname, char *cc, char *prefix, char *tmp)
 	printf("- installing %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "install"))
 		die("+ failed to install %s, see %s/install.log",
-		    argv0, pname, tmp);
+		    pname, tmp);
 	printf("+ installed %s\n", pname);
 }
 
@@ -476,7 +476,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 	printf("- uninstalling %s\n", pname);
 	if (runpscript(prefix, cc, tmp, "uninstall"))
 		die("+ failed to uninstall %s, see %s/uninstall.log",
-		    argv0, pname, tmp);
+		    pname, tmp);
 	printf("+ uninstalled %s\n", pname);
 
 	for (dep = ideps; dep; dep = dep->n) {

@@ -421,7 +421,7 @@ uninstallpackage(char *pname, char *cc, char *prefix, char *tmp,
 
 		for (pd = pdeps; pd; pd = pd->n) {
 			if (!strcmp(pd->v, pname)
-			    && !runpscript(prefix, cc, tmp, "isinstalled")) {
+			    && !runpscript(prefix, cc, dir, "isinstalled")) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
 				free(dir);

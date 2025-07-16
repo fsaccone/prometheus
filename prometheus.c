@@ -466,7 +466,7 @@ void
 usage(void)
 {
 	die("usage: %s [-u [-r]] [-p prefix] package ...\n"
-	    "       %s [-l] [-p prefix]", argv0, argv0);
+	    "       %s -l [-p prefix]", argv0, argv0);
 }
 
 int

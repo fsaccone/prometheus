@@ -413,6 +413,11 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 		freelinkedlist(pdeps);
 	}
 
+	if (chdir(tmp)) {
+		perror("chdir");
+		exit(EXIT_FAILURE);
+	}
+
 	if (rec) {
 		struct Node *deps = readlines("dependencies"),
 		            *idepstail = NULL;

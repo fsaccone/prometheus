@@ -13,6 +13,12 @@
 #include "arg.h"
 #include "config.h"
 
+struct Source {
+	char *url;
+	uint8_t sha256[32];
+	char *relpath;
+};
+
 struct StringNode {
 	char *v;
 	struct StringNode *n;

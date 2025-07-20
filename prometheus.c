@@ -257,7 +257,7 @@ handlesignals(void(*hdl)(int))
 void
 installpackage(char *pname, char *prefix)
 {
-	struct StringNode *deps = readlines("depends"), *dep;
+	struct DependNode *deps, *dep;
 	struct StringNode *o, *outs;
 	size_t bl, dbl;
 	char *b, *db, *env;
@@ -265,24 +265,24 @@ installpackage(char *pname, char *prefix)
 
 	if (packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is already installed\n", pname);
-		freestringllist(deps);
 		return;
 	}
 
+	env = createisolatedenv(pname, prefix);
+
+	deps = packagedepends(pname);
 	for (dep = deps; dep; dep = dep->n) {
-		printf("+ found dependency %s for %s\n", dep->v, pname);
-		if (!packageexists(dep->v)) {
-			printf("+ dependency %s does not exist\n", dep->v);
+		printf("+ found dependency %s for %s\n", dep->v.pname, pname);
+		if (!packageexists(dep->v.pname)) {
+			printf("+ dependency %s does not exist\n",
+			       dep->v.pname);
 			continue;
 		}
-		installpackage(dep->v, prefix);
+		installpackage(dep->v.pname, dep->v.runtime ? prefix : env);
 	}
-
-	freestringllist(dep);
+	freedependllist(deps);
 
 	printf("- building %s\n", pname);
-
-	env = createisolatedenv(pname, prefix);
 	
 	/* / + /build + \0 */
 	bl = strlen(pkgsrepodir) + strlen(pname) + 8;

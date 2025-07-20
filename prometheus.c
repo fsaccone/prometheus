@@ -258,6 +258,7 @@ void
 installpackage(char *pname, char *prefix)
 {
 	struct StringNode *deps = readlines("depends"), *dep;
+	struct StringNode *o, *outs;
 	size_t bl, dbl;
 	char *b, *db, *env;
 	pid_t pid;
@@ -322,8 +323,8 @@ installpackage(char *pname, char *prefix)
 		dup2(logfd, STDERR_FILENO);
 		close(logfd);
 
-		free(env);
 		execl(cmd, cmd, (char *)NULL);
+		free(env);
 		perror("execl");
 		exit(EXIT_FAILURE);
 	} else {
@@ -337,10 +338,39 @@ installpackage(char *pname, char *prefix)
 				free(env);
 				exit(EXIT_FAILURE);
 			}
-			free(env);
 			printf("+ built %s\n", pname);
 		}
 	}
+
+	outs = packageouts(pname);
+	for (o = outs; o; o = o->n) {
+		char *s, *d;
+		size_t ss = strlen(env) + strlen(o->v) + 1,
+		       ds = strlen(prefix) + strlen(o->v) + 1;
+
+		if (!(s = malloc(ss))) {
+			free(env);
+			freestringllist(outs);
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(s, ss, "%s%s", env, o->v);
+
+		if (!(d = malloc(ds))) {
+			free(s);
+			free(env);
+			freestringllist(outs);
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(d, ds, "%s%s", prefix, o->v);
+
+		copyfile(s, d);
+		free(s);
+		free(d);
+	}
+	free(env);
+	freestringllist(outs);
 }
 
 struct StringNode *

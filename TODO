@@ -29,7 +29,7 @@ environment is initialized with an empty /src directory in it.
 build
 -----
 
-This file is an executable which is copied as /src/.build.prometheus in the
+This file is an executable which is copied as /prometheus.build in the
 package isolated environment and called from the /src directory.
 
 Its job is to build the package from the files present in the /src directory

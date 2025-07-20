@@ -199,7 +199,7 @@ installpackage(char *pname, char *prefix, char *tmp)
 {
 	struct StringNode *deps = readlines("depends"), *dep;
 
-	if (!runpscript(prefix, tmp, "isinstalled")) {
+	if (packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is already installed\n", pname);
 		freelinkedlist(deps);
 		return;
@@ -472,7 +472,7 @@ printinstalled(char *prefix, struct StringNode *pkgs)
 			perror("chdir");
 			exit(EXIT_FAILURE);
 		}
-		if (!runpscript(prefix, dir, "isinstalled"))
+		if (packageisinstalled(p->v, prefix))
 			printf("%s\n", p->v);
 		free(dir);
 	}
@@ -560,7 +560,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 		perror("chdir");
 		exit(EXIT_FAILURE);
 	}
-	if (runpscript(prefix, tmp, "isinstalled")) {
+	if (!packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is not installed\n", pname);
 		return;
 	}
@@ -578,7 +578,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 
 		for (pd = pdeps; pd; pd = pd->n) {
 			if (!strcmp(pd->v, pname)
-			    && !runpscript(prefix, dir, "isinstalled")) {
+			    && packageisinstalled(pkg->v, prefix)) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
 				free(dir);

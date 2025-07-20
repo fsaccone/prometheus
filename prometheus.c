@@ -49,7 +49,7 @@ static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
-static void freelinkedlist(struct StringNode *n);
+static void freestringllist(struct StringNode *n);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix);
 static struct StringNode *listdirs(const char *d);
@@ -205,7 +205,7 @@ fileexists(const char *f)
 }
 
 void
-freelinkedlist(struct StringNode *n)
+freestringllist(struct StringNode *n)
 {
 	while (n) {
 		struct StringNode *nn = n->n;
@@ -239,7 +239,7 @@ installpackage(char *pname, char *prefix)
 
 	if (packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is already installed\n", pname);
-		freelinkedlist(deps);
+		freestringllist(deps);
 		return;
 	}
 
@@ -252,7 +252,7 @@ installpackage(char *pname, char *prefix)
 		installpackage(dep->v, prefix);
 	}
 
-	freelinkedlist(deps);
+	freestringllist(dep);
 
 	printf("- building %s\n", pname);
 
@@ -639,13 +639,13 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
 				free(dir);
-				freelinkedlist(pdeps);
+				freestringllist(pdeps);
 				return;
 			}
 		}
 
 		free(dir);
-		freelinkedlist(pdeps);
+		freestringllist(pdeps);
 	}
 
 	if (chdir(tmp)) {
@@ -690,7 +690,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 			idepstail = newidep;
 		}
 
-		freelinkedlist(deps);
+		freestringllist(deps);
 	}
 
 	printf("- uninstalling %s\n", pname);
@@ -724,7 +724,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 		free(dir);
 	}
 
-	freelinkedlist(ideps);
+	freestringllist(ideps);
 }
 
 void
@@ -788,7 +788,7 @@ main(int argc, char *argv[])
 	if (printinst) {
 		struct StringNode *pkgs = listdirs(pkgsrepodir);
 		printinstalled(prefix, pkgs);
-		freelinkedlist(pkgs);
+		freestringllist(pkgs);
 	}
 
 	/* will not be evaluated when printinst is 1 */
@@ -804,7 +804,7 @@ main(int argc, char *argv[])
 			struct StringNode *pkgs = listdirs(pkgsrepodir);
 			uninstallpackage(*argv, prefix, tmp,
 			                 recuninstall, pkgs);
-			freelinkedlist(pkgs);
+			freestringllist(pkgs);
 		} else {
 			installpackage(*argv, prefix);
 		}

@@ -1,0 +1,100 @@
+TODO
+====
+
+The plan for the next release is to simplify the structure of package
+repositories, making the package manager do the systematic tasks of retrieving,
+verifying, installing, uninstalling and checking packages.
+
+The following is the planned specification for repositories.
+
+Repositories
+============
+
+The repository tree must have a set of directories, each named after the
+package it represents: each of these directories must contain the following
+mandatory files:
+
+- build
+- outs
+- sources
+
+Each package directory may also contain the following optional files:
+
+- depends
+- requires
+
+The program chroots in a isolated environment before building a package: this
+environment is initialized with an empty /src directory in it.
+
+build
+-----
+
+This file is an executable which is copied as /src/.build.prometheus in the
+package isolated environment and called from the /src directory.
+
+Its job is to build the package from the files present in the /src directory
+and install what it needs to the root directory of the isolated environment.
+
+outs
+----
+
+Each line of the outs file must be the absolute path of each file installed to
+the root directory of the isolated environment.
+
+Only files, and not directories, must be listed.
+
+After running build, if a file that is listed is not present in the root
+directory, or if a file that is present in the root directory is not listed,
+the package build fails.
+
+Everything in /src is ignored.
+
+The recommended way to generate it is to install the package manually and use
+find to generate outs:
+
+	$ find $builddir -type f \
+	                 -exec echo {} \; | sed "s|^$builddir||" > outs
+
+sources
+-------
+
+Each line of the sources file must be of the following format:
+
+	URL SHA256 [RELPATH]
+
+A valid URL is the relative path to a file in the package directory, a
+HTTP/HTTPS address or a FTP address.
+
+If URL is a local file, it must not be a directory.
+
+Each source must have a corresponding SHA256 hash.
+
+An optional RELPATH field may be provided: it is the path, relative to /src,
+where the fetched source file is moved to after being retrieved and
+verified.
+
+depends
+-------
+
+Each line of the depends file must be of the following format:
+
+	PACKAGE [runtime]
+
+A valid PACKAGE is the name of a package in the repository.
+
+Each PACKAGE listed here is built prior to the package being built, is
+installed to the root directory of the isolated environment and is ignored
+when installing the package.
+
+Additionally, when "runtime" is present after PACKAGE, PACKAGE gets also
+installed to the system.
+
+requires
+--------
+
+Each line of the requires file must be the absolute path of each file or
+directory in the build system that is needed to build the package.
+
+All specified files and directories are copied to the root directory of the
+isolated environment, keeping its path, and are ignored when installing the
+package.

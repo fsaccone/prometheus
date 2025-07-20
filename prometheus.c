@@ -41,6 +41,7 @@ struct StringNode {
 	struct StringNode *n;
 };
 
+static void copyfile(const char *s, const char *d);
 static char *createisolatedenv(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
@@ -59,11 +60,36 @@ static struct StringNode *packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
-static int runpscript(char *prefix, char *tmp, char *script);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, char *tmp,
                              unsigned int rec, struct StringNode *pkgs);
 static void usage(void);
+
+void
+copyfile(const char *s, const char *d)
+{
+	int sfd, dfd;
+	char buf[1024];
+	ssize_t b;
+
+	if ((sfd = open(s, O_RDONLY)) == -1) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+
+	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
+		close(sfd);
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+
+	while ((b = read(sfd, buf, sizeof(buf))) > 0) {
+		write(dfd, buf, b);
+	}
+
+	close(sfd);
+	close(dfd);
+}
 
 char *
 createisolatedenv(char *pname, char *prefix)

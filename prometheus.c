@@ -554,7 +554,7 @@ void
 uninstallpackage(char *pname, char *prefix, char *tmp,
                  unsigned int rec, struct StringNode *pkgs)
 {
-	struct StringNode *dep, *pkg, *ideps = NULL;
+	struct StringNode *dep, *pkg, *ideps = NULL, *out;
 
 	if (chdir(tmp)) {
 		perror("chdir");
@@ -637,9 +637,24 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 	}
 
 	printf("- uninstalling %s\n", pname);
-	if (runpscript(prefix, tmp, "uninstall"))
-		die("+ failed to uninstall %s, see %s/uninstall.log",
-		    pname, tmp);
+	for (out = packageouts(pname); out; out = out->n) {
+		size_t fl = strlen(prefix) + strlen(out->v) + 2; /* / + \0 */
+		char *f;
+
+		if (!(f = malloc(fl))) {
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(f, fl, "%s/%s", prefix, out->v);
+
+		if (remove(out->v)) {
+			free(f);
+			perror("remove");
+			exit(EXIT_FAILURE);
+		}
+
+		free(f);
+	}
 	printf("+ uninstalled %s\n", pname);
 
 	for (dep = ideps; dep; dep = dep->n) {

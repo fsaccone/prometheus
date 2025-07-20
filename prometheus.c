@@ -417,6 +417,7 @@ packagesources(char *pname)
 		if (nfields == 3) {
 			relpath[strcspn(relpath, "\n")] = '\0';
 			if (!(s->v.relpath = malloc(strlen(relpath) + 1))) {
+				free(s->v.url);
 				free(s);
 				perror("malloc");
 				exit(1);

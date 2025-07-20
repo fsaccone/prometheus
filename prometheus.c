@@ -64,8 +64,8 @@ static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
 static void sigcleanup();
-static void uninstallpackage(char *pname, char *prefix, char *tmp,
-                             unsigned int rec, struct StringNode *pkgs);
+static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
+                             struct StringNode *pkgs);
 static void usage(void);
 
 void
@@ -663,64 +663,50 @@ sigcleanup()
 }
 
 void
-uninstallpackage(char *pname, char *prefix, char *tmp,
-                 unsigned int rec, struct StringNode *pkgs)
+uninstallpackage(char *pname, char *prefix, unsigned int rec,
+                 struct StringNode *pkgs)
 {
-	struct StringNode *dep, *pkg, *ideps = NULL, *out;
+	struct StringNode *idep, *ideps = NULL, *pkg, *out;
 
-	if (chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
 	if (!packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is not installed\n", pname);
 		return;
 	}
 
 	for (pkg = pkgs; pkg; pkg = pkg->n) {
-		struct StringNode *pdeps, *pd;
-		char *dir;
+		struct DependNode *pdeps, *pd;
 
-		dir = createisolatedenv(pkg->v, prefix);
-		if (chdir(dir)) {
-			perror("chdir");
-			exit(EXIT_FAILURE);
-		}
-		pdeps = readlines("depends");
+		pdeps = packagedepends(pkg->v);
 
 		for (pd = pdeps; pd; pd = pd->n) {
-			if (!strcmp(pd->v, pname)
+			if (!strcmp(pd->v.pname, pname)
+			    && pd->v.runtime
 			    && packageisinstalled(pkg->v, prefix)) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkg->v);
-				free(dir);
-				freestringllist(pdeps);
+				freedependllist(pdeps);
 				return;
 			}
 		}
 
-		free(dir);
-		freestringllist(pdeps);
-	}
-
-	if (chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
+		freedependllist(pdeps);
 	}
 
 	if (rec) {
-		struct StringNode *deps = readlines("depends"),
-		                  *idepstail = NULL;
+		struct DependNode *dep, *deps = packagedepends(pname);
+		struct StringNode *idepstail = NULL;
 
 		for (dep = deps; dep; dep = dep->n) {
 			struct StringNode *newidep;
 
-			printf("+ found dependency %s for %s\n",
-			       dep->v, pname);
+			if (!dep->v.runtime) continue;
 
-			if (!packageexists(dep->v)) {
+			printf("+ found dependency %s for %s\n",
+			       dep->v.pname, pname);
+
+			if (!packageexists(dep->v.pname)) {
 				printf("+ dependency %s does not exist\n",
-				       dep->v);
+				       dep->v.pname);
 				continue;
 			}
 
@@ -728,12 +714,12 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			if (!(newidep->v = malloc(strlen(dep->v) + 1))) {
+			if (!(newidep->v = malloc(strlen(dep->v.pname) + 1))) {
 				free(newidep);
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			strcpy(newidep->v, dep->v);
+			strcpy(newidep->v, dep->v.pname);
 
 			newidep->n = NULL;
 
@@ -745,7 +731,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 			idepstail = newidep;
 		}
 
-		freestringllist(deps);
+		freedependllist(deps);
 	}
 
 	printf("- uninstalling %s\n", pname);
@@ -769,14 +755,8 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 	}
 	printf("+ uninstalled %s\n", pname);
 
-	for (dep = ideps; dep; dep = dep->n) {
-		char *dir = createisolatedenv(dep->v, prefix);
-		if (chdir(dir)) {
-			perror("chdir");
-			exit(EXIT_FAILURE);
-		}
-		uninstallpackage(dep->v, prefix, dir, rec, pkgs);
-		free(dir);
+	for (idep = ideps; idep; idep = idep->n) {
+		uninstallpackage(idep->v, prefix, rec, pkgs);
 	}
 
 	freestringllist(ideps);
@@ -857,8 +837,7 @@ main(int argc, char *argv[])
 
 		if (uninstall) {
 			struct StringNode *pkgs = listdirs(pkgsrepodir);
-			uninstallpackage(*argv, prefix, tmp,
-			                 recuninstall, pkgs);
+			uninstallpackage(*argv, prefix, recuninstall, pkgs);
 			freestringllist(pkgs);
 		} else {
 			installpackage(*argv, prefix);

@@ -50,6 +50,7 @@ static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
 static void freedependllist(struct DependNode *n);
+static void freesourcellist(struct SourceNode *n);
 static void freestringllist(struct StringNode *n);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix);
@@ -210,6 +211,19 @@ freedependllist(struct DependNode *n)
 	while (n) {
 		struct DependNode *nn = n->n;
 		free(n->v.pname);
+		free(n);
+		n = nn;
+	}
+}
+
+void
+freesourcellist(struct SourceNode *n)
+{
+	while (n) {
+		struct SourceNode *nn = n->n;
+		free(n->v.url);
+		free(n->v.sha256);
+		free(n->v.relpath);
 		free(n);
 		n = nn;
 	}

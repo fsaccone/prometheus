@@ -517,9 +517,26 @@ packagedepends(char *pname)
 struct StringNode *
 packageouts(char *pname)
 {
+	struct StringNode *ls, *l;
 	char f[1024];
+
 	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
-	return readlines(f);
+	ls = readlines(f);
+
+	for (l = ls; l; l = l->n) {
+		if (l->v[0] == '\0') {
+			freestringllist(ls);
+			die("%s: empty path found in %s's outs", argv0, pname);
+		}
+
+		if (l->v[0] != '/') {
+			freestringllist(ls);
+			die("%s: non-absolute path found in %s's outs",
+			    argv0, pname);
+		}
+	}
+
+	return ls;
 }
 
 struct StringNode *packagerequires(char *pname)

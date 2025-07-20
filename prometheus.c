@@ -675,7 +675,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 		}
 		snprintf(f, fl, "%s/%s", prefix, out->v);
 
-		if (remove(out->v)) {
+		if (remove(f)) {
 			free(f);
 			perror("remove");
 			exit(EXIT_FAILURE);

@@ -35,6 +35,7 @@ static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
+static unsigned int fileexists(const char *f);
 static void freelinkedlist(struct StringNode *n);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix, char *tmp);
@@ -150,6 +151,13 @@ expandtilde(const char *f)
 	strcat(res, f + 1); /* skip ~ */
 
 	return res;
+}
+
+unsigned int
+fileexists(const char *f)
+{
+	struct stat buf;
+	return (!stat(f, &buf));
 }
 
 void

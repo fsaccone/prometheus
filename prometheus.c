@@ -40,7 +40,6 @@ struct StringNode {
 	struct StringNode *n;
 };
 
-static char *chdirtotmp(char *pname, char *prefix);
 static char *createisolatedenv(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
@@ -63,51 +62,6 @@ static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, char *tmp,
                              unsigned int rec, struct StringNode *pkgs);
 static void usage(void);
-
-char *
-chdirtotmp(char *pname, char *prefix)
-{
-	char tmp[256], cmd[512], *dir, *resdir;
-
-	snprintf(tmp, sizeof(tmp), "%s/tmp", prefix);
-	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
-		perror("mkdir");
-		exit(EXIT_FAILURE);
-	}
-
-	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus", prefix);
-	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
-		perror("mkdir");
-		exit(EXIT_FAILURE);
-	}
-
-	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus/%s-XXXXXX", prefix,
-	                                                          pname);
-	if (!(dir = mkdtemp(tmp))) {
-		perror("mkdtemp");
-		exit(EXIT_FAILURE);
-	}
-
-	snprintf(cmd, sizeof(cmd), "cp -rf '%s/%s'/* %s", pkgsrepodir, pname,
-	                                                  dir);
-	if (system(cmd) == -1) {
-		perror("system");
-		exit(EXIT_FAILURE);
-	}
-
-	if (chdir(dir) != 0) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
-
-	if (!(resdir = malloc(strlen(dir) + 1))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	strcpy(resdir, dir);
-
-	return resdir;
-}
 
 char *
 createisolatedenv(char *pname, char *prefix)
@@ -251,12 +205,16 @@ installpackage(char *pname, char *prefix, char *tmp)
 	}
 
 	for (dep = deps; dep; dep = dep->n) {
-		char *tmp = chdirtotmp(dep->v, prefix);
+		char *tmp = createisolatedenv(dep->v, prefix);
 		printf("+ found dependency %s for %s\n", dep->v, pname);
 		if (!packageexists(dep->v)) {
 			printf("+ dependency %s does not exist\n", dep->v);
 			free(tmp);
 			continue;
+		}
+		if (chdir(tmp)) {
+			perror("chdir");
+			exit(EXIT_FAILURE);
 		}
 		installpackage(dep->v, prefix, tmp);
 		free(tmp);
@@ -488,7 +446,11 @@ printinstalled(char *prefix, struct StringNode *pkgs)
 	struct StringNode *p;
 
 	for (p = pkgs; p; p = p->n) {
-		char *dir = chdirtotmp(p->v, prefix);
+		char *dir = createisolatedenv(p->v, prefix);
+		if (chdir(dir)) {
+			perror("chdir");
+			exit(EXIT_FAILURE);
+		}
 		if (!runpscript(prefix, dir, "isinstalled"))
 			printf("%s\n", p->v);
 		free(dir);
@@ -573,6 +535,10 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 {
 	struct StringNode *dep, *pkg, *ideps = NULL;
 
+	if (chdir(tmp)) {
+		perror("chdir");
+		exit(EXIT_FAILURE);
+	}
 	if (runpscript(prefix, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is not installed\n", pname);
 		return;
@@ -582,7 +548,11 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 		struct StringNode *pdeps, *pd;
 		char *dir;
 
-		dir = chdirtotmp(pkg->v, prefix);
+		dir = createisolatedenv(pkg->v, prefix);
+		if (chdir(dir)) {
+			perror("chdir");
+			exit(EXIT_FAILURE);
+		}
 		pdeps = readlines("depends");
 
 		for (pd = pdeps; pd; pd = pd->n) {
@@ -652,7 +622,11 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 	printf("+ uninstalled %s\n", pname);
 
 	for (dep = ideps; dep; dep = dep->n) {
-		char *dir = chdirtotmp(dep->v, prefix);
+		char *dir = createisolatedenv(dep->v, prefix);
+		if (chdir(dir)) {
+			perror("chdir");
+			exit(EXIT_FAILURE);
+		}
 		uninstallpackage(dep->v, prefix, dir, rec, pkgs);
 		free(dir);
 	}
@@ -728,7 +702,7 @@ main(int argc, char *argv[])
 		if (!packageexists(*argv))
 			die("%s: package %s does not exist", argv0, *argv);
 
-		tmp = chdirtotmp(*argv, prefix);
+		tmp = createisolatedenv(*argv, prefix);
 
 		if (uninstall) {
 			struct StringNode *pkgs = listdirs(pkgsrepodir);

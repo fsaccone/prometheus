@@ -38,8 +38,8 @@ and install what it needs to the root directory of the isolated environment.
 outs
 ----
 
-Each line of the outs file must be the absolute path of each file installed to
-the root directory of the isolated environment.
+Each line of the outs file must be the absolute path of each file to be
+installed to the root directory of the isolated environment.
 
 Only files, and not directories, must be listed.
 

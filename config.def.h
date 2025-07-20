@@ -5,4 +5,4 @@ static char *const pkgsrepodir = "/opt/olympus";
 /* check README for more informations about package repositories */
 
 /* the default prefix for installing packages */
-static char *const defaultprefix = "/usr/local";
+static char *const defaultprefix = "/";

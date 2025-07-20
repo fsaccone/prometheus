@@ -51,6 +51,7 @@ static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix, char *tmp);
 static struct StringNode *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
+static struct DependNode *packagedepends(char *pname);
 static struct StringNode *packageouts(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
@@ -291,6 +292,63 @@ packageexists(char *pname)
 	if (execfileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
 
 	return 0;
+}
+
+struct DependNode *
+packagedepends(char *pname)
+{
+	char f[1024];
+	struct StringNode *l;
+	struct DependNode *tail = NULL, *head = NULL;
+
+	snprintf(f, sizeof(f), "%s/%s/depends", pkgsrepodir, pname);
+	l = readlines(f);
+
+	for (; l; l = l->n) {
+		char dname[65],
+		     sndfield[8];
+		int nfields;
+		struct DependNode *d = malloc(sizeof(struct DependNode));
+
+		dname[0] = '\0';
+		sndfield[0] = '\0';
+
+		if ((nfields = sscanf(l->v, "%64s %7s", dname, sndfield)) < 1) {
+			free(d);
+			die("%s: PACKAGE not present in one of %s's depends",
+			    argv0, pname);
+		}
+
+		dname[strcspn(dname, "\n")] = '\0';
+		if (!(d->v.pname = malloc(strlen(dname) + 1))) {
+			free(d);
+			perror("malloc");
+			exit(1);
+		};
+		strcpy(d->v.pname, dname);
+		d->v.pname[65] = '\0';
+		if (nfields < 2) {
+			d->v.runtime = 0;
+		} else if (!strcmp(sndfield, "runtime")) {
+			d->v.runtime = 1;
+		} else {
+			free(d->v.pname);
+			free(d);
+			die("%s: the second field in one of %s's depends is "
+			    "something different than runtime", argv0, pname);
+		}
+
+		d->n = NULL;
+
+		if (!head)
+			head = d;
+		else
+			tail->n = d;
+
+		tail = d;
+	}
+
+	return head;
 }
 
 struct StringNode *

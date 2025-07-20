@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "arg.h"
@@ -50,7 +51,7 @@ static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
 static void freelinkedlist(struct StringNode *n);
 static void handlesignals(void(*hdl)(int));
-static void installpackage(char *pname, char *prefix, char *tmp);
+static void installpackage(char *pname, char *prefix);
 static struct StringNode *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
@@ -229,9 +230,12 @@ handlesignals(void(*hdl)(int))
 }
 
 void
-installpackage(char *pname, char *prefix, char *tmp)
+installpackage(char *pname, char *prefix)
 {
 	struct StringNode *deps = readlines("depends"), *dep;
+	size_t bl, dbl;
+	char *b, *db, *env;
+	pid_t pid;
 
 	if (packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is already installed\n", pname);
@@ -240,28 +244,78 @@ installpackage(char *pname, char *prefix, char *tmp)
 	}
 
 	for (dep = deps; dep; dep = dep->n) {
-		char *tmp = createisolatedenv(dep->v, prefix);
 		printf("+ found dependency %s for %s\n", dep->v, pname);
 		if (!packageexists(dep->v)) {
 			printf("+ dependency %s does not exist\n", dep->v);
-			free(tmp);
 			continue;
 		}
-		if (chdir(tmp)) {
-			perror("chdir");
-			exit(EXIT_FAILURE);
-		}
-		installpackage(dep->v, prefix, tmp);
-		free(tmp);
+		installpackage(dep->v, prefix);
 	}
 
 	freelinkedlist(deps);
 
 	printf("- building %s\n", pname);
-	if (runpscript(prefix, tmp, "build"))
-		die("+ failed to build %s, see %s/build.log",
-		    pname, tmp);
-	printf("+ built %s\n", pname);
+
+	env = createisolatedenv(pname, prefix);
+	
+	/* / + /build + \0 */
+	bl = strlen(pkgsrepodir) + strlen(pname) + 8;
+	b = malloc(bl);
+	snprintf(b, bl, "%s/%s/build", pkgsrepodir, pname);
+
+	/* /prometheus.build + \0 */
+	dbl = strlen(env) + 18;
+	db = malloc(dbl);
+	snprintf(db, dbl, "%s/prometheus.build", env);
+
+	copyfile(b, db);
+	free(b);
+	free(db);
+
+	if ((pid = fork()) < 0) {
+		free(env);
+		perror("fork");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!pid) {
+		const char *cmd = "/src/prometheus.build";
+		int logfd;
+
+		if (chroot(env)) {
+			free(env);
+			perror("chroot");
+			exit(EXIT_FAILURE);
+		}
+
+		if ((logfd = open("/prometheus.log", O_WRONLY)) == -1) {
+			free(env);
+			perror("open");
+			exit(EXIT_FAILURE);
+		}
+		dup2(logfd, STDOUT_FILENO);
+		dup2(logfd, STDERR_FILENO);
+		close(logfd);
+
+		free(env);
+		execl(cmd, cmd, (char *)NULL);
+		perror("execl");
+		exit(EXIT_FAILURE);
+	} else {
+		int s;
+		waitpid(pid, &s, 0);
+		if (WIFEXITED(s)) {
+			if (WEXITSTATUS(s)) {
+				printf("+ failed to build %s, see "
+				       "%s/prometheus.log\n",
+				       pname, env);
+				free(env);
+				exit(EXIT_FAILURE);
+			}
+			free(env);
+			printf("+ built %s\n", pname);
+		}
+	}
 }
 
 struct StringNode *
@@ -547,31 +601,6 @@ readlines(const char *f)
 	return head;
 }
 
-int
-runpscript(char *prefix, char *tmp, char *script)
-{
-	int c;
-	char cmd[1024];
-
-	snprintf(cmd, sizeof(cmd),
-	         "prefix=\"%s\" "
-	         "PATH=\"%s/bin:$PATH\" "
-	         "/bin/sh %s > %s.log 2>&1",
-	         prefix, prefix, script, script);
-
-	if(chdir(tmp)) {
-		perror("chdir");
-		exit(EXIT_FAILURE);
-	}
-
-	if ((c = system(cmd)) == -1) {
-		perror("system");
-		exit(EXIT_FAILURE);
-	}
-
-	return WEXITSTATUS(c);
-}
-
 void
 sigcleanup()
 {
@@ -774,7 +803,7 @@ main(int argc, char *argv[])
 			                 recuninstall, pkgs);
 			freelinkedlist(pkgs);
 		} else {
-			installpackage(*argv, prefix, tmp);
+			installpackage(*argv, prefix);
 		}
 
 		free(tmp);

@@ -740,6 +740,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		char *f;
 
 		if (!(f = malloc(fl))) {
+			freestringllist(ideps);
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
@@ -747,6 +748,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 
 		if (remove(f)) {
 			free(f);
+			freestringllist(ideps);
 			perror("remove");
 			exit(EXIT_FAILURE);
 		}

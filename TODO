@@ -43,11 +43,8 @@ the root directory of the isolated environment.
 
 Only files, and not directories, must be listed.
 
-After running build, if a file that is listed is not present in the root
-directory, or if a file that is present in the root directory is not listed,
-the package build fails.
-
-Everything in /src is ignored.
+When uninstalling, all listed files are removed from the system. A package is
+considered installed when all listed files exist.
 
 The recommended way to generate it is to install the package manually and use
 find to generate outs:

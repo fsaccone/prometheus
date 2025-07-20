@@ -41,6 +41,7 @@ static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix, char *tmp);
 static struct StringNode *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
+static struct StringNode *packageouts(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
@@ -280,6 +281,14 @@ packageexists(char *pname)
 	if (execfileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
 
 	return 0;
+}
+
+struct StringNode *
+packageouts(char *pname)
+{
+	char f[1024];
+	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
+	return readlines(f);
 }
 
 struct SourceNode *

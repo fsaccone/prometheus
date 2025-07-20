@@ -13,9 +13,9 @@
 #include "arg.h"
 #include "config.h"
 
-struct Node {
+struct StringNode {
 	char *v;
-	struct Node *n;
+	struct StringNode *n;
 };
 
 static char *chdirtotmp(char *pname, char *prefix);
@@ -23,17 +23,17 @@ static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
-static void freelinkedlist(struct Node *n);
+static void freelinkedlist(struct StringNode *n);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix, char *tmp);
-static struct Node *listdirs(const char *d);
+static struct StringNode *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
-static void printinstalled(char *prefix, struct Node *pkgs);
-static struct Node *readlines(const char *f);
+static void printinstalled(char *prefix, struct StringNode *pkgs);
+static struct StringNode *readlines(const char *f);
 static int runpscript(char *prefix, char *tmp, char *script);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, char *tmp,
-                             unsigned int rec, struct Node *pkgs);
+                             unsigned int rec, struct StringNode *pkgs);
 static void usage(void);
 
 char *
@@ -140,10 +140,10 @@ expandtilde(const char *f)
 }
 
 void
-freelinkedlist(struct Node *n)
+freelinkedlist(struct StringNode *n)
 {
 	while (n) {
-		struct Node *nn = n->n;
+		struct StringNode *nn = n->n;
 		free(n->v);
 		free(n);
 		n = nn;
@@ -167,7 +167,7 @@ handlesignals(void(*hdl)(int))
 void
 installpackage(char *pname, char *prefix, char *tmp)
 {
-	struct Node *deps = readlines("dependencies"), *dep;
+	struct StringNode *deps = readlines("dependencies"), *dep;
 
 	if (!runpscript(prefix, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is already installed\n", pname);
@@ -196,13 +196,13 @@ installpackage(char *pname, char *prefix, char *tmp)
 	printf("+ built %s\n", pname);
 }
 
-struct Node *
+struct StringNode *
 listdirs(const char *f)
 {
 	DIR *d;
 	struct dirent *e;
 	struct stat s;
-	struct Node *head = NULL, *tail = NULL, *n;
+	struct StringNode *head = NULL, *tail = NULL, *n;
 
 	if(!(d = opendir(f))) return NULL;
 
@@ -217,7 +217,7 @@ listdirs(const char *f)
 		snprintf(path, sizeof(path), "%s/%s", f, e->d_name);
 
 		if (!stat(path, &s) && S_ISDIR(s.st_mode)) {
-			if (!(n = malloc(sizeof(struct Node)))) {
+			if (!(n = malloc(sizeof(struct StringNode)))) {
 				closedir(d);
 				perror("malloc");
 				exit(EXIT_FAILURE);
@@ -265,9 +265,9 @@ packageexists(char *pname)
 }
 
 void
-printinstalled(char *prefix, struct Node *pkgs)
+printinstalled(char *prefix, struct StringNode *pkgs)
 {
-	struct Node *p;
+	struct StringNode *p;
 
 	for (p = pkgs; p; p = p->n) {
 		char *dir = chdirtotmp(p->v, prefix);
@@ -277,10 +277,10 @@ printinstalled(char *prefix, struct Node *pkgs)
 	}
 }
 
-struct Node *
+struct StringNode *
 readlines(const char *f)
 {
-	struct Node *head = NULL, *tail = NULL;
+	struct StringNode *head = NULL, *tail = NULL;
 	FILE *fp;
 	char buf[1024];
 
@@ -288,7 +288,7 @@ readlines(const char *f)
 	if (!fp) return NULL;
 
 	while (fgets(buf,sizeof(buf), fp) != NULL) {
-		struct Node *newl = malloc(sizeof(struct Node));
+		struct StringNode *newl = malloc(sizeof(struct StringNode));
 		if (!newl) {
 			fclose(fp);
 			perror("malloc");
@@ -351,9 +351,9 @@ sigcleanup()
 
 void
 uninstallpackage(char *pname, char *prefix, char *tmp,
-                 unsigned int rec, struct Node *pkgs)
+                 unsigned int rec, struct StringNode *pkgs)
 {
-	struct Node *dep, *pkg, *ideps = NULL;
+	struct StringNode *dep, *pkg, *ideps = NULL;
 
 	if (runpscript(prefix, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is not installed\n", pname);
@@ -361,7 +361,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 	}
 
 	for (pkg = pkgs; pkg; pkg = pkg->n) {
-		struct Node *pdeps, *pd;
+		struct StringNode *pdeps, *pd;
 		char *dir;
 
 		dir = chdirtotmp(pkg->v, prefix);
@@ -388,11 +388,11 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 	}
 
 	if (rec) {
-		struct Node *deps = readlines("dependencies"),
-		            *idepstail = NULL;
+		struct StringNode *deps = readlines("dependencies"),
+		                  *idepstail = NULL;
 
 		for (dep = deps; dep; dep = dep->n) {
-			struct Node *newidep;
+			struct StringNode *newidep;
 
 			printf("+ found dependency %s for %s\n",
 			       dep->v, pname);
@@ -403,7 +403,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 				continue;
 			}
 
-			if (!(newidep = malloc(sizeof(struct Node)))) {
+			if (!(newidep = malloc(sizeof(struct StringNode)))) {
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
@@ -498,7 +498,7 @@ main(int argc, char *argv[])
 		die("%s: prefix %s does not exist", argv0, prefix);
 
 	if (printinst) {
-		struct Node *pkgs = listdirs(pkgsrepodir);
+		struct StringNode *pkgs = listdirs(pkgsrepodir);
 		printinstalled(prefix, pkgs);
 		freelinkedlist(pkgs);
 	}
@@ -514,7 +514,7 @@ main(int argc, char *argv[])
 		tmp = chdirtotmp(*argv, prefix);
 
 		if (uninstall) {
-			struct Node *pkgs = listdirs(pkgsrepodir);
+			struct StringNode *pkgs = listdirs(pkgsrepodir);
 			uninstallpackage(*argv, prefix, tmp,
 			                 recuninstall, pkgs);
 			freelinkedlist(pkgs);

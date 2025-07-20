@@ -51,6 +51,7 @@ static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix, char *tmp);
 static struct StringNode *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
+static unsigned int packageisinstalled(char *pname, char *prefix);
 static struct DependNode *packagedepends(char *pname);
 static struct StringNode *packageouts(char *pname);
 static struct StringNode *packagerequires(char *pname);
@@ -292,6 +293,25 @@ packageexists(char *pname)
 	if (execfileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
 
 	return 0;
+}
+
+unsigned int
+packageisinstalled(char *pname, char *prefix)
+{
+	struct StringNode *o = packageouts(pname);
+
+	for (; o; o = o->n) {
+		size_t fl = strlen(prefix) + strlen(o->v) + 2; /* / + \0 */
+		char *f = malloc(fl);
+		snprintf(f, fl, "%s/%s", prefix, o->v);
+		if (!fileexists(f)) {
+			free(f);
+			return 0;
+		}
+		free(f);
+	}
+
+	return 1;
 }
 
 struct DependNode *

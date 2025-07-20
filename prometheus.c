@@ -180,7 +180,7 @@ handlesignals(void(*hdl)(int))
 void
 installpackage(char *pname, char *prefix, char *tmp)
 {
-	struct StringNode *deps = readlines("dependencies"), *dep;
+	struct StringNode *deps = readlines("depends"), *dep;
 
 	if (!runpscript(prefix, tmp, "isinstalled")) {
 		printf("+ skipping %s since it is already installed\n", pname);
@@ -452,7 +452,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 		char *dir;
 
 		dir = chdirtotmp(pkg->v, prefix);
-		pdeps = readlines("dependencies");
+		pdeps = readlines("depends");
 
 		for (pd = pdeps; pd; pd = pd->n) {
 			if (!strcmp(pd->v, pname)
@@ -475,7 +475,7 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 	}
 
 	if (rec) {
-		struct StringNode *deps = readlines("dependencies"),
+		struct StringNode *deps = readlines("depends"),
 		                  *idepstail = NULL;
 
 		for (dep = deps; dep; dep = dep->n) {

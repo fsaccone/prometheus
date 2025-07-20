@@ -178,6 +178,11 @@ installpackage(char *pname, char *prefix, char *tmp)
 	for (dep = deps; dep; dep = dep->n) {
 		char *tmp = chdirtotmp(dep->v, prefix);
 		printf("+ found dependency %s for %s\n", dep->v, pname);
+		if (!packageexists(dep->v)) {
+			printf("+ dependency %s does not exist\n", dep->v);
+			free(tmp);
+			continue;
+		}
 		installpackage(dep->v, prefix, tmp);
 		free(tmp);
 	}
@@ -427,6 +432,12 @@ uninstallpackage(char *pname, char *prefix, char *tmp,
 
 			printf("+ found dependency %s for %s\n",
 			       dep->v, pname);
+
+			if (!packageexists(dep->v)) {
+				printf("+ dependency %s does not exist\n",
+				       dep->v);
+				continue;
+			}
 
 			if (!(newidep = malloc(sizeof(struct Node)))) {
 				perror("malloc");

@@ -2,6 +2,7 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -67,7 +68,8 @@ static void usage(void);
 char *
 createisolatedenv(char *pname, char *prefix)
 {
-	char tmp[256], src[259], *dir, *resdir;
+	char tmp[256], log[267], src[259], *dir, *resdir;
+	int logfd;
 
 	snprintf(tmp, sizeof(tmp), "%s/tmp", prefix);
 	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
@@ -94,8 +96,14 @@ createisolatedenv(char *pname, char *prefix)
 	}
 	strcpy(resdir, dir);
 
-	snprintf(src, sizeof(src), "%s/tmp/prometheus/%s-XXXXXX/src", prefix,
-	                                                              pname);
+	snprintf(log, sizeof(log), "%s/prometheus.log", resdir);
+	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
+		perror("open");
+		exit(EXIT_FAILURE);
+	}
+	close(logfd);
+
+	snprintf(src, sizeof(src), "%s/src", resdir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
 		perror("mkdir");
 		exit(EXIT_FAILURE);

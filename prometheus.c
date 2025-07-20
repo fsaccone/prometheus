@@ -189,35 +189,11 @@ installpackage(char *pname, char *prefix, char *tmp)
 
 	freelinkedlist(deps);
 
-	printf("- retrieving %s\n", pname);
-	if (runpscript(prefix, tmp, "retrieve"))
-		die("+ failed to retrieve %s, see %s/retrieve.log",
-		    pname, tmp);
-	printf("+ retrieved %s\n", pname);
-
-	printf("- configuring %s\n", pname);
-	if (runpscript(prefix, tmp, "configure"))
-		die("+ failed to configure %s, see %s/configure.log",
-		    pname, tmp);
-	printf("+ configured %s\n", pname);
-
 	printf("- building %s\n", pname);
 	if (runpscript(prefix, tmp, "build"))
 		die("+ failed to build %s, see %s/build.log",
 		    pname, tmp);
 	printf("+ built %s\n", pname);
-
-	printf("- testing %s\n", pname);
-	if (runpscript(prefix, tmp, "test"))
-		die("+ failed to test %s, see %s/test.log",
-		    pname, tmp);
-	printf("+ tested %s\n", pname);
-
-	printf("- installing %s\n", pname);
-	if (runpscript(prefix, tmp, "install"))
-		die("+ failed to install %s, see %s/install.log",
-		    pname, tmp);
-	printf("+ installed %s\n", pname);
 }
 
 struct Node *
@@ -276,19 +252,7 @@ packageexists(char *pname)
 {
 	char f[1024];
 
-	snprintf(f, sizeof(f), "%s/%s/retrieve", pkgsrepodir, pname);
-	if (!execfileexists(f)) return 0;
-
-	snprintf(f, sizeof(f), "%s/%s/configure", pkgsrepodir, pname);
-	if (!execfileexists(f)) return 0;
-
 	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepodir, pname);
-	if (!execfileexists(f)) return 0;
-
-	snprintf(f, sizeof(f), "%s/%s/test", pkgsrepodir, pname);
-	if (!execfileexists(f)) return 0;
-
-	snprintf(f, sizeof(f), "%s/%s/install", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
 	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepodir, pname);

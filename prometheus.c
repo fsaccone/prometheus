@@ -14,6 +14,16 @@
 #include "arg.h"
 #include "config.h"
 
+struct Depend {
+	char *pname;
+	unsigned int runtime;
+};
+
+struct DependNode {
+	struct Depend v;
+	struct DependNode *n;
+};
+
 struct Source {
 	char *url;
 	uint8_t sha256[32];

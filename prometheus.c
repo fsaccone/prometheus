@@ -323,7 +323,7 @@ packagedepends(char *pname)
 		if (!(d->v.pname = malloc(strlen(dname) + 1))) {
 			free(d);
 			perror("malloc");
-			exit(1);
+			exit(EXIT_FAILURE);
 		};
 		strcpy(d->v.pname, dname);
 		d->v.pname[65] = '\0';
@@ -407,7 +407,7 @@ packagesources(char *pname)
 		if (!(s->v.url = malloc(strlen(url) + 1))) {
 			free(s);
 			perror("malloc");
-			exit(1);
+			exit(EXIT_FAILURE);
 		};
 		strcpy(s->v.url, url);
 		s->v.url[255] = '\0';
@@ -420,7 +420,7 @@ packagesources(char *pname)
 				free(s->v.url);
 				free(s);
 				perror("malloc");
-				exit(1);
+				exit(EXIT_FAILURE);
 			};
 			strcpy(s->v.relpath, relpath);
 			s->v.relpath[255] = '\0';

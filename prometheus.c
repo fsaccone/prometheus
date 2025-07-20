@@ -467,14 +467,8 @@ printinstalled(char *prefix, struct StringNode *pkgs)
 	struct StringNode *p;
 
 	for (p = pkgs; p; p = p->n) {
-		char *dir = createisolatedenv(p->v, prefix);
-		if (chdir(dir)) {
-			perror("chdir");
-			exit(EXIT_FAILURE);
-		}
 		if (packageisinstalled(p->v, prefix))
 			printf("%s\n", p->v);
-		free(dir);
 	}
 }
 

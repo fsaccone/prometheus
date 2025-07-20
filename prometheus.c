@@ -19,6 +19,11 @@ struct Source {
 	char *relpath;
 };
 
+struct SourceNode {
+	struct Source v;
+	struct SourceNode *n;
+};
+
 struct StringNode {
 	char *v;
 	struct StringNode *n;

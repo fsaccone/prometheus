@@ -53,6 +53,7 @@ static struct StringNode *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
 static struct DependNode *packagedepends(char *pname);
 static struct StringNode *packageouts(char *pname);
+static struct StringNode *packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
@@ -356,6 +357,13 @@ packageouts(char *pname)
 {
 	char f[1024];
 	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
+	return readlines(f);
+}
+
+struct StringNode *packagerequires(char *pname)
+{
+	char f[1024];
+	snprintf(f, sizeof(f), "%s/%s/requires", pkgsrepodir, pname);
 	return readlines(f);
 }
 

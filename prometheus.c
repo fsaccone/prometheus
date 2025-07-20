@@ -271,18 +271,15 @@ listdirs(const char *f)
 unsigned int
 packageexists(char *pname)
 {
-	char f[1024];
+	char bf[1024], of[1024], sf[1024];
 
-	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepodir, pname);
-	if (!execfileexists(f)) return 0;
+	snprintf(bf, sizeof(bf), "%s/%s/build", pkgsrepodir, pname);
+	snprintf(of, sizeof(of), "%s/%s/outs", pkgsrepodir, pname);
+	snprintf(sf, sizeof(sf), "%s/%s/sources", pkgsrepodir, pname);
 
-	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
-	if (!fileexists(f)) return 0;
+	if (execfileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
 
-	snprintf(f, sizeof(f), "%s/%s/sources", pkgsrepodir, pname);
-	if (!fileexists(f)) return 0;
-
-	return 1;
+	return 0;
 }
 
 struct SourceNode *

@@ -41,6 +41,7 @@ struct StringNode {
 };
 
 static char *chdirtotmp(char *pname, char *prefix);
+static char *createisolatedenv(char *pname, char *prefix);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
@@ -104,6 +105,46 @@ chdirtotmp(char *pname, char *prefix)
 		exit(EXIT_FAILURE);
 	}
 	strcpy(resdir, dir);
+
+	return resdir;
+}
+
+char *
+createisolatedenv(char *pname, char *prefix)
+{
+	char tmp[256], src[259], *dir, *resdir;
+
+	snprintf(tmp, sizeof(tmp), "%s/tmp", prefix);
+	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
+		perror("mkdir");
+		exit(EXIT_FAILURE);
+	}
+
+	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus", prefix);
+	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
+		perror("mkdir");
+		exit(EXIT_FAILURE);
+	}
+
+	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus/%s-XXXXXX", prefix,
+	                                                          pname);
+	if (!(dir = mkdtemp(tmp))) {
+		perror("mkdtemp");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!(resdir = malloc(strlen(dir) + 1))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	strcpy(resdir, dir);
+
+	snprintf(src, sizeof(src), "%s/tmp/prometheus/%s-XXXXXX/src", prefix,
+	                                                              pname);
+	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
+		perror("mkdir");
+		exit(EXIT_FAILURE);
+	}
 
 	return resdir;
 }

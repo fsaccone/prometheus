@@ -268,11 +268,11 @@ packageexists(char *pname)
 	snprintf(f, sizeof(f), "%s/%s/build", pkgsrepodir, pname);
 	if (!execfileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/uninstall", pkgsrepodir, pname);
-	if (!execfileexists(f)) return 0;
+	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
+	if (!fileexists(f)) return 0;
 
-	snprintf(f, sizeof(f), "%s/%s/isinstalled", pkgsrepodir, pname);
-	if (!execfileexists(f)) return 0;
+	snprintf(f, sizeof(f), "%s/%s/sources", pkgsrepodir, pname);
+	if (!fileexists(f)) return 0;
 
 	return 1;
 }

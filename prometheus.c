@@ -762,6 +762,9 @@ main(int argc, char *argv[])
 		usage();
 	} ARGEND
 
+	if (getuid())
+		die("%s: superuser privileges are required", argv0);
+
 	if (printinst && argc)
 		usage();
 

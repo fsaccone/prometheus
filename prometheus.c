@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -39,6 +40,7 @@ static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix, char *tmp);
 static struct StringNode *listdirs(const char *d);
 static unsigned int packageexists(char *pname);
+static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
 static int runpscript(char *prefix, char *tmp, char *script);
@@ -273,6 +275,80 @@ packageexists(char *pname)
 	if (!execfileexists(f)) return 0;
 
 	return 1;
+}
+
+struct SourceNode *
+packagesources(char *pname)
+{
+	char f[1024];
+	struct StringNode *l;
+	struct SourceNode *tail = NULL, *head = NULL;
+
+	snprintf(f, sizeof(f), "%s/%s/sources", pkgsrepodir, pname);
+	l = readlines(f);
+
+	for (; l; l = l->n) {
+		char url[256],
+		     sha256[65],
+		     relpath[256];
+		uint8_t sha256bin[32];
+		int nfields, i;
+		struct SourceNode *s = malloc(sizeof(struct SourceNode));
+
+		url[0] = '\0';
+		sha256[0] = '\0';
+		relpath[0] = '\0';
+
+		if ((nfields = sscanf(l->v, "%255s %64s %255s",
+		                     url, sha256, relpath)) < 2) {
+			free(s);
+			die("%s: URL or SHA256 not present in one of %s's "
+			    "sources",argv0, pname);
+		}
+		sha256[strcspn(sha256, "\n")] = '\0';
+		for (i = 0; i < 32; i++) {
+			if (sscanf(sha256 + 2 * i, "%2hhx",
+			           &sha256bin[i]) != 1) {
+				free(s);
+				die("%s: Invalid SHA256 format in one of %s's "
+				    "sources", argv0, pname);
+			}
+		}
+
+		if (!(s->v.url = malloc(strlen(url) + 1))) {
+			free(s);
+			perror("malloc");
+			exit(1);
+		};
+		strcpy(s->v.url, url);
+		s->v.url[255] = '\0';
+
+		memcpy(s->v.sha256, sha256bin, sizeof(sha256bin));
+
+		if (nfields == 3) {
+			relpath[strcspn(relpath, "\n")] = '\0';
+			if (!(s->v.relpath = malloc(strlen(relpath) + 1))) {
+				free(s);
+				perror("malloc");
+				exit(1);
+			};
+			strcpy(s->v.relpath, relpath);
+			s->v.relpath[255] = '\0';
+		} else {
+			s->v.relpath = NULL;
+		}
+
+		s->n = NULL;
+
+		if (!head)
+			head = s;
+		else
+			tail->n = s;
+
+		tail = s;
+	}
+
+	return head;
 }
 
 void

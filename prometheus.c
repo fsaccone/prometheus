@@ -485,7 +485,7 @@ installpackage(char *pname, char *prefix)
 				perror("fopen");
 				exit(EXIT_FAILURE);
 			}
-			fprintf(logf, "lua: %s\n", lua_tostring(luas, -1));
+			fprintf(logf, "%s\n", lua_tostring(luas, -1));
 			fclose(logf);
 			lua_pop(luas, 1);
 			lua_close(luas);

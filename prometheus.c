@@ -46,7 +46,6 @@ static void copyfile(const char *s, const char *d);
 static char *createtmpdir(char *pname);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
-static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
 static struct StringNode *findwithusrlocal(struct StringNode *reqs,
@@ -175,15 +174,6 @@ direxists(const char *f)
 	struct stat buf;
 	if (stat(f, &buf) != 0) return 0;
 	if (S_ISDIR(buf.st_mode)) return 1;
-	return 0;
-}
-
-unsigned int
-execfileexists(const char *f)
-{
-	struct stat buf;
-	if (stat(f, &buf) != 0) return 0;
-	if (buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH)) return 1;
 	return 0;
 }
 

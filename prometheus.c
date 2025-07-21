@@ -705,12 +705,7 @@ struct StringNode *packagerequires(char *pname)
 	for (l = ls; l; l = l->n) {
 		if (l->v[0] == '\0') {
 			freestringllist(ls);
-			die("%s: empty path found in %s's requires", argv0, pname);
-		}
-
-		if (l->v[0] != '/') {
-			freestringllist(ls);
-			die("%s: non-absolute path found in %s's requires",
+			die("%s: empty line found in %s's requires",
 			    argv0, pname);
 		}
 	}

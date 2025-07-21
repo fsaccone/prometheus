@@ -49,6 +49,8 @@ static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
 static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
+static struct StringNode *findwithusrlocal(struct StringNode *reqs,
+                                           char *pname);
 static void freedependllist(struct DependNode *n);
 static void freesourcellist(struct SourceNode *n);
 static void freestringllist(struct StringNode *n);
@@ -223,6 +225,99 @@ fileexists(const char *f)
 	struct stat buf;
 	return (!stat(f, &buf));
 }
+
+struct StringNode *
+findwithusrlocal(struct StringNode *reqs, char *pname)
+{
+	struct StringNode *r, *head = NULL, *tail = NULL;
+
+	for (r = reqs; r; r = r->n) {
+		char *usr, *local;
+		size_t usrl = strlen(r->v) + 5,
+		       locall; /* /usr + \0 */
+
+		if (fileexists(r->v)) {
+			struct StringNode *new;
+			if (!(new = malloc(sizeof(struct StringNode)))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			if (!(new->v = malloc(strlen(r->v) + 1))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			strcpy(new->v, r->v);
+			new->n = NULL;
+			if (!head)
+				head = new;
+			else
+				tail->n = new;
+			tail = new;
+			continue;
+		}
+
+		if (!(usr = malloc(usrl))) {
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(usr, usrl, "/usr%s", r->v);
+
+		if(fileexists(usr)) {
+			struct StringNode *new;
+			if (!(new = malloc(sizeof(struct StringNode)))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			if (!(new->v = malloc(strlen(usr) + 1))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			strcpy(new->v, usr);
+			new->n = NULL;
+			if (!head)
+				head = new;
+			else
+				tail->n = new;
+			tail = new;
+		}
+
+		free(usr);
+		locall = strlen(r->v) + 11; /* /usr/local + \0 */
+
+		if (!(local = malloc(locall))) {
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(local, locall, "/usr/local%s", r->v);
+
+		if(fileexists(local)) {
+			struct StringNode *new;
+			if (!(new = malloc(sizeof(struct StringNode)))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			if (!(new->v = malloc(strlen(local) + 1))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			strcpy(new->v, local);
+			new->n = NULL;
+			if (!head)
+				head = new;
+			else
+				tail->n = new;
+			tail = new;
+			continue;
+		}
+
+		free(local);
+		die("%s: file %s in %s's requires does not exist",
+		    argv0, r->v, pname);
+	}
+
+	return head;
+}
+
 void
 freedependllist(struct DependNode *n)
 {

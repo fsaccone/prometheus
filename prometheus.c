@@ -88,6 +88,8 @@ copyfile(const char *s, const char *d)
 	}
 	free(syms);
 
+	if (strrchr(d, '/')) mkdirrecursive(d);
+
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		close(sfd);
 		perror("open");

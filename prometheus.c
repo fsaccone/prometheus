@@ -230,8 +230,8 @@ findwithusrlocal(struct StringNode *reqs, char *pname)
 
 	for (r = reqs; r; r = r->n) {
 		char *usr, *local;
-		size_t usrl = strlen(r->v) + 5,
-		       locall; /* /usr + \0 */
+		size_t usrl = strlen(r->v) + 5, /* /usr + \0 */
+		       locall = usrl + 6; /* -\0 /local + \0 */
 
 		if (fileexists(r->v)) {
 			struct StringNode *new;
@@ -279,7 +279,6 @@ findwithusrlocal(struct StringNode *reqs, char *pname)
 		}
 
 		free(usr);
-		locall = strlen(r->v) + 11; /* /usr/local + \0 */
 
 		if (!(local = malloc(locall))) {
 			perror("malloc");

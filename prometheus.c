@@ -19,6 +19,7 @@
 
 #include "arg.h"
 #include "config.h"
+#include "sha256.h"
 
 struct Depend {
 	char *pname;
@@ -32,7 +33,7 @@ struct DependNode {
 
 struct Source {
 	char *url;
-	uint8_t sha256[32];
+	uint8_t sha256[SHA256_DIGEST_LENGTH];
 	char *relpath;
 };
 

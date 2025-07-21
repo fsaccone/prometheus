@@ -23,23 +23,23 @@ Each package directory may also contain the following optional files:
 - depends
 - requires
 
-The program chroots in a isolated environment before building a package: this
-environment is initialized with an empty /src directory in it.
+The program chroots in a temporary directory before building a package: it is
+initialized with an empty /src directory in it.
 
 build
 -----
 
 This file is an executable which is copied as /prometheus.build in the
-package isolated environment and called from the /src directory.
+package temporary directory and called from the /src directory.
 
 Its job is to build the package from the files present in the /src directory
-and install what it needs to the root directory of the isolated environment.
+and install what it needs to the root of the temporary directory.
 
 outs
 ----
 
 Each line of the outs file must be the absolute path of each file to be
-installed to the root directory of the isolated environment.
+installed to the root of the temporary directory.
 
 Only files, and not directories, must be listed.
 
@@ -80,8 +80,8 @@ Each line of the depends file must be of the following format:
 A valid PACKAGE is the name of a package in the repository.
 
 Each PACKAGE listed here is built prior to the package being built, is
-installed to the root directory of the isolated environment and is ignored
-when installing the package.
+installed to the root of the temporary directory and is ignored when installing
+the package.
 
 Additionally, when "runtime" is present after PACKAGE, PACKAGE gets also
 installed to the system.
@@ -92,9 +92,8 @@ requires
 Each line of the requires file must be the absolute path of each file or
 directory in the build system that is needed to build the package.
 
-All specified files and directories are copied to the root directory of the
-isolated environment, keeping its path, and are ignored when installing the
-package.
+All specified files and directories are copied to the root of the temporary
+directory, keeping its path, and are ignored when installing the package.
 
 If the program cannot find a listed file, it tries to find it in /usr and
 /usr/local.

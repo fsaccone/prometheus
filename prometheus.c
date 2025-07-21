@@ -111,17 +111,17 @@ createtmpdir(char *pname)
 	size_t dirl, logl, srcl;
 	int logfd;
 
-	if (mkdir("/tmp/prometheus", 0700) == -1 && errno != EEXIST) {
+	if (mkdir("/tmp", 0700) == -1 && errno != EEXIST) {
 		perror("mkdir");
 		exit(EXIT_FAILURE);
 	}
 
-	dirl = strlen(pname) + 24; /* /tmp/prometheus/ + \-XXXXXX + \0 */
+	dirl = strlen(pname) + 24; /* /tmp/prometheus--XXXXXX + \0 */
 	if (!(dir = malloc(dirl))) {
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
-	snprintf(dir, dirl, "/tmp/prometheus/%s-XXXXXX", pname);
+	snprintf(dir, dirl, "/tmp/prometheus-%s-XXXXXX", pname);
 	if (!mkdtemp(dir)) {
 		free(dir);
 		perror("mkdtemp");

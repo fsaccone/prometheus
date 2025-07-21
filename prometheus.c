@@ -965,6 +965,11 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		}
 		snprintf(f, fl, "%s/%s", prefix, out->v);
 
+		if (!fileexists(f)) {
+			free(f);
+			continue;
+		}
+
 		if (remove(f)) {
 			free(f);
 			freestringllist(ideps);

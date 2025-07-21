@@ -320,26 +320,13 @@ followsymlink(const char *f)
 	char *p, *res;
 	struct stat sb;
 
-	if (lstat(f, &sb)) {
-		perror("lstat");
-		exit(EXIT_FAILURE);
-	}
-
-	if (!S_ISLNK(sb.st_mode)) {
-		if (!(res = malloc(strlen(f) + 1))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		strcpy(res, f);
-		return res;
-	}
-
 	if (!(p = malloc(PATH_MAX))) {
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
+	strcpy(p, f);
 
-	while (1) {
+	while (S_ISLNK(sb.st_mode)) {
 		ssize_t n;
 
 		if ((n = readlink(f, p, PATH_MAX - 1)) == -1) {
@@ -348,6 +335,11 @@ followsymlink(const char *f)
 			exit(EXIT_FAILURE);
 		}
 		p[n] = '\0';
+
+		if (lstat(p, &sb)) {
+			perror("lstat");
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (!(res = malloc(strlen(p) + 1))) {

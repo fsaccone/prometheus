@@ -43,7 +43,7 @@ struct StringNode {
 };
 
 static void copyfile(const char *s, const char *d);
-static char *createisolatedenv(char *pname, char *prefix);
+static char *createisolatedenv(char *pname);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
@@ -102,50 +102,36 @@ copyfile(const char *s, const char *d)
 }
 
 char *
-createisolatedenv(char *pname, char *prefix)
+createisolatedenv(char *pname)
 {
-	char tmp[256], log[267], src[259], *dir, *resdir;
+	char tmp[256], log[267], src[259], *dir;
 	int logfd;
 
-	snprintf(tmp, sizeof(tmp), "%s/tmp", prefix);
-	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
+	if (mkdir("/tmp/prometheus", 0700) == -1 && errno != EEXIST) {
 		perror("mkdir");
 		exit(EXIT_FAILURE);
 	}
 
-	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus", prefix);
-	if (mkdir(tmp, 0700) == -1 && errno != EEXIST) {
-		perror("mkdir");
-		exit(EXIT_FAILURE);
-	}
-
-	snprintf(tmp, sizeof(tmp), "%s/tmp/prometheus/%s-XXXXXX", prefix,
-	                                                          pname);
+	snprintf(tmp, sizeof(tmp), "/tmp/prometheus/%s-XXXXXX", pname);
 	if (!(dir = mkdtemp(tmp))) {
 		perror("mkdtemp");
 		exit(EXIT_FAILURE);
 	}
 
-	if (!(resdir = malloc(strlen(dir) + 1))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	strcpy(resdir, dir);
-
-	snprintf(log, sizeof(log), "%s/prometheus.log", resdir);
+	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		perror("open");
 		exit(EXIT_FAILURE);
 	}
 	close(logfd);
 
-	snprintf(src, sizeof(src), "%s/src", resdir);
+	snprintf(src, sizeof(src), "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
 		perror("mkdir");
 		exit(EXIT_FAILURE);
 	}
 
-	return resdir;
+	return dir;
 }
 
 void
@@ -413,7 +399,7 @@ installpackage(char *pname, char *prefix)
 		return;
 	}
 
-	env = createisolatedenv(pname, prefix);
+	env = createisolatedenv(pname);
 
 	deps = packagedepends(pname);
 	for (dep = deps; dep; dep = dep->n) {
@@ -1033,7 +1019,7 @@ main(int argc, char *argv[])
 		if (!packageexists(*argv))
 			die("%s: package %s does not exist", argv0, *argv);
 
-		tmp = createisolatedenv(*argv, prefix);
+		tmp = createisolatedenv(*argv);
 
 		if (uninstall) {
 			struct StringNode *pkgs = listdirs(pkgsrepodir);

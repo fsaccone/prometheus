@@ -58,6 +58,7 @@ static void freestringllist(struct StringNode *n);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix);
 static struct StringNode *listdirs(const char *d);
+static void mkdirrecursive(const char *d);
 static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
 static struct DependNode *packagedepends(char *pname);
@@ -572,6 +573,26 @@ listdirs(const char *f)
 
 	closedir(d);
 	return head;
+}
+
+void
+mkdirrecursive(const char *d)
+{
+	char buf[1024], *p = NULL;
+
+	strncpy(buf, d, sizeof(buf));
+	buf[sizeof(buf) - 1] = '\0';
+
+	for (p = buf + 1; *p; p++) {
+		if (*p == '/') {
+			*p = '\0';
+			if (mkdir(buf, 0700) && errno != EEXIST) {
+				perror("mkdir");
+				exit(EXIT_FAILURE);
+			}
+			*p = '/';
+		}
+	}
 }
 
 unsigned int

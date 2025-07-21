@@ -2,12 +2,18 @@
 
 include config.mk
 
+SRCS = prometheus.c sha256.c
 BIN = prometheus
+
+OBJS = $(SRCS:.c=.o)
 
 all: $(BIN)
 
-$(BIN): config.h prometheus.c
-	$(CC) $(CFLAGS) -o $@ $^
+$(BIN): $(OBJS) config.h
+	$(CC) -o $@ $(OBJS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -o $@ -c $^
 
 config.h: config.def.h
 	cp $^ $@

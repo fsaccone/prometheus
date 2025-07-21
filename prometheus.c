@@ -52,8 +52,7 @@ static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
-static struct StringNode *findwithusrlocal(struct StringNode *reqs,
-                                           char *pname);
+static struct StringNode *findinpath(struct StringNode *reqs);
 static char *followsymlink(const char *f);
 static void freedependllist(struct DependNode *n);
 static void freesourcellist(struct SourceNode *n);
@@ -218,92 +217,50 @@ fileexists(const char *f)
 }
 
 struct StringNode *
-findwithusrlocal(struct StringNode *reqs, char *pname)
+findinpath(struct StringNode *progs)
 {
-	struct StringNode *r, *head = NULL, *tail = NULL;
+	struct StringNode *p, *head = NULL, *tail = NULL;
+	char *path, *pathd;
 
-	for (r = reqs; r; r = r->n) {
-		char *usr, *local;
-		size_t usrl = strlen(r->v) + 5, /* /usr + \0 */
-		       locall = usrl + 6; /* -\0 /local + \0 */
+	if (!(path = getenv("PATH")))
+		die("%s: PATH is not set", argv0);
 
-		if (fileexists(r->v)) {
+	for (p = progs; p; p = p->n) {
+		unsigned int set = 0;
+
+		for (pathd = strtok(path, ":"); pathd; pathd = strtok(NULL, ":")) {
+			char *pp;
+			size_t ppl = strlen(pathd) + strlen(p->v) + 1;
 			struct StringNode *new;
+
+			if (!(pp = malloc(ppl))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			snprintf(pp, ppl, "%s/%s", pathd, p->v);
+
+			if (!fileexists(pp)) continue;
+			set = 1;
+
 			if (!(new = malloc(sizeof(struct StringNode)))) {
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			if (!(new->v = malloc(strlen(r->v) + 1))) {
+			if (!(new->v = malloc(ppl + 1))) {
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			strcpy(new->v, r->v);
+			strcpy(new->v, pp);
 			new->n = NULL;
 			if (!head)
 				head = new;
 			else
 				tail->n = new;
 			tail = new;
-			continue;
 		}
 
-		if (!(usr = malloc(usrl))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(usr, usrl, "/usr%s", r->v);
-
-		if(fileexists(usr)) {
-			struct StringNode *new;
-			if (!(new = malloc(sizeof(struct StringNode)))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			if (!(new->v = malloc(strlen(usr) + 1))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			strcpy(new->v, usr);
-			new->n = NULL;
-			if (!head)
-				head = new;
-			else
-				tail->n = new;
-			tail = new;
-			continue;
-		}
-
-		free(usr);
-
-		if (!(local = malloc(locall))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(local, locall, "/usr/local%s", r->v);
-
-		if(fileexists(local)) {
-			struct StringNode *new;
-			if (!(new = malloc(sizeof(struct StringNode)))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			if (!(new->v = malloc(strlen(local) + 1))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			strcpy(new->v, local);
-			new->n = NULL;
-			if (!head)
-				head = new;
-			else
-				tail->n = new;
-			tail = new;
-			continue;
-		}
-
-		free(local);
-		die("%s: file %s in %s's requires does not exist",
-		    argv0, r->v, pname);
+		if (!set)
+			die("%s: program %s does not exist", argv0, p->v);
 	}
 
 	return head;
@@ -440,7 +397,7 @@ installpackage(char *pname, char *prefix)
 	free(db);
 
 	reqs = packagerequires(pname);
-	freqs = findwithusrlocal(reqs, pname);
+	freqs = findinpath(reqs);
 	for (r = reqs, fr = freqs; r && fr; r = r->n, fr = fr->n) {
 		char *d;
 		size_t dl = strlen(env) + strlen(r->v) + 1;

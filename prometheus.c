@@ -69,6 +69,7 @@ static struct StringNode *packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
+static unsigned int relpathisvalid(char *relpath);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
                              struct StringNode *pkgs);
@@ -878,6 +879,12 @@ readlines(const char *f)
 
 	fclose(fp);
 	return head;
+}
+
+unsigned int
+relpathisvalid(char *relpath)
+{
+	return (!strstr(relpath, "..") && relpath[0] != '/');
 }
 
 void

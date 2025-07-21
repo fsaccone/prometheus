@@ -521,6 +521,15 @@ installpackage(char *pname, char *prefix)
 		}
 		snprintf(s, ss, "%s%s", env, o->v);
 
+		if (!fileexists(s)) {
+			free(env);
+			freestringllist(outs);
+			die("%s: file %s in %s's outs in was not installed",
+			    argv0, s, pname);
+			free(s);
+			exit(EXIT_FAILURE);
+		}
+
 		if (!(d = malloc(ds))) {
 			free(s);
 			free(env);

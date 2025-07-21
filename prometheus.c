@@ -394,12 +394,20 @@ installpackage(char *pname, char *prefix)
 	
 	/* / + /build.lua + \0 */
 	bl = strlen(pkgsrepodir) + strlen(pname) + 12;
-	b = malloc(bl);
+	if (!(b = malloc(bl))) {
+		free(env);
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
 	snprintf(b, bl, "%s/%s/build.lua", pkgsrepodir, pname);
 
 	/* /prometheus.build.lua + \0 */
 	dbl = strlen(env) + 22;
-	db = malloc(dbl);
+	if (!(db = malloc(dbl))) {
+		free(env);
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
 	snprintf(db, dbl, "%s/prometheus.build.lua", env);
 
 	copyfile(b, db);

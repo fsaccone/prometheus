@@ -39,7 +39,7 @@ outs
 ----
 
 Each line of the outs file must be the absolute path of each file to be
-installed to the root of the temporary directory.
+installed to the system.
 
 Only files, and not directories, must be listed.
 

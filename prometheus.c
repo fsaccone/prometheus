@@ -483,6 +483,11 @@ installpackage(char *pname, char *prefix)
 		}
 		luaL_openlibs(luas);
 
+		if (setenv("PATH", "/bin", 1)) {
+			perror("setenv");
+			exit(EXIT_FAILURE);
+		}
+
 		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
 			fprintf(stderr, "lua: %s\n", lua_tostring(luas, -1));
 			lua_pop(luas, 1);

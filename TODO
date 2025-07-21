@@ -88,11 +88,7 @@ installed to the system.
 requires
 --------
 
-Each line of the requires file must be the absolute path of each file or
-directory in the build system that is needed to build the package.
+Each line of the requires file must be a program which exists in any of the
+PATH directories.
 
-All specified files and directories are copied to the root of the temporary
-directory, keeping their path, and are ignored when installing the package.
-
-If the program cannot find a listed file, it tries to find it in /usr and
-/usr/local.
+The listed programs are copied to the /bin of the package temporary directory.

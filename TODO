@@ -95,3 +95,6 @@ directory in the build system that is needed to build the package.
 All specified files and directories are copied to the root directory of the
 isolated environment, keeping its path, and are ignored when installing the
 package.
+
+If the program cannot find a listed file, it tries to find it in /usr and
+/usr/local.

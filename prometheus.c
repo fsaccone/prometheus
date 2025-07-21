@@ -626,7 +626,7 @@ packageexists(char *pname)
 	snprintf(of, sizeof(of), "%s/%s/outs", pkgsrepodir, pname);
 	snprintf(sf, sizeof(sf), "%s/%s/sources", pkgsrepodir, pname);
 
-	if (execfileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
+	if (fileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
 
 	return 0;
 }

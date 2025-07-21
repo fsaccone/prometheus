@@ -51,6 +51,7 @@ static char *expandtilde(const char *f);
 static unsigned int fileexists(const char *f);
 static struct StringNode *findwithusrlocal(struct StringNode *reqs,
                                            char *pname);
+static char *followsymlink(const char *f);
 static void freedependllist(struct DependNode *n);
 static void freesourcellist(struct SourceNode *n);
 static void freestringllist(struct StringNode *n);
@@ -74,31 +75,17 @@ void
 copyfile(const char *s, const char *d)
 {
 	int sfd, dfd;
-	char buf[1024];
+	char buf[1024], *syms;
 	ssize_t b;
-	struct stat sbuf;
 
-	if (lstat(s, &sbuf) == -1) {
-		perror("lstat");
-		exit(EXIT_FAILURE);
-	}
+	syms = followsymlink(s);
 
-	if (S_ISLNK(sbuf.st_mode)) {
-		char t[1024];
-		size_t l;
-
-		if ((l = readlink(s, t, sizeof(t) - 1) == -1)) {
-			perror("readlink");
-			exit(EXIT_FAILURE);
-		}
-		t[l] = '\0';
-		s = t;
-	}
-
-	if ((sfd = open(s, O_RDONLY)) == -1) {
+	if ((sfd = open(syms, O_RDONLY)) == -1) {
+		free(syms);
 		perror("open");
 		exit(EXIT_FAILURE);
 	}
+	free(syms);
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		close(sfd);
@@ -316,6 +303,51 @@ findwithusrlocal(struct StringNode *reqs, char *pname)
 	}
 
 	return head;
+}
+
+char *
+followsymlink(const char *f)
+{
+	char *p, *res;
+	struct stat sb;
+
+	if (lstat(f, &sb)) {
+		perror("lstat");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!S_ISLNK(sb.st_mode)) {
+		if (!(res = malloc(strlen(f) + 1))) {
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		strcpy(res, f);
+		return res;
+	}
+
+	if (!(p = malloc(PATH_MAX))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	while (1) {
+		ssize_t n;
+
+		if ((n = readlink(f, p, PATH_MAX - 1)) == -1) {
+			if (errno == EINVAL || errno == ENOENT) break;
+			perror("readlink");
+			exit(EXIT_FAILURE);
+		}
+		p[n] = '\0';
+	}
+
+	if (!(res = malloc(strlen(p) + 1))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	strcpy(res, p);
+	free(p);
+	return res;
 }
 
 void

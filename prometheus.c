@@ -13,6 +13,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+
 #include "arg.h"
 #include "config.h"
 
@@ -462,6 +466,7 @@ installpackage(char *pname, char *prefix)
 
 	if (!pid) {
 		int logfd;
+		lua_State *luas;
 
 		if (chroot(env)) {
 			free(env);
@@ -478,9 +483,19 @@ installpackage(char *pname, char *prefix)
 		dup2(logfd, STDERR_FILENO);
 		close(logfd);
 
-		/* TODO: run /prometheus.build.lua */;
-		free(env);
-		exit(EXIT_FAILURE);
+		if(!(luas = luaL_newstate())) {
+			perror("luaL_newstate");
+			exit(EXIT_FAILURE);
+		}
+		luaL_openlibs(luas);
+
+		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
+			fprintf(stderr, "lua: %s\n", lua_tostring(luas, -1));
+			lua_pop(luas, 1);
+			lua_close(luas);
+			exit(EXIT_FAILURE);
+		}
+		exit(EXIT_SUCCESS);
 	} else {
 		int s;
 		waitpid(pid, &s, 0);

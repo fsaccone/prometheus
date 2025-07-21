@@ -107,7 +107,8 @@ copyfile(const char *s, const char *d)
 char *
 createtmpdir(char *pname)
 {
-	char tmp[256], log[268], src[259], *dir;
+	char *tmp, *log, *src, *dir;
+	size_t tmpl, logl, srcl;
 	int logfd;
 
 	if (mkdir("/tmp/prometheus", 0700) == -1 && errno != EEXIST) {
@@ -115,24 +116,45 @@ createtmpdir(char *pname)
 		exit(EXIT_FAILURE);
 	}
 
-	snprintf(tmp, sizeof(tmp), "/tmp/prometheus/%s-XXXXXX", pname);
+	tmpl = strlen(pname) + 24; /* /tmp/prometheus/ + \-XXXXXX + \0 */
+	if (!(tmp = malloc(tmpl))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(tmp, tmpl, "/tmp/prometheus/%s-XXXXXX", pname);
 	if (!(dir = mkdtemp(tmp))) {
+		free(tmp);
 		perror("mkdtemp");
 		exit(EXIT_FAILURE);
 	}
+	free(tmp);
 
-	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
+	logl = strlen(dir) + 16; /* /prometheus.log + \0 */
+	if (!(log = malloc(logl))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(log, logl, "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
+		free(log);
 		perror("open");
 		exit(EXIT_FAILURE);
 	}
+	free(log);
 	close(logfd);
 
-	snprintf(src, sizeof(src), "%s/src", dir);
+	srcl = strlen(dir) + 5; /* /src + \0 */
+	if (!(src = malloc(srcl))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(src, srcl, "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
+		free(src);
 		perror("mkdir");
 		exit(EXIT_FAILURE);
 	}
+	free(src);
 
 	return dir;
 }

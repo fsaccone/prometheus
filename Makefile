@@ -10,7 +10,7 @@ OBJS = $(SRCS:.c=.o)
 all: $(BIN)
 
 $(BIN): $(OBJS) config.h
-	$(CC) -o $@ $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $^

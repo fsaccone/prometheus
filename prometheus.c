@@ -1014,12 +1014,8 @@ main(int argc, char *argv[])
 
 	/* will not be evaluated when printinst is 1 */
 	for (; *argv; argc--, argv++) {
-		char *tmp;
-
 		if (!packageexists(*argv))
 			die("%s: package %s does not exist", argv0, *argv);
-
-		tmp = createtmpdir(*argv);
 
 		if (uninstall) {
 			struct StringNode *pkgs = listdirs(pkgsrepodir);
@@ -1028,8 +1024,6 @@ main(int argc, char *argv[])
 		} else {
 			installpackage(*argv, prefix);
 		}
-
-		free(tmp);
 	}
 
 	if (expprefix) free(prefix);

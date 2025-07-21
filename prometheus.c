@@ -459,7 +459,6 @@ installpackage(char *pname, char *prefix)
 	}
 
 	if (!pid) {
-		int logfd;
 		lua_State *luas;
 
 		if (chroot(env)) {
@@ -467,15 +466,6 @@ installpackage(char *pname, char *prefix)
 			perror("chroot");
 			exit(EXIT_FAILURE);
 		}
-
-		if ((logfd = open("/prometheus.log", O_WRONLY)) == -1) {
-			free(env);
-			perror("open");
-			exit(EXIT_FAILURE);
-		}
-		dup2(logfd, STDOUT_FILENO);
-		dup2(logfd, STDERR_FILENO);
-		close(logfd);
 
 		if(!(luas = luaL_newstate())) {
 			perror("luaL_newstate");
@@ -489,7 +479,14 @@ installpackage(char *pname, char *prefix)
 		}
 
 		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
-			fprintf(stderr, "lua: %s\n", lua_tostring(luas, -1));
+			FILE *logf;
+			if (!(logf = fopen("/prometheus.log", "a"))) {
+				free(env);
+				perror("fopen");
+				exit(EXIT_FAILURE);
+			}
+			fprintf(logf, "lua: %s\n", lua_tostring(luas, -1));
+			fclose(logf);
 			lua_pop(luas, 1);
 			lua_close(luas);
 			exit(EXIT_FAILURE);

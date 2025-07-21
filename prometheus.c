@@ -371,7 +371,7 @@ void
 installpackage(char *pname, char *prefix)
 {
 	struct DependNode *deps, *dep;
-	struct StringNode *o, *outs;
+	struct StringNode *o, *outs, *r, *reqs, *fr, *freqs;
 	size_t bl, dbl;
 	char *b, *db, *env;
 	pid_t pid;
@@ -410,6 +410,25 @@ installpackage(char *pname, char *prefix)
 	copyfile(b, db);
 	free(b);
 	free(db);
+
+	reqs = packagerequires(pname);
+	freqs = findwithusrlocal(reqs, pname);
+	for (r = reqs, fr = freqs; r && fr; r = r->n, fr = fr->n) {
+		char *d;
+		size_t dl = strlen(env) + strlen(r->v) + 1;
+		if (!(d = malloc(dl))) {
+			free(env);
+			freestringllist(freqs);
+			freestringllist(reqs);
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(d, dl, "%s%s", env, fr->v);
+		copyfile(fr->v, d);
+		free(d);
+	}
+	freestringllist(freqs);
+	freestringllist(reqs);
 
 	if ((pid = fork()) < 0) {
 		free(env);

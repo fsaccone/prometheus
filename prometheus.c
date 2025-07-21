@@ -240,6 +240,8 @@ findinpath(struct StringNode *progs)
 			size_t ppl;
 			struct StringNode *new;
 
+			if (set) break;
+
 			ppl = strlen(pathd) + strlen(p->v) + 2; /* / + \0 */
 			if (!(pp = malloc(ppl))) {
 				perror("malloc");

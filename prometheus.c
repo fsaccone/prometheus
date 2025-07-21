@@ -470,7 +470,7 @@ installpackage(char *pname, char *prefix)
 	}
 
 	if (!pid) {
-		const char *cmd = "/src/prometheus.build";
+		const char *cmd = "/prometheus.build";
 		int logfd;
 
 		if (chroot(env)) {

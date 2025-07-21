@@ -430,15 +430,15 @@ installpackage(char *pname, char *prefix)
 
 	printf("- building %s\n", pname);
 	
-	/* / + /build + \0 */
-	bl = strlen(pkgsrepodir) + strlen(pname) + 8;
+	/* / + /build.lua + \0 */
+	bl = strlen(pkgsrepodir) + strlen(pname) + 12;
 	b = malloc(bl);
-	snprintf(b, bl, "%s/%s/build", pkgsrepodir, pname);
+	snprintf(b, bl, "%s/%s/build.lua", pkgsrepodir, pname);
 
-	/* /prometheus.build + \0 */
-	dbl = strlen(env) + 18;
+	/* /prometheus.build.lua + \0 */
+	dbl = strlen(env) + 22;
 	db = malloc(dbl);
-	snprintf(db, dbl, "%s/prometheus.build", env);
+	snprintf(db, dbl, "%s/prometheus.build.lua", env);
 
 	copyfile(b, db);
 	free(b);
@@ -470,7 +470,6 @@ installpackage(char *pname, char *prefix)
 	}
 
 	if (!pid) {
-		const char *cmd = "/prometheus.build";
 		int logfd;
 
 		if (chroot(env)) {
@@ -488,9 +487,8 @@ installpackage(char *pname, char *prefix)
 		dup2(logfd, STDERR_FILENO);
 		close(logfd);
 
-		execl(cmd, cmd, (char *)NULL);
+		/* TODO: run /prometheus.build.lua */;
 		free(env);
-		perror("execl");
 		exit(EXIT_FAILURE);
 	} else {
 		int s;
@@ -623,7 +621,7 @@ packageexists(char *pname)
 {
 	char bf[1024], of[1024], sf[1024];
 
-	snprintf(bf, sizeof(bf), "%s/%s/build", pkgsrepodir, pname);
+	snprintf(bf, sizeof(bf), "%s/%s/build.lua", pkgsrepodir, pname);
 	snprintf(of, sizeof(of), "%s/%s/outs", pkgsrepodir, pname);
 	snprintf(sf, sizeof(sf), "%s/%s/sources", pkgsrepodir, pname);
 

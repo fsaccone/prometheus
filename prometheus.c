@@ -456,7 +456,7 @@ installpackage(char *pname, char *prefix)
 	freqs = findwithusrlocal(reqs, pname);
 	for (r = reqs, fr = freqs; r && fr; r = r->n, fr = fr->n) {
 		char *d;
-		size_t dl = strlen(env) + strlen(fr->v) + 1;
+		size_t dl = strlen(env) + strlen(r->v) + 1;
 		if (!(d = malloc(dl))) {
 			free(env);
 			freestringllist(freqs);
@@ -464,7 +464,7 @@ installpackage(char *pname, char *prefix)
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
-		snprintf(d, dl, "%s%s", env, fr->v);
+		snprintf(d, dl, "%s%s", env, r->v);
 		copyfile(fr->v, d);
 		free(d);
 	}

@@ -72,6 +72,7 @@ static struct StringNode *readlines(const char *f);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
                              struct StringNode *pkgs);
+static unsigned int urlisvalid(char *url);
 static void usage(void);
 
 void
@@ -990,6 +991,14 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	}
 
 	freestringllist(ideps);
+}
+
+unsigned int
+urlisvalid(char *url)
+{
+	return (!strncmp(url, "http://", 7)
+	     && !strncmp(url, "https://", 8)
+	     && !strncmp(url, "ftp://", 6));
 }
 
 void

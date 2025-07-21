@@ -67,8 +67,7 @@ If URL is a local file, it must not be a directory.
 Each source must have a corresponding SHA256 hash.
 
 An optional RELPATH field may be provided: it is the path, relative to /src,
-where the fetched source file is moved to after being retrieved and
-verified.
+where the fetched source file is moved to after being retrieved and verified.
 
 depends
 -------

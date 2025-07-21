@@ -366,9 +366,9 @@ void
 installpackage(char *pname, char *prefix)
 {
 	struct DependNode *deps, *dep;
-	struct StringNode *o, *outs, *r, *reqs, *fr, *freqs;
-	size_t bl, dbl;
-	char *b, *db, *env;
+	struct StringNode *o, *outs, *r, *reqs, *pr, *preqs;
+	size_t bl, dbl, binl;
+	char *b, *db, *env, *bin;
 	pid_t pid;
 
 	if (packageisinstalled(pname, prefix)) {
@@ -415,22 +415,41 @@ installpackage(char *pname, char *prefix)
 	free(db);
 
 	reqs = packagerequires(pname);
-	freqs = findinpath(reqs);
-	for (r = reqs, fr = freqs; r && fr; r = r->n, fr = fr->n) {
+	preqs = findinpath(reqs);
+
+	binl = strlen(env) + 5; /* /bin + \0 */
+	if (!(bin = malloc(binl))) {
+		free(env);
+		freestringllist(preqs);
+		freestringllist(reqs);
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(bin, binl, "%s/bin", env);
+	if (preqs && mkdir(bin, 0700) && errno != EEXIST) {
+		free(env);
+		freestringllist(preqs);
+		freestringllist(reqs);
+		perror("mkdir");
+		exit(EXIT_FAILURE);
+	}
+	free(bin);
+
+	for (r = reqs, pr = preqs; r && pr; r = r->n, pr = pr->n) {
 		char *d;
-		size_t dl = strlen(env) + strlen(r->v) + 1;
+		size_t dl = strlen(env) + strlen(r->v) + 6; /* /bin/ + \0 */
 		if (!(d = malloc(dl))) {
 			free(env);
-			freestringllist(freqs);
+			freestringllist(preqs);
 			freestringllist(reqs);
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
-		snprintf(d, dl, "%s%s", env, r->v);
-		copyfile(fr->v, d);
+		snprintf(d, dl, "%s/bin/%s", env, r->v);
+		copyfile(pr->v, d);
 		free(d);
 	}
-	freestringllist(freqs);
+	freestringllist(preqs);
 	freestringllist(reqs);
 
 	if ((pid = fork()) < 0) {

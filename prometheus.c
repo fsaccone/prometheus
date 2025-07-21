@@ -220,19 +220,27 @@ struct StringNode *
 findinpath(struct StringNode *progs)
 {
 	struct StringNode *p, *head = NULL, *tail = NULL;
-	char *path, *pathd;
+	char *pathenv;
 
-	if (!(path = getenv("PATH")))
+	if (!(pathenv = getenv("PATH")))
 		die("%s: PATH is not set", argv0);
 
 	for (p = progs; p; p = p->n) {
+		char *path, *pathd;
 		unsigned int set = 0;
 
-		for (pathd = strtok(path, ":"); pathd; pathd = strtok(NULL, ":")) {
+		if (!(path = malloc(strlen(pathenv) + 1))) {
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		strcpy(path, pathenv);
+
+		for (pathd = strtok(path, ":"); path; pathd = strtok(NULL, ":")) {
 			char *pp;
-			size_t ppl = strlen(pathd) + strlen(p->v) + 1;
+			size_t ppl;
 			struct StringNode *new;
 
+			ppl = strlen(pathd) + strlen(p->v) + 2; /* / + \0 */
 			if (!(pp = malloc(ppl))) {
 				perror("malloc");
 				exit(EXIT_FAILURE);

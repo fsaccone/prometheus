@@ -14,7 +14,7 @@ The repository tree must have a set of directories, each named after the
 package it represents: each of these directories must contain the following
 mandatory files:
 
-- build
+- build.lua
 - outs
 - sources
 
@@ -26,10 +26,10 @@ Each package directory may also contain the following optional files:
 The program chroots in a temporary directory before building a package: it is
 initialized with an empty /src directory in it.
 
-build
------
+build.lua
+---------
 
-This file is an executable which is copied as /prometheus.build in the
+This file is a Lua script which is copied as /prometheus.build.lua in the
 package temporary directory and called from the /src directory.
 
 Its job is to build the package from the files present in the /src directory

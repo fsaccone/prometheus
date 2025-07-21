@@ -6,6 +6,13 @@ The package manager of the Arcadia Linux distribution.
 The main package repository is Olympus, available at
 <git://git.francescosaccone.com/olympus>.
 
+Requirements
+------------
+
+- C99 compiler
+- libc
+- Lua
+
 Structure of a package repository
 ---------------------------------
 

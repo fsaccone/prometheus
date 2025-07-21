@@ -74,6 +74,24 @@ copyfile(const char *s, const char *d)
 	int sfd, dfd;
 	char buf[1024];
 	ssize_t b;
+	struct stat sbuf;
+
+	if (lstat(s, &sbuf) == -1) {
+		perror("lstat");
+		exit(EXIT_FAILURE);
+	}
+
+	if (S_ISLNK(sbuf.st_mode)) {
+		char t[1024];
+		size_t l;
+
+		if ((l = readlink(s, t, sizeof(t) - 1) == -1)) {
+			perror("readlink");
+			exit(EXIT_FAILURE);
+		}
+		t[l] = '\0';
+		s = t;
+	}
 
 	if ((sfd = open(s, O_RDONLY)) == -1) {
 		perror("open");

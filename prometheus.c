@@ -107,8 +107,8 @@ copyfile(const char *s, const char *d)
 char *
 createtmpdir(char *pname)
 {
-	char *tmp, *log, *src, *dir;
-	size_t tmpl, logl, srcl;
+	char *dir, *log, *src;
+	size_t dirl, logl, srcl;
 	int logfd;
 
 	if (mkdir("/tmp/prometheus", 0700) == -1 && errno != EEXIST) {
@@ -116,18 +116,17 @@ createtmpdir(char *pname)
 		exit(EXIT_FAILURE);
 	}
 
-	tmpl = strlen(pname) + 24; /* /tmp/prometheus/ + \-XXXXXX + \0 */
-	if (!(tmp = malloc(tmpl))) {
+	dirl = strlen(pname) + 24; /* /tmp/prometheus/ + \-XXXXXX + \0 */
+	if (!(dir = malloc(dirl))) {
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
-	snprintf(tmp, tmpl, "/tmp/prometheus/%s-XXXXXX", pname);
-	if (!(dir = mkdtemp(tmp))) {
-		free(tmp);
+	snprintf(dir, dirl, "/tmp/prometheus/%s-XXXXXX", pname);
+	if (!mkdtemp(dir)) {
+		free(dir);
 		perror("mkdtemp");
 		exit(EXIT_FAILURE);
 	}
-	free(tmp);
 
 	logl = strlen(dir) + 16; /* /prometheus.log + \0 */
 	if (!(log = malloc(logl))) {

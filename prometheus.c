@@ -43,7 +43,7 @@ struct StringNode {
 };
 
 static void copyfile(const char *s, const char *d);
-static char *createisolatedenv(char *pname);
+static char *createtmpdir(char *pname);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static unsigned int execfileexists(const char *f);
@@ -102,9 +102,9 @@ copyfile(const char *s, const char *d)
 }
 
 char *
-createisolatedenv(char *pname)
+createtmpdir(char *pname)
 {
-	char tmp[256], log[267], src[259], *dir;
+	char tmp[256], log[268], src[259], *dir;
 	int logfd;
 
 	if (mkdir("/tmp/prometheus", 0700) == -1 && errno != EEXIST) {
@@ -399,7 +399,7 @@ installpackage(char *pname, char *prefix)
 		return;
 	}
 
-	env = createisolatedenv(pname);
+	env = createtmpdir(pname);
 
 	deps = packagedepends(pname);
 	for (dep = deps; dep; dep = dep->n) {
@@ -1019,7 +1019,7 @@ main(int argc, char *argv[])
 		if (!packageexists(*argv))
 			die("%s: package %s does not exist", argv0, *argv);
 
-		tmp = createisolatedenv(*argv);
+		tmp = createtmpdir(*argv);
 
 		if (uninstall) {
 			struct StringNode *pkgs = listdirs(pkgsrepodir);

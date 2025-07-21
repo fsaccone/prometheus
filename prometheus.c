@@ -71,6 +71,9 @@ static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
 static unsigned int relpathisvalid(char *relpath);
+static uint8_t *sha256chartouint8(const char *c);
+static uint8_t *sha256hash(const char *f);
+static char *sha256uint8tochar(const uint8_t *u);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
                              struct StringNode *pkgs);
@@ -886,6 +889,80 @@ unsigned int
 relpathisvalid(char *relpath)
 {
 	return (!strstr(relpath, "..") && relpath[0] != '/');
+}
+
+uint8_t *
+sha256chartouint8(const char *c)
+{
+	uint8_t *u;
+	int i;
+
+	if (!(u = malloc(SHA256_DIGEST_LENGTH * sizeof(uint8_t)))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	for (i = 0; i < SHA256_DIGEST_LENGTH; i++)
+		sscanf(c + i * 2, "%2hhx", &u[i]);
+
+	return u;
+}
+
+uint8_t *
+sha256hash(const char *f)
+{
+	unsigned char buf[4096];
+	uint8_t *res, hash[SHA256_DIGEST_LENGTH];
+	size_t br;
+	struct sha256 ctx;
+	FILE *ff;
+
+	sha256_init(&ctx);
+
+	if (!(ff = fopen(f, "rb"))) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
+
+	while ((br = fread(buf, 1, sizeof(buf), ff)) > 0)
+		sha256_update(&ctx, buf, br);
+
+	if (ferror(ff)) {
+		fclose(ff);
+		perror("ferror");
+		exit(EXIT_FAILURE);
+	}
+
+	fclose(ff);
+	sha256_sum(&ctx, hash);
+
+	if (!(res = malloc(SHA256_DIGEST_LENGTH))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	memcpy(res, hash, SHA256_DIGEST_LENGTH);
+
+	return res;
+}
+
+char *
+sha256uint8tochar(const uint8_t *u)
+{
+	char *c;
+	int i;
+
+	if (!(c = malloc(64 * sizeof(char) + 1))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+
+	for (i = 0; i < SHA256_DIGEST_LENGTH; i++)
+		snprintf(&c[i * 2], 3, "%02x", u[i]);
+
+	c[64] = '\0';
+
+	return c;
 }
 
 void

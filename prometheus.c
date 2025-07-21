@@ -276,6 +276,7 @@ findwithusrlocal(struct StringNode *reqs, char *pname)
 			else
 				tail->n = new;
 			tail = new;
+			continue;
 		}
 
 		free(usr);

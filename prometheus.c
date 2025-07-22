@@ -323,6 +323,49 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 			free(sf);
 			free(df);
 		}
+
+		if (s->v.relpath) {
+			char *sf, *df, *dn = dirname(s->v.relpath), *mvd;
+			size_t sfl, dfl, mvdl;
+
+			sfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
+			if (!(sf = malloc(sfl))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			snprintf(sf, sfl, "%s/src/%s", tmpd, b);
+
+			dfl = strlen(tmpd) + strlen(s->v.relpath)
+			    + 6; /* /src/ + \0 */
+			if (!(df = malloc(dfl))) {
+				free(sf);
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			snprintf(df, dfl, "%s/src/%s", tmpd, s->v.relpath);
+
+			mvdl = strlen(tmpd) + strlen(dn) + 6; /* /src/ + \0 */
+			if (!(mvd = malloc(mvdl))) {
+				free(sf);
+				free(df);
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			snprintf(mvd, mvdl, "%s/src/%s", tmpd, dn);
+
+			if (strrchr(dn, '/')) mkdirrecursive(mvd);
+			free(mvd);
+
+			if (rename(sf, df)) {
+				free(sf);
+				free(df);
+				perror("rename");
+				exit(EXIT_FAILURE);
+			}
+
+			free(sf);
+			free(df);
+		}
 	}
 }
 

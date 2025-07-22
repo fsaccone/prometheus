@@ -85,30 +85,41 @@ static void usage(void);
 void
 buildpackage(char *pname, const char *tmpd)
 {
-	char *b, *db;
-	size_t bl, dbl;
+	char *pdir, *b, *db;
+	size_t pdirl, bl, dbl;
 	struct StringNode *reqs;
 	pid_t pid;
 
 	printf("- building %s\n", pname);
 
-	/* / + /build.lua + \0 */
-	bl = strlen(pkgsrepodir) + strlen(pname) + 12;
-	if (!(b = malloc(bl))) {
+	pdirl = strlen(pkgsrepodir) + strlen(pname) + 2; /* / + \0 */
+	if (!(pdir = malloc(pdirl))) {
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
-	snprintf(b, bl, "%s/%s/build.lua", pkgsrepodir, pname);
+	snprintf(pdir, pdirl, "%s/%s", pkgsrepodir, pname);
+
+	/* / + /build.lua + \0 */
+	bl = pdirl - 1 + 12;
+	if (!(b = malloc(bl))) {
+		free(pdir);
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(b, bl, "%s/build.lua", pdir);
 
 	/* /prometheus.build.lua + \0 */
 	dbl = strlen(tmpd) + 22;
 	if (!(db = malloc(dbl))) {
+		free(pdir);
+		free(b);
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
 	snprintf(db, dbl, "%s/prometheus.build.lua", tmpd);
 
 	copyfile(b, db);
+	free(pdir);
 	free(b);
 	free(db);
 

@@ -47,6 +47,7 @@ struct StringNode {
 	struct StringNode *n;
 };
 
+static void buildpackage(char *pname, const char *tmpd);
 static void copyfile(const char *s, const char *d);
 static char *createtmpdir(char *pname);
 static void die(const char *m, ...);
@@ -79,6 +80,123 @@ static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
                              struct StringNode *pkgs);
 static unsigned int urlisvalid(char *url);
 static void usage(void);
+
+void
+buildpackage(char *pname, const char *tmpd)
+{
+	char *b, *db, *bin;
+	size_t bl, dbl, binl;
+	struct StringNode *r, *reqs, *pr, *preqs;
+	pid_t pid;
+
+	printf("- building %s\n", pname);
+
+	/* / + /build.lua + \0 */
+	bl = strlen(pkgsrepodir) + strlen(pname) + 12;
+	if (!(b = malloc(bl))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(b, bl, "%s/%s/build.lua", pkgsrepodir, pname);
+
+	/* /prometheus.build.lua + \0 */
+	dbl = strlen(tmpd) + 22;
+	if (!(db = malloc(dbl))) {
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(db, dbl, "%s/prometheus.build.lua", tmpd);
+
+	copyfile(b, db);
+	free(b);
+	free(db);
+
+	reqs = packagerequires(pname);
+	preqs = findinpath(reqs);
+
+	binl = strlen(tmpd) + 5; /* /bin + \0 */
+	if (!(bin = malloc(binl))) {
+		freestringllist(preqs);
+		freestringllist(reqs);
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(bin, binl, "%s/bin", tmpd);
+	if (preqs && mkdir(bin, 0700) && errno != EEXIST) {
+		freestringllist(preqs);
+		freestringllist(reqs);
+		perror("mkdir");
+		exit(EXIT_FAILURE);
+	}
+	free(bin);
+
+	for (r = reqs, pr = preqs; r && pr; r = r->n, pr = pr->n) {
+		char *d;
+		size_t dl = strlen(tmpd) + strlen(r->v) + 6; /* /bin/ + \0 */
+		if (!(d = malloc(dl))) {
+			freestringllist(preqs);
+			freestringllist(reqs);
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(d, dl, "%s/bin/%s", tmpd, r->v);
+		copyfile(pr->v, d);
+		free(d);
+	}
+	freestringllist(preqs);
+	freestringllist(reqs);
+
+	if ((pid = fork()) < 0) {
+		perror("fork");
+		exit(EXIT_FAILURE);
+	}
+
+	if (!pid) {
+		lua_State *luas;
+
+		if (chroot(tmpd)) {
+			perror("chroot");
+			exit(EXIT_FAILURE);
+		}
+
+		if(!(luas = luaL_newstate())) {
+			perror("luaL_newstate");
+			exit(EXIT_FAILURE);
+		}
+		luaL_openlibs(luas);
+
+		if (setenv("PATH", "/bin", 1)) {
+			perror("setenv");
+			exit(EXIT_FAILURE);
+		}
+
+		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
+			FILE *logf;
+			if (!(logf = fopen("/prometheus.log", "a"))) {
+				perror("fopen");
+				exit(EXIT_FAILURE);
+			}
+			fprintf(logf, "%s\n", lua_tostring(luas, -1));
+			fclose(logf);
+			lua_pop(luas, 1);
+			lua_close(luas);
+			exit(EXIT_FAILURE);
+		}
+		exit(EXIT_SUCCESS);
+	} else {
+		int s;
+		waitpid(pid, &s, 0);
+		if (WIFEXITED(s)) {
+			if (WEXITSTATUS(s)) {
+				printf("+ failed to build %s, see "
+				       "%s/prometheus.log\n",
+				       pname, tmpd);
+				exit(EXIT_FAILURE);
+			}
+			printf("+ built %s\n", pname);
+		}
+	}
+}
 
 void
 copyfile(const char *s, const char *d)
@@ -372,10 +490,8 @@ void
 installpackage(char *pname, char *prefix)
 {
 	struct DependNode *deps, *dep;
-	struct StringNode *o, *outs, *r, *reqs, *pr, *preqs;
-	size_t bl, dbl, binl;
-	char *b, *db, *env, *bin;
-	pid_t pid;
+	struct StringNode *o, *outs;
+	char *env;
 
 	if (packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is already installed\n", pname);
@@ -396,122 +512,7 @@ installpackage(char *pname, char *prefix)
 	}
 	freedependllist(deps);
 
-	printf("- building %s\n", pname);
-	
-	/* / + /build.lua + \0 */
-	bl = strlen(pkgsrepodir) + strlen(pname) + 12;
-	if (!(b = malloc(bl))) {
-		free(env);
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(b, bl, "%s/%s/build.lua", pkgsrepodir, pname);
-
-	/* /prometheus.build.lua + \0 */
-	dbl = strlen(env) + 22;
-	if (!(db = malloc(dbl))) {
-		free(env);
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(db, dbl, "%s/prometheus.build.lua", env);
-
-	copyfile(b, db);
-	free(b);
-	free(db);
-
-	reqs = packagerequires(pname);
-	preqs = findinpath(reqs);
-
-	binl = strlen(env) + 5; /* /bin + \0 */
-	if (!(bin = malloc(binl))) {
-		free(env);
-		freestringllist(preqs);
-		freestringllist(reqs);
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(bin, binl, "%s/bin", env);
-	if (preqs && mkdir(bin, 0700) && errno != EEXIST) {
-		free(env);
-		freestringllist(preqs);
-		freestringllist(reqs);
-		perror("mkdir");
-		exit(EXIT_FAILURE);
-	}
-	free(bin);
-
-	for (r = reqs, pr = preqs; r && pr; r = r->n, pr = pr->n) {
-		char *d;
-		size_t dl = strlen(env) + strlen(r->v) + 6; /* /bin/ + \0 */
-		if (!(d = malloc(dl))) {
-			free(env);
-			freestringllist(preqs);
-			freestringllist(reqs);
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(d, dl, "%s/bin/%s", env, r->v);
-		copyfile(pr->v, d);
-		free(d);
-	}
-	freestringllist(preqs);
-	freestringllist(reqs);
-
-	if ((pid = fork()) < 0) {
-		free(env);
-		perror("fork");
-		exit(EXIT_FAILURE);
-	}
-
-	if (!pid) {
-		lua_State *luas;
-
-		if (chroot(env)) {
-			free(env);
-			perror("chroot");
-			exit(EXIT_FAILURE);
-		}
-
-		if(!(luas = luaL_newstate())) {
-			perror("luaL_newstate");
-			exit(EXIT_FAILURE);
-		}
-		luaL_openlibs(luas);
-
-		if (setenv("PATH", "/bin", 1)) {
-			perror("setenv");
-			exit(EXIT_FAILURE);
-		}
-
-		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
-			FILE *logf;
-			if (!(logf = fopen("/prometheus.log", "a"))) {
-				free(env);
-				perror("fopen");
-				exit(EXIT_FAILURE);
-			}
-			fprintf(logf, "%s\n", lua_tostring(luas, -1));
-			fclose(logf);
-			lua_pop(luas, 1);
-			lua_close(luas);
-			exit(EXIT_FAILURE);
-		}
-		exit(EXIT_SUCCESS);
-	} else {
-		int s;
-		waitpid(pid, &s, 0);
-		if (WIFEXITED(s)) {
-			if (WEXITSTATUS(s)) {
-				printf("+ failed to build %s, see "
-				       "%s/prometheus.log\n",
-				       pname, env);
-				free(env);
-				exit(EXIT_FAILURE);
-			}
-			printf("+ built %s\n", pname);
-		}
-	}
+	buildpackage(pname, env);
 
 	outs = packageouts(pname);
 	for (o = outs; o; o = o->n) {

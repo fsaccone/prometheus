@@ -29,7 +29,7 @@ uninstall:
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/$(BIN).1
 
 clean:
-	rm -f $(BIN) config.h
+	rm -f $(BIN) $(OBJS) config.h
 
 .PHONY:
 	clean install uninstall

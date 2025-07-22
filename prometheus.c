@@ -1303,8 +1303,8 @@ unsigned int
 urlisvalid(char *url)
 {
 	return (!strncmp(url, "http://", 7)
-	     && !strncmp(url, "https://", 8)
-	     && !strncmp(url, "ftp://", 6));
+	     || !strncmp(url, "https://", 8)
+	     || !strncmp(url, "ftp://", 6));
 }
 
 void

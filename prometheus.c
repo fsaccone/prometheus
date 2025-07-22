@@ -102,8 +102,7 @@ buildpackage(char *pname, const char *tmpd)
 	}
 	snprintf(pdir, pdirl, "%s/%s", pkgsrepodir, pname);
 
-	/* / + /build.lua + \0 */
-	bl = pdirl - 1 + 12;
+	bl = pdirl - 1 + 12; /* / + /build.lua + \0 */
 	if (!(b = malloc(bl))) {
 		free(pdir);
 		perror("malloc");
@@ -111,8 +110,7 @@ buildpackage(char *pname, const char *tmpd)
 	}
 	snprintf(b, bl, "%s/build.lua", pdir);
 
-	/* /prometheus.build.lua + \0 */
-	dbl = strlen(tmpd) + 22;
+	dbl = strlen(tmpd) + 22; /* /prometheus.build.lua + \0 */
 	if (!(db = malloc(dbl))) {
 		free(pdir);
 		free(b);

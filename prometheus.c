@@ -772,7 +772,7 @@ packagesources(char *pname)
 		char url[256],
 		     sha256[65],
 		     relpath[256];
-		uint8_t sha256bin[32];
+		uint8_t *sha256bin;
 		int nfields, i;
 		struct SourceNode *s = malloc(sizeof(struct SourceNode));
 
@@ -787,14 +787,9 @@ packagesources(char *pname)
 			    "sources",argv0, pname);
 		}
 		sha256[strcspn(sha256, "\n")] = '\0';
-		for (i = 0; i < 32; i++) {
-			if (sscanf(sha256 + 2 * i, "%2hhx",
-			           &sha256bin[i]) != 1) {
-				free(s);
-				die("%s: Invalid SHA256 format in one of %s's "
-				    "sources", argv0, pname);
-			}
-		}
+		sha256bin = sha256chartouint8(sha256);
+		memcpy(s->v.sha256, sha256bin, SHA256_DIGEST_LENGTH);
+		free(sha256bin);
 
 		if (!(s->v.url = malloc(strlen(url) + 1))) {
 			free(s);
@@ -803,8 +798,6 @@ packagesources(char *pname)
 		};
 		strcpy(s->v.url, url);
 		s->v.url[255] = '\0';
-
-		memcpy(s->v.sha256, sha256bin, sizeof(sha256bin));
 
 		if (nfields == 3) {
 			relpath[strcspn(relpath, "\n")] = '\0';

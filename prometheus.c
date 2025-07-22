@@ -950,6 +950,12 @@ packagesources(char *pname)
 
 		if (nfields == 3) {
 			relpath[strcspn(relpath, "\n")] = '\0';
+			if (!relpathisvalid(relpath)) {
+				free(s->v.url);
+				free(s);
+				die("%s: RELPATH %s is not valid",
+				    argv0, relpath);
+			}
 			if (!(s->v.relpath = malloc(strlen(relpath) + 1))) {
 				free(s->v.url);
 				free(s);

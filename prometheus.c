@@ -32,8 +32,8 @@ struct DependNode {
 };
 
 struct Source {
-	char *url;
 	uint8_t sha256[SHA256_DIGEST_LENGTH];
+	char *url;
 	char *relpath;
 };
 
@@ -461,8 +461,8 @@ freesourcellist(struct SourceNode *n)
 {
 	while (n) {
 		struct SourceNode *nn = n->n;
-		free(n->v.url);
 		free(n->v.sha256);
+		free(n->v.url);
 		free(n->v.relpath);
 		free(n);
 		n = nn;
@@ -778,28 +778,28 @@ packagesources(char *pname)
 	l = readlines(f);
 
 	for (; l; l = l->n) {
-		char url[256],
-		     sha256[65],
+		char sha256[65],
+		     url[256],
 		     relpath[256];
 		uint8_t *sha256bin;
 		int nfields, i;
 		struct SourceNode *s = malloc(sizeof(struct SourceNode));
 
-		url[0] = '\0';
 		sha256[0] = '\0';
+		url[0] = '\0';
 		relpath[0] = '\0';
 
-		if ((nfields = sscanf(l->v, "%255s %64s %255s",
-		                     url, sha256, relpath)) < 2) {
+		if ((nfields = sscanf(l->v, "%64s %255s %255s",
+		                     sha256, url, relpath)) < 2) {
 			free(s);
 			die("%s: URL or SHA256 not present in one of %s's "
 			    "sources",argv0, pname);
 		}
-		sha256[strcspn(sha256, "\n")] = '\0';
 		sha256bin = sha256chartouint8(sha256);
 		memcpy(s->v.sha256, sha256bin, SHA256_DIGEST_LENGTH);
 		free(sha256bin);
 
+		url[strcspn(url, "\n")] = '\0';
 		if (!(s->v.url = malloc(strlen(url) + 1))) {
 			free(s);
 			perror("malloc");

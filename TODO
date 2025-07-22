@@ -57,7 +57,7 @@ sources
 
 Each line of the sources file must be of the following format:
 
-	URL SHA256 [RELPATH]
+	SHA256 URL [RELPATH]
 
 A valid URL is the relative path to a file in the package directory, a
 HTTP/HTTPS address or a FTP address.

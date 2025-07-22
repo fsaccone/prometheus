@@ -1,4 +1,6 @@
 /* See LICENSE file for copyright and license details. */
+#define PROJECTNAME "Prometheus"
+#define VERSION     "0.1"
 
 /* the directory containing the package repository */
 static char *const pkgsrepodir = "/opt/olympus";

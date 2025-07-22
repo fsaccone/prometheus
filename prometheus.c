@@ -14,6 +14,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <curl/curl.h>
+
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -54,9 +56,11 @@ static void copyrequires(struct StringNode *reqs, const char *tmpd);
 static void copysources(struct SourceNode *srcs, const char *pdir,
                         const char *tmpd);
 static char *createtmpdir(char *pname);
+static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
 static char *expandtilde(const char *f);
+static void fetchfile(const char *url, const char *f);
 static unsigned int fileexists(const char *f);
 static struct StringNode *findinpath(struct StringNode *reqs);
 static char *followsymlink(const char *f);
@@ -429,6 +433,12 @@ createtmpdir(char *pname)
 	return dir;
 }
 
+size_t
+curlwrite(void *d, size_t dl, size_t n, FILE *f)
+{
+	return fwrite(d, dl, n, f);
+}
+
 void
 die(const char *m, ...)
 {
@@ -476,6 +486,37 @@ expandtilde(const char *f)
 	strcat(res, f + 1); /* skip ~ */
 
 	return res;
+}
+
+void
+fetchfile(const char *url, const char *f)
+{
+	CURL *c;
+	CURLcode cc;
+	FILE *ff;
+
+	if (!(c = curl_easy_init()))
+		die("curl: failed to initialize");
+
+	if (!(ff = fopen(f, "wb"))) {
+		curl_easy_cleanup(c);
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
+
+	curl_easy_setopt(c, CURLOPT_URL, url);
+	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlwrite);
+	curl_easy_setopt(c, CURLOPT_WRITEDATA, ff);
+	curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
+
+	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
+		fclose(ff);
+		curl_easy_cleanup(c);
+		die("curl: %s", curl_easy_strerror(cc));
+	}
+
+	fclose(ff);
+	curl_easy_cleanup(c);
 }
 
 unsigned int

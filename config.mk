@@ -4,4 +4,4 @@ MANPREFIX = $(PREFIX)/share/man
 CC = cc
 CFLAGS = -Wall -Wextra -Wpedantic
 LDFLAGS = -s
-LIBS = -llua
+LIBS = -lcurl -llua

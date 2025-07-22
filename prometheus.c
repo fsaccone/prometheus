@@ -1107,7 +1107,8 @@ readlines(const char *f)
 unsigned int
 relpathisvalid(char *relpath)
 {
-	return (!strstr(relpath, "..") && relpath[0] != '/'
+	return (!strstr(relpath, "..") && !strstr(relpath, ":")
+	                               && relpath[0] != '/'
 	                               && relpath[0] != '.');
 }
 

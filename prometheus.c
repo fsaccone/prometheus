@@ -125,7 +125,7 @@ buildpackage(char *pname, const char *tmpd)
 
 	reqs = packagerequires(pname);
 	copyrequires(reqs, tmpd);
-	free(reqs);
+	freestringllist(reqs);
 
 	if ((pid = fork()) < 0) {
 		perror("fork");

@@ -49,6 +49,7 @@ struct StringNode {
 
 static void buildpackage(char *pname, const char *tmpd);
 static void copyfile(const char *s, const char *d);
+static void copyrequires(struct StringNode *reqs, const char *tmpd);
 static char *createtmpdir(char *pname);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
@@ -84,9 +85,9 @@ static void usage(void);
 void
 buildpackage(char *pname, const char *tmpd)
 {
-	char *b, *db, *bin;
-	size_t bl, dbl, binl;
-	struct StringNode *r, *reqs, *pr, *preqs;
+	char *b, *db;
+	size_t bl, dbl;
+	struct StringNode *reqs;
 	pid_t pid;
 
 	printf("- building %s\n", pname);
@@ -112,39 +113,8 @@ buildpackage(char *pname, const char *tmpd)
 	free(db);
 
 	reqs = packagerequires(pname);
-	preqs = findinpath(reqs);
-
-	binl = strlen(tmpd) + 5; /* /bin + \0 */
-	if (!(bin = malloc(binl))) {
-		freestringllist(preqs);
-		freestringllist(reqs);
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(bin, binl, "%s/bin", tmpd);
-	if (preqs && mkdir(bin, 0700) && errno != EEXIST) {
-		freestringllist(preqs);
-		freestringllist(reqs);
-		perror("mkdir");
-		exit(EXIT_FAILURE);
-	}
-	free(bin);
-
-	for (r = reqs, pr = preqs; r && pr; r = r->n, pr = pr->n) {
-		char *d;
-		size_t dl = strlen(tmpd) + strlen(r->v) + 6; /* /bin/ + \0 */
-		if (!(d = malloc(dl))) {
-			freestringllist(preqs);
-			freestringllist(reqs);
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(d, dl, "%s/bin/%s", tmpd, r->v);
-		copyfile(pr->v, d);
-		free(d);
-	}
-	freestringllist(preqs);
-	freestringllist(reqs);
+	copyrequires(reqs, tmpd);
+	free(reqs);
 
 	if ((pid = fork()) < 0) {
 		perror("fork");
@@ -228,6 +198,44 @@ copyfile(const char *s, const char *d)
 
 	close(sfd);
 	close(dfd);
+}
+
+void
+copyrequires(struct StringNode *reqs, const char *tmpd)
+{
+	char *bin;
+	size_t binl;
+	struct StringNode *preqs, *r, *pr;
+
+	preqs = findinpath(reqs);
+
+	binl = strlen(tmpd) + 5; /* /bin + \0 */
+	if (!(bin = malloc(binl))) {
+		freestringllist(preqs);
+		perror("malloc");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(bin, binl, "%s/bin", tmpd);
+	if (preqs && mkdir(bin, 0700) && errno != EEXIST) {
+		freestringllist(preqs);
+		perror("mkdir");
+		exit(EXIT_FAILURE);
+	}
+	free(bin);
+
+	for (r = reqs, pr = preqs; r && pr; r = r->n, pr = pr->n) {
+		char *d;
+		size_t dl = strlen(tmpd) + strlen(r->v) + 6; /* /bin/ + \0 */
+		if (!(d = malloc(dl))) {
+			freestringllist(preqs);
+			perror("malloc");
+			exit(EXIT_FAILURE);
+		}
+		snprintf(d, dl, "%s/bin/%s", tmpd, r->v);
+		copyfile(pr->v, d);
+		free(d);
+	}
+	freestringllist(preqs);
 }
 
 char *

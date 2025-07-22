@@ -937,7 +937,6 @@ packagesources(char *pname)
 
 		url[strcspn(url, "\n")] = '\0';
 		if (!(s->v.url = malloc(strlen(url) + 1))) {
-			free(s->v.sha256);
 			free(s);
 			perror("malloc");
 			exit(EXIT_FAILURE);
@@ -949,7 +948,6 @@ packagesources(char *pname)
 			relpath[strcspn(relpath, "\n")] = '\0';
 			if (!(s->v.relpath = malloc(strlen(relpath) + 1))) {
 				free(s->v.url);
-				free(s->v.sha256);
 				free(s);
 				perror("malloc");
 				exit(EXIT_FAILURE);

@@ -474,7 +474,7 @@ freesourcellist(struct SourceNode *n)
 		struct SourceNode *nn = n->n;
 		free(n->v.sha256);
 		free(n->v.url);
-		free(n->v.relpath);
+		if (n->v.relpath) free(n->v.relpath);
 		free(n);
 		n = nn;
 	}

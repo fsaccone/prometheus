@@ -139,6 +139,7 @@ buildpackage(char *pname, const char *tmpd)
 
 	if (!pid) {
 		lua_State *luas;
+		int logf;
 
 		if (chroot(tmpd)) {
 			perror("chroot");
@@ -151,19 +152,28 @@ buildpackage(char *pname, const char *tmpd)
 		}
 		luaL_openlibs(luas);
 
+		if (!(logf = open("/prometheus.log", O_WRONLY, 0700))) {
+			perror("fopen");
+			exit(EXIT_FAILURE);
+		}
+		if (dup2(logf, STDOUT_FILENO) == -1) {
+			perror("dup2");
+			close(logf);
+			exit(EXIT_FAILURE);
+		}
+		if (dup2(logf, STDERR_FILENO) == -1) {
+			perror("dup2");
+			close(logf);
+			exit(EXIT_FAILURE);
+		}
+		close(logf);
+
 		if (setenv("PATH", "/bin", 1)) {
 			perror("setenv");
 			exit(EXIT_FAILURE);
 		}
 
 		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
-			FILE *logf;
-			if (!(logf = fopen("/prometheus.log", "a"))) {
-				perror("fopen");
-				exit(EXIT_FAILURE);
-			}
-			fprintf(logf, "%s\n", lua_tostring(luas, -1));
-			fclose(logf);
 			lua_pop(luas, 1);
 			lua_close(luas);
 			exit(EXIT_FAILURE);

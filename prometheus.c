@@ -228,6 +228,7 @@ copyrequires(struct StringNode *reqs, const char *tmpd)
 	}
 	snprintf(bin, binl, "%s/bin", tmpd);
 	if (preqs && mkdir(bin, 0700) && errno != EEXIST) {
+		free(bin);
 		freestringllist(preqs);
 		perror("mkdir");
 		exit(EXIT_FAILURE);
@@ -275,11 +276,13 @@ createtmpdir(char *pname)
 
 	logl = strlen(dir) + 16; /* /prometheus.log + \0 */
 	if (!(log = malloc(logl))) {
+		free(dir);
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
 	snprintf(log, logl, "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
+		free(dir);
 		free(log);
 		perror("open");
 		exit(EXIT_FAILURE);
@@ -812,6 +815,7 @@ packagesources(char *pname)
 
 		url[strcspn(url, "\n")] = '\0';
 		if (!(s->v.url = malloc(strlen(url) + 1))) {
+			free(s->v.sha256);
 			free(s);
 			perror("malloc");
 			exit(EXIT_FAILURE);
@@ -823,6 +827,7 @@ packagesources(char *pname)
 			relpath[strcspn(relpath, "\n")] = '\0';
 			if (!(s->v.relpath = malloc(strlen(relpath) + 1))) {
 				free(s->v.url);
+				free(s->v.sha256);
 				free(s);
 				perror("malloc");
 				exit(EXIT_FAILURE);

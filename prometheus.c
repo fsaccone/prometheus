@@ -3,6 +3,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <libgen.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -276,6 +277,8 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 	struct SourceNode *s;
 
 	for (s = srcs; s; s = s->n) {
+		char *b = basename(s->v.url);
+
 		if (relpathisvalid(s->v.url)) {
 			char *sf, *df;
 			size_t sfl, dfl;
@@ -288,13 +291,13 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 			}
 			snprintf(sf, sfl, "%s/%s", pdir, s->v.url);
 
-			dfl = strlen(tmpd) + strlen(s->v.url) + 6; /* /src/ + \0 */
+			dfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
 			if (!(df = malloc(dfl))) {
 				free(sf);
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			snprintf(df, dfl, "%s/src/%s", tmpd, s->v.url);
+			snprintf(df, dfl, "%s/src/%s", tmpd, b);
 
 			h = sha256hash(sf);
 			if (memcmp(h, s->v.sha256, SHA256_DIGEST_LENGTH)) {

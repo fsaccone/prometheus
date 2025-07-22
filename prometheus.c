@@ -525,6 +525,9 @@ fetchfile(const char *url, const char *f)
 	CURLcode cc;
 	FILE *ff;
 	long r;
+	char ua[sizeof(PROJECTNAME) + sizeof(VERSION)]; /* -2^\0 +/ +\0 */
+
+	snprintf(ua, sizeof(ua), "%s/%s", PROJECTNAME, VERSION);
 
 	if (!(c = curl_easy_init()))
 		die("curl: failed to initialize");
@@ -539,6 +542,7 @@ fetchfile(const char *url, const char *f)
 	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlwrite);
 	curl_easy_setopt(c, CURLOPT_WRITEDATA, ff);
 	curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(c, CURLOPT_USERAGENT, ua);
 
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);

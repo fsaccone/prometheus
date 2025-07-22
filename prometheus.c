@@ -173,6 +173,11 @@ buildpackage(char *pname, const char *tmpd)
 			exit(EXIT_FAILURE);
 		}
 
+		if (chdir("/src")) {
+			perror("chdir");
+			exit(EXIT_FAILURE);
+		}
+
 		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
 			lua_pop(luas, 1);
 			lua_close(luas);

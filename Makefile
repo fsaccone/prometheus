@@ -9,11 +9,11 @@ OBJS = $(SRCS:.c=.o)
 
 all: $(BIN)
 
-$(BIN): $(OBJS) config.h
+$(BIN): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $^
+%.o: %.c config.h
+	$(CC) $(CFLAGS) -o $@ -c $<
 
 config.h: config.def.h
 	cp $^ $@

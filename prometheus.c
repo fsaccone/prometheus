@@ -50,6 +50,8 @@ struct StringNode {
 static void buildpackage(char *pname, const char *tmpd);
 static void copyfile(const char *s, const char *d);
 static void copyrequires(struct StringNode *reqs, const char *tmpd);
+static void copysources(struct SourceNode *srcs, const char *pdir,
+                        const char *tmpd);
 static char *createtmpdir(char *pname);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
@@ -88,6 +90,7 @@ buildpackage(char *pname, const char *tmpd)
 	char *pdir, *b, *db;
 	size_t pdirl, bl, dbl;
 	struct StringNode *reqs;
+	struct SourceNode *srcs;
 	pid_t pid;
 
 	printf("- building %s\n", pname);
@@ -119,13 +122,17 @@ buildpackage(char *pname, const char *tmpd)
 	snprintf(db, dbl, "%s/prometheus.build.lua", tmpd);
 
 	copyfile(b, db);
-	free(pdir);
 	free(b);
 	free(db);
 
 	reqs = packagerequires(pname);
 	copyrequires(reqs, tmpd);
 	freestringllist(reqs);
+
+	srcs = packagesources(pname);
+	copysources(srcs, pdir, tmpd);
+	freesourcellist(srcs);
+	free(pdir);
 
 	if ((pid = fork()) < 0) {
 		perror("fork");
@@ -248,6 +255,59 @@ copyrequires(struct StringNode *reqs, const char *tmpd)
 		free(d);
 	}
 	freestringllist(preqs);
+}
+
+void
+copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
+{
+	struct SourceNode *s;
+
+	for (s = srcs; s; s = s->n) {
+		if (relpathisvalid(s->v.url)) {
+			char *sf, *df;
+			size_t sfl, dfl;
+			uint8_t *h;
+
+			sfl = strlen(pdir) + strlen(s->v.url) + 2; /* / + \0 */
+			if (!(sf = malloc(sfl))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			snprintf(sf, sfl, "%s/%s", pdir, s->v.url);
+
+			dfl = strlen(tmpd) + strlen(s->v.url) + 6; /* /src/ + \0 */
+			if (!(df = malloc(dfl))) {
+				free(sf);
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			snprintf(df, dfl, "%s/src/%s", tmpd, s->v.url);
+
+			h = sha256hash(sf);
+			if (memcmp(h, s->v.sha256, SHA256_DIGEST_LENGTH)) {
+				char *eh, *gh;
+
+				eh = sha256uint8tochar(h);
+				gh = sha256uint8tochar(s->v.sha256);
+				free(h);
+
+				printf("+ hash of %s does not match:\n",
+				       s->v.url);
+				printf("  expected: %s\n", eh);
+				printf("  got:      %s\n", gh);
+
+				free(sf);
+				free(df);
+				free(eh);
+				free(gh);
+				exit(EXIT_FAILURE);
+			}
+			copyfile(sf, df);
+			free(h);
+			free(sf);
+			free(df);
+		}
+	}
 }
 
 char *

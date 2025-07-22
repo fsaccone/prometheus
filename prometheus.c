@@ -524,6 +524,7 @@ fetchfile(const char *url, const char *f)
 	CURL *c;
 	CURLcode cc;
 	FILE *ff;
+	long r;
 
 	if (!(c = curl_easy_init()))
 		die("curl: failed to initialize");
@@ -543,6 +544,16 @@ fetchfile(const char *url, const char *f)
 		fclose(ff);
 		curl_easy_cleanup(c);
 		die("curl: %s", curl_easy_strerror(cc));
+	}
+
+	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
+
+	if (r >= 400) {
+		printf("+ failed to fetch URL %s: response code is %ld\n",
+		       url, r);
+		fclose(ff);
+		curl_easy_cleanup(c);
+		exit(EXIT_FAILURE);
 	}
 
 	fclose(ff);

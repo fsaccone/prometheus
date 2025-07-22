@@ -890,7 +890,8 @@ readlines(const char *f)
 unsigned int
 relpathisvalid(char *relpath)
 {
-	return (!strstr(relpath, "..") && relpath[0] != '/');
+	return (!strstr(relpath, "..") && relpath[0] != '/'
+	                               && relpath[0] != '.');
 }
 
 uint8_t *

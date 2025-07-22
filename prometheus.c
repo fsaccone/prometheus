@@ -299,6 +299,10 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 			}
 			snprintf(df, dfl, "%s/src/%s", tmpd, b);
 
+			if (!fileexists(sf))
+				die("%s: URL %s does not exist",
+				    argv0, s->v.url);
+
 			h = sha256hash(sf);
 			if (memcmp(h, s->v.sha256, SHA256_DIGEST_LENGTH)) {
 				char *eh, *gh;

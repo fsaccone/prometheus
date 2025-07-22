@@ -936,6 +936,10 @@ packagesources(char *pname)
 		free(sha256bin);
 
 		url[strcspn(url, "\n")] = '\0';
+		if (!relpathisvalid(url) && !urlisvalid(url)) {
+			free(s);
+			die("%s: URL %s is not valid", argv0, url);
+		}
 		if (!(s->v.url = malloc(strlen(url) + 1))) {
 			free(s);
 			perror("malloc");

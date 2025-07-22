@@ -283,7 +283,37 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 	for (s = srcs; s; s = s->n) {
 		char *b = basename(s->v.url);
 
-		if (relpathisvalid(s->v.url)) {
+		if (urlisvalid(s->v.url)) {
+			char *df;
+			size_t dfl;
+			uint8_t *h;
+
+			dfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
+			if (!(df = malloc(dfl))) {
+				perror("malloc");
+				exit(EXIT_FAILURE);
+			}
+			snprintf(df, dfl, "%s/src/%s", tmpd, b);
+
+			fetchfile(s->v.url, df);
+
+			h = sha256hash(df);
+			free(df);
+			if (memcmp(h, s->v.sha256, SHA256_DIGEST_LENGTH)) {
+				char *eh, *gh;
+
+				eh = sha256uint8tochar(h);
+				gh = sha256uint8tochar(s->v.sha256);
+				free(h);
+
+				printf("+ hash of %s does not match:\n",
+				       s->v.url);
+				printf("  expected: %s\n", eh);
+				printf("  got:      %s\n", gh);
+
+				exit(EXIT_FAILURE);
+			}
+		} else if (relpathisvalid(s->v.url)) {
 			char *sf, *df;
 			size_t sfl, dfl;
 			uint8_t *h;

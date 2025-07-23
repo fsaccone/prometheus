@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include <lua.h>
 #include <lauxlib.h>
@@ -51,6 +52,20 @@ lua_exec(lua_State *luas)
 			luaL_error(luas, "exec %s: failed with exit status %d",
 			                 c, s);
 	}
+
+	lua_pushboolean(luas, 1);
+
+	return 1;
+}
+
+int
+lua_mkdir(lua_State *luas)
+{
+	const char *d = luaL_checkstring(luas, 1);
+	int r;
+
+	if ((r = mkdir(d, 0700)))
+		luaL_error(luas, "mkdir %s: %s", d, strerror(errno));
 
 	lua_pushboolean(luas, 1);
 

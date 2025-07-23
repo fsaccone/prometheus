@@ -1200,6 +1200,11 @@ main(int argc, char *argv[])
 		printinstalled(prefix, pkgs);
 	}
 
+	if (printall) {
+		struct Packages pkgs = getpackages();
+		printpackages(pkgs);
+	}
+
 	/* will not be evaluated when printinst is 1 */
 	for (; *argv; argc--, argv++) {
 		if (!packageexists(*argv))

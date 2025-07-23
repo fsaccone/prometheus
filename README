@@ -1,7 +1,7 @@
 Prometheus
 ==========
 
-The package manager of the Arcadia Linux distribution.
+Simple package manager for POSIX systems.
 
 The main package repository is Olympus, available at
 <git://git.francescosaccone.com/olympus>.

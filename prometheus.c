@@ -1115,15 +1115,18 @@ urlisvalid(char *url)
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-u [-r]] [-p prefix] package ...\n"
-	                "       %s -l [-p prefix]", argv0, argv0);
+	fprintf(stderr, "usage: %s -i [-p prefix] package ...\n"
+	                "       %s -u [-p prefix] [-r]  package ...\n"
+	                "       %s -l [-p prefix]\n",
+	                argv0, argv0, argv0);
 	exit(EXIT_FAILURE);
 }
 
 int
 main(int argc, char *argv[])
 {
-	int uninstall = 0,
+	int install = 0,
+	    uninstall = 0,
 	    recuninstall = 0,
 	    printinst = 0;
 	char prefix[PATH_MAX] = DEFAULT_PREFIX;
@@ -1135,6 +1138,9 @@ main(int argc, char *argv[])
 	}
 
 	ARGBEGIN {
+	case 'i':
+		install = 1;
+		break;
 	case 'l':
 		printinst = 1;
 		break;
@@ -1158,7 +1164,7 @@ main(int argc, char *argv[])
 	if (!printinst && !argc)
 		usage();
 
-	if (printinst && uninstall)
+	if (install + printinst + uninstall != 1)
 		usage();
 
 	if (recuninstall && !uninstall)

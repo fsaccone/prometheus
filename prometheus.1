@@ -6,8 +6,13 @@
 .Nd Simple package manager for Arcadia.
 .Sh SYNOPSIS
 .Nm
-.Op Fl u Op Fl r
+.Fl i
 .Op Fl p Ar prefix
+.Ar package ...
+.Nm
+.Fl u
+.Op Fl p Ar prefix
+.Op Fl r
 .Ar package ...
 .Nm
 .Fl l
@@ -19,17 +24,19 @@ a package repository as defined in the README file of the source tree of
 .Nm .
 .Sh OPTIONS
 .Bl -tag -width Ds
+.It Fl i
+Install
+.Ar package .
 .It Fl u
 Uninstall
 .Ar package .
-The default is to install it.
+.It Fl l
+List installed packages.
 .It Fl r
 Uninstall
 .Ar package
 and all its dependencies. Requires
 .Fl u .
-.It Fl l
-List installed packages.
 .It Fl p Ar prefix
 Use
 .Ar prefix

@@ -965,9 +965,10 @@ packagesources(char *pname)
 	l = readlines(f);
 
 	for (i = 0; i < l.l; i++) {
-		char sha256[65],
+		char sha256[2 * SHA256_DIGEST_LENGTH + 1],
 		     url[PATH_MAX],
-		     relpath[PATH_MAX];
+		     relpath[PATH_MAX],
+		     *tok;
 		uint8_t *sha256bin;
 		int nfields;
 
@@ -975,10 +976,40 @@ packagesources(char *pname)
 		url[0] = '\0';
 		relpath[0] = '\0';
 
-		if ((nfields = sscanf(l.a[i], "%64s %255s %255s",
-		                      sha256, url, relpath)) < 2)
-			die("%s: URL or SHA256 not present in one of %s's "
-			    "sources",argv0, pname);
+		tok = strtok(l.a[i], " \t\n");
+		while (tok && nfields < 3) {
+			switch (nfields) {
+			case 0:
+				if (2 * SHA256_DIGEST_LENGTH != strlen(tok))
+					die("%s: SHA256 is not valid", argv0);
+				strncpy(sha256, tok, 2 * SHA256_DIGEST_LENGTH);
+				sha256[2 * SHA256_DIGEST_LENGTH] = '\0';
+				break;
+			case 1:
+				if (PATH_MAX <= strlen(tok))
+					die("%s: PATH_MAX exceeded", argv0);
+				strncpy(url, tok, PATH_MAX);
+				url[PATH_MAX - 1] = '\0';
+				break;
+			case 2:
+				if (PATH_MAX <= strlen(tok))
+					die("%s: PATH_MAX exceeded", argv0);
+				strncpy(relpath, tok, PATH_MAX);
+				sha256[PATH_MAX - 1] = '\0';
+				break;
+			default:
+			}
+			nfields++;
+			tok = strtok(NULL, " \t\n");
+		}
+
+		if (nfields < 1)
+			die("%s: SHA256 not present in one of %s's sources",
+			    argv0, pname);
+		else if (nfields < 2)
+			die("%s: URL not present in one of %s's sources",
+			    argv0, pname);
+
 		sha256bin = sha256chartouint8(sha256);
 		memcpy(srcs.a[i].sha256, sha256bin, SHA256_DIGEST_LENGTH);
 		free(sha256bin);

@@ -29,7 +29,7 @@
                       MAX(REQUIRES_MAX, SOURCES_MAX))
 
 struct Depend {
-	char *pname;
+	char pname[PROGRAM_MAX];
 	unsigned int runtime;
 };
 
@@ -687,7 +687,6 @@ freedependllist(struct DependNode *n)
 {
 	while (n) {
 		struct DependNode *nn = n->n;
-		free(n->v.pname);
 		free(n);
 		n = nn;
 	}
@@ -916,19 +915,15 @@ packagedepends(char *pname)
 		}
 
 		dname[strcspn(dname, "\n")] = '\0';
-		if (!(d->v.pname = malloc(strlen(dname) + 1))) {
-			free(d);
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		};
-		strcpy(d->v.pname, dname);
+		if (PROGRAM_MAX <= strlen(dname))
+			die("%s: PROGRAM_MAX exceeded", argv0);
+		strncpy(d->v.pname, dname, PROGRAM_MAX);
 		d->v.pname[65] = '\0';
 		if (nfields < 2) {
 			d->v.runtime = 0;
 		} else if (!strcmp(sndfield, "runtime")) {
 			d->v.runtime = 1;
 		} else {
-			free(d->v.pname);
 			free(d);
 			die("%s: the second field in one of %s's depends is "
 			    "something different than runtime", argv0, pname);

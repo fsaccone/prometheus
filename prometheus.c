@@ -34,6 +34,11 @@ struct DependNode {
 	struct DependNode *n;
 };
 
+struct Outs {
+	char a[OUTS_MAX][PATH_MAX];
+	size_t l;
+};
+
 struct Requires {
 	char a[REQUIRES_MAX][PROGRAM_MAX];
 	size_t l;
@@ -79,7 +84,7 @@ static void mkdirrecursive(const char *d);
 static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
 static struct DependNode *packagedepends(char *pname);
-static struct StringNode *packageouts(char *pname);
+static struct Outs packageouts(char *pname);
 static struct Requires packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
@@ -710,8 +715,9 @@ void
 installpackage(char *pname, char *prefix)
 {
 	struct DependNode *deps, *dep;
-	struct StringNode *o, *outs;
+	struct Outs outs;
 	char *env;
+	int i;
 
 	if (packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is already installed\n", pname);
@@ -735,22 +741,20 @@ installpackage(char *pname, char *prefix)
 	buildpackage(pname, env);
 
 	outs = packageouts(pname);
-	for (o = outs; o; o = o->n) {
+	for (i = 0; i < outs.l; i++) {
 		char *s, *d;
-		size_t ss = strlen(env) + strlen(o->v) + 1,
-		       ds = strlen(prefix) + strlen(o->v) + 1;
+		size_t ss = strlen(env) + strlen(outs.a[i]) + 1,
+		       ds = strlen(prefix) + strlen(outs.a[i]) + 1;
 
 		if (!(s = malloc(ss))) {
 			free(env);
-			freestringllist(outs);
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
-		snprintf(s, ss, "%s%s", env, o->v);
+		snprintf(s, ss, "%s%s", env, outs.a[i]);
 
 		if (!fileexists(s)) {
 			free(env);
-			freestringllist(outs);
 			die("%s: file %s in %s's outs in was not installed",
 			    argv0, s, pname);
 			free(s);
@@ -760,18 +764,16 @@ installpackage(char *pname, char *prefix)
 		if (!(d = malloc(ds))) {
 			free(s);
 			free(env);
-			freestringllist(outs);
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
-		snprintf(d, ds, "%s%s", prefix, o->v);
+		snprintf(d, ds, "%s%s", prefix, outs.a[i]);
 
 		copyfile(s, d);
 		free(s);
 		free(d);
 	}
 	free(env);
-	freestringllist(outs);
 }
 
 struct StringNode *
@@ -862,12 +864,13 @@ packageexists(char *pname)
 unsigned int
 packageisinstalled(char *pname, char *prefix)
 {
-	struct StringNode *o = packageouts(pname);
+	struct Outs outs = packageouts(pname);
+	int i;
 
-	for (; o; o = o->n) {
-		size_t fl = strlen(prefix) + strlen(o->v) + 2; /* / + \0 */
+	for (i = 0; i < outs.l; i++) {
+		size_t fl = strlen(prefix) + strlen(outs.a[i]) + 2; /* / + \0 */
 		char *f = malloc(fl);
-		snprintf(f, fl, "%s/%s", prefix, o->v);
+		snprintf(f, fl, "%s/%s", prefix, outs.a[i]);
 		if (!fileexists(f)) {
 			free(f);
 			return 0;
@@ -935,16 +938,18 @@ packagedepends(char *pname)
 	return head;
 }
 
-struct StringNode *
+struct Outs
 packageouts(char *pname)
 {
+	struct Outs outs;
+	size_t i;
 	struct StringNode *ls, *l;
 	char f[1024];
 
 	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
 	ls = readlines(f);
 
-	for (l = ls; l; l = l->n) {
+	for (l = ls; l; l = l->n, i++) {
 		if (l->v[0] == '\0') {
 			freestringllist(ls);
 			die("%s: empty path found in %s's outs", argv0, pname);
@@ -955,9 +960,13 @@ packageouts(char *pname)
 			die("%s: non-absolute path found in %s's outs",
 			    argv0, pname);
 		}
-	}
 
-	return ls;
+		strncpy(outs.a[i], l->v, PATH_MAX);
+	}
+	outs.l = i;
+
+	freestringllist(ls);
+	return outs;
 }
 
 struct Requires
@@ -1206,7 +1215,9 @@ void
 uninstallpackage(char *pname, char *prefix, unsigned int rec,
                  struct StringNode *pkgs)
 {
-	struct StringNode *idep, *ideps = NULL, *pkg, *out;
+	struct StringNode *idep, *ideps = NULL, *pkg;
+	struct Outs outs;
+	int i;
 
 	if (!packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is not installed\n", pname);
@@ -1275,8 +1286,8 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	}
 
 	printf("- uninstalling %s\n", pname);
-	for (out = packageouts(pname); out; out = out->n) {
-		size_t fl = strlen(prefix) + strlen(out->v) + 2; /* / + \0 */
+	for (i = 0; i < outs.l; i++) {
+		size_t fl = strlen(prefix) + strlen(outs.a[i]) + 2; /* / + \0 */
 		char *f;
 
 		if (!(f = malloc(fl))) {
@@ -1284,7 +1295,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
-		snprintf(f, fl, "%s/%s", prefix, out->v);
+		snprintf(f, fl, "%s/%s", prefix, outs.a[i]);
 
 		if (!fileexists(f)) {
 			free(f);

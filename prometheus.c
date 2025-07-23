@@ -79,15 +79,15 @@ static void copyfile(const char *s, const char *d);
 static void copyrequires(struct Requires reqs, const char *tmpd);
 static void copysources(struct Sources srcs, const char *pdir,
                         const char *tmpd);
-static char *createtmpdir(char *pname);
+static void createtmpdir(char *pname, char dir[PATH_MAX]);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
-static char *expandtilde(const char *f);
+static void expandtilde(const char *f, char ef[PATH_MAX]);
 static void fetchfile(const char *url, const char *f);
 static unsigned int fileexists(const char *f);
 static struct RequiresPath findinpath(struct Requires reqs);
-static char *followsymlink(const char *f);
+static void followsymlink(const char *f, char ff[PATH_MAX]);
 static struct Packages getpackages(void);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix);
@@ -115,48 +115,32 @@ static void usage(void);
 void
 buildpackage(char *pname, const char *tmpd)
 {
-	char *pdir, *b, *db;
-	size_t pdirl, bl, dbl;
+	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX];
 	struct Requires reqs;
 	struct Sources srcs;
 	pid_t pid;
 
-	pdirl = strlen(pkgsrepodir) + strlen(pname) + 2; /* / + \0 */
-	if (!(pdir = malloc(pdirl))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(pdir, pdirl, "%s/%s", pkgsrepodir, pname);
+	if (PATH_MAX <= strlen(pkgsrepodir) + strlen("/") + strlen(pname))
+		die("%s: PATH_MAX exceeded", argv0);
+	snprintf(pdir, sizeof(pdir), "%s/%s", pkgsrepodir, pname);
 
-	bl = pdirl - 1 + 12; /* / + /build.lua + \0 */
-	if (!(b = malloc(bl))) {
-		free(pdir);
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(b, bl, "%s/build.lua", pdir);
+	if (PATH_MAX <= strlen(pdir) + strlen("/build.lua"))
+		die("%s: PATH_MAX exceeded", argv0);
+	snprintf(b, sizeof(b), "%s/build.lua", pdir);
 
-	dbl = strlen(tmpd) + 22; /* /prometheus.build.lua + \0 */
-	if (!(db = malloc(dbl))) {
-		free(pdir);
-		free(b);
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(db, dbl, "%s/prometheus.build.lua", tmpd);
+	if (PATH_MAX <= strlen(tmpd) + strlen("/prometheus.build.lua"))
+		die("%s: PATH_MAX exceeded", argv0);
+	snprintf(db, sizeof(db), "%s/prometheus.build.lua", tmpd);
 
 	copyfile(b, db);
-	free(b);
-	free(db);
 
 	reqs = packagerequires(pname);
+	printf("- copying %s's sources\n", pname);
 	copyrequires(reqs, tmpd);
 
 	srcs = packagesources(pname);
-	printf("- copying %s's sources\n", pname);
 	copysources(srcs, pdir, tmpd);
 	printf("+ copied %s's sources\n", pname);
-	free(pdir);
 
 	if ((pid = fork()) < 0) {
 		perror("fork");
@@ -231,17 +215,15 @@ void
 copyfile(const char *s, const char *d)
 {
 	int sfd, dfd;
-	char buf[1024], *syms;
+	char buf[1024], syms[PATH_MAX];
 	ssize_t b;
 
-	syms = followsymlink(s);
+	followsymlink(s, syms);
 
 	if ((sfd = open(syms, O_RDONLY)) == -1) {
-		free(syms);
 		perror("open");
 		exit(EXIT_FAILURE);
 	}
-	free(syms);
 
 	if (strrchr(d, '/')) mkdirrecursive(d);
 
@@ -262,36 +244,27 @@ copyfile(const char *s, const char *d)
 void
 copyrequires(struct Requires reqs, const char *tmpd)
 {
-	char *bin;
-	size_t binl;
+	char bin[PATH_MAX];
 	struct RequiresPath preqs;
 	int i;
 
 	preqs = findinpath(reqs);
 
-	binl = strlen(tmpd) + 5; /* /bin + \0 */
-	if (!(bin = malloc(binl))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(bin, binl, "%s/bin", tmpd);
+	if (PATH_MAX <= strlen(tmpd) + strlen("/bin"))
+		die("%s: PATH_MAX exceeded", argv0);
+	snprintf(bin, sizeof(bin), "%s/bin", tmpd);
 	if (preqs.l > 0 && mkdir(bin, 0700) && errno != EEXIST) {
-		free(bin);
 		perror("mkdir");
 		exit(EXIT_FAILURE);
 	}
-	free(bin);
 
 	for (i = 0; i < reqs.l; i++) {
-		char *d;
-		size_t dl = strlen(tmpd) + strlen(reqs.a[i]) + 6; /* /bin/ + \0 */
-		if (!(d = malloc(dl))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(d, dl, "%s/bin/%s", tmpd, reqs.a[i]);
+		char d[PATH_MAX];
+		if (PATH_MAX <= strlen(tmpd) + strlen(reqs.a[i])
+		              + strlen("/bin/"))
+			die("%s: PATH_MAX exceeded", argv0);
+		snprintf(d, sizeof(d), "%s/bin/%s", tmpd, reqs.a[i]);
 		copyfile(preqs.a[i], d);
-		free(d);
 	}
 }
 
@@ -304,21 +277,17 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 		char *b = basename(srcs.a[i].url);
 
 		if (urlisvalid(srcs.a[i].url)) {
-			char *df;
-			size_t dfl;
+			char df[PATH_MAX];
 			uint8_t h[SHA256_DIGEST_LENGTH];
 
-			dfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
-			if (!(df = malloc(dfl))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(df, dfl, "%s/src/%s", tmpd, b);
+			if (PATH_MAX <= strlen(tmpd) + strlen(b)
+			              + strlen("/src/"))
+				die("%s: PATH_MAX exceeded", argv0);
+			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
 
 			fetchfile(srcs.a[i].url, df);
 
 			sha256hash(df, h);
-			free(df);
 			if (memcmp(h,
 			           srcs.a[i].sha256,
 			           SHA256_DIGEST_LENGTH)) {
@@ -336,24 +305,18 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 				exit(EXIT_FAILURE);
 			}
 		} else if (relpathisvalid(srcs.a[i].url)) {
-			char *sf, *df;
-			size_t sfl, dfl;
+			char sf[PATH_MAX], df[PATH_MAX];
 			uint8_t h[SHA256_DIGEST_LENGTH];
 
-			sfl = strlen(pdir) + strlen(srcs.a[i].url) + 2; /* / + \0 */
-			if (!(sf = malloc(sfl))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(sf, sfl, "%s/%s", pdir, srcs.a[i].url);
+			if (PATH_MAX <= strlen(pdir) + strlen("/")
+			              + strlen(srcs.a[i].url))
+				die("%s: PATH_MAX exceeded", argv0);
+			snprintf(sf, sizeof(sf), "%s/%s", pdir, srcs.a[i].url);
 
-			dfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
-			if (!(df = malloc(dfl))) {
-				free(sf);
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(df, dfl, "%s/src/%s", tmpd, b);
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(b))
+				die("%s: PATH_MAX exceeded", argv0);
+			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
 
 			if (!fileexists(sf))
 				die("%s: URL %s does not exist",
@@ -372,66 +335,46 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 				printf("  expected: %s\n", eh);
 				printf("  got:      %s\n", gh);
 
-				free(sf);
-				free(df);
 				exit(EXIT_FAILURE);
 			}
 			copyfile(sf, df);
-			free(sf);
-			free(df);
 		}
 
 		if (srcs.a[i].relpath) {
-			char *sf, *df, *dn = dirname(srcs.a[i].relpath), *mvd;
-			size_t sfl, dfl, mvdl;
+			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
+			     *dn = dirname(srcs.a[i].relpath);
 
-			sfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
-			if (!(sf = malloc(sfl))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(sf, sfl, "%s/src/%s", tmpd, b);
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(b))
+				die("%s: PATH_MAX exceeded", argv0);
+			snprintf(sf, sizeof(sf), "%s/src/%s", tmpd, b);
 
-			dfl = strlen(tmpd) + strlen(srcs.a[i].relpath)
-			    + 6; /* /src/ + \0 */
-			if (!(df = malloc(dfl))) {
-				free(sf);
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(df, dfl, "%s/src/%s",
+
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(srcs.a[i].relpath))
+				die("%s: PATH_MAX exceeded", argv0);
+			snprintf(df, sizeof(df), "%s/src/%s",
 			         tmpd, srcs.a[i].relpath);
 
-			mvdl = strlen(tmpd) + strlen(dn) + 6; /* /src/ + \0 */
-			if (!(mvd = malloc(mvdl))) {
-				free(sf);
-				free(df);
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(mvd, mvdl, "%s/src/%s", tmpd, dn);
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(dn))
+				die("%s: PATH_MAX exceeded", argv0);
+			snprintf(mvd, sizeof(mvd), "%s/src/%s", tmpd, dn);
 
 			if (strrchr(dn, '/')) mkdirrecursive(mvd);
-			free(mvd);
 
 			if (rename(sf, df)) {
-				free(sf);
-				free(df);
 				perror("rename");
 				exit(EXIT_FAILURE);
 			}
-
-			free(sf);
-			free(df);
 		}
 	}
 }
 
-char *
-createtmpdir(char *pname)
+void
+createtmpdir(char *pname, char dir[PATH_MAX])
 {
-	char *dir, *log, *src;
-	size_t dirl, logl, srcl;
+	char dirtmp[PATH_MAX], log[PATH_MAX], src[PATH_MAX];
 	int logfd;
 
 	if (mkdir("/tmp", 0700) == -1 && errno != EEXIST) {
@@ -439,48 +382,31 @@ createtmpdir(char *pname)
 		exit(EXIT_FAILURE);
 	}
 
-	dirl = strlen(pname) + 24; /* /tmp/prometheus--XXXXXX + \0 */
-	if (!(dir = malloc(dirl))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(dir, dirl, "/tmp/prometheus-%s-XXXXXX", pname);
+	if (PATH_MAX <= strlen("/tmp/prometheus--XXXXXX") + strlen(pname))
+		die("%s: PATH_MAX exceeded", argv0);
+	snprintf(dirtmp, sizeof(dirtmp), "/tmp/prometheus-%s-XXXXXX", pname);
+	strncpy(dir, dirtmp, PATH_MAX);
 	if (!mkdtemp(dir)) {
-		free(dir);
 		perror("mkdtemp");
 		exit(EXIT_FAILURE);
 	}
 
-	logl = strlen(dir) + 16; /* /prometheus.log + \0 */
-	if (!(log = malloc(logl))) {
-		free(dir);
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(log, logl, "%s/prometheus.log", dir);
+	if (PATH_MAX <= strlen(dir) + strlen("/prometheus.log"))
+		die("%s: PATH_MAX exceeded", argv0);
+	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
-		free(dir);
-		free(log);
 		perror("open");
 		exit(EXIT_FAILURE);
 	}
-	free(log);
 	close(logfd);
 
-	srcl = strlen(dir) + 5; /* /src + \0 */
-	if (!(src = malloc(srcl))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	snprintf(src, srcl, "%s/src", dir);
+	if (PATH_MAX <= strlen(dir) + strlen("/src"))
+		die("%s: PATH_MAX exceeded", argv0);
+	snprintf(src, sizeof(src), "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
-		free(src);
 		perror("mkdir");
 		exit(EXIT_FAILURE);
 	}
-	free(src);
-
-	return dir;
 }
 
 size_t
@@ -509,33 +435,21 @@ direxists(const char *f)
 	return 0;
 }
 
-char *
-expandtilde(const char *f)
+void
+expandtilde(const char *f, char ef[PATH_MAX])
 {
-	char *home, *res;
+	char *home;
 
 	if (f[0] != '~') {
-		if (!(res = malloc(strlen(f) + 1))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		strcpy(res, f);
-		return res;
+		strncpy(ef, f, PATH_MAX);
+		return;
 	}
 
 	if (!(home = getenv("HOME")))
 		die("%s: cannot expand tilde since HOME is undefined", argv0);
 
-	/* -~ +\0 */
-	if (!(res = malloc(strlen(home) + strlen(f)))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-
-	strcpy(res, home);
-	strcat(res, f + 1); /* skip ~ */
-
-	return res;
+	strncpy(ef, home, PATH_MAX);
+	strncat(ef, f + 1, PATH_MAX - strlen(home)); /* skip ~ */
 }
 
 void
@@ -602,27 +516,20 @@ findinpath(struct Requires reqs)
 		die("%s: PATH is not set", argv0);
 
 	for (i = 0; i < reqs.l; i++) {
-		char *path, *pathd;
+		char *pathd, path[PATH_MAX];
 		unsigned int set = 0;
 
-		if (!(path = malloc(strlen(pathenv) + 1))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		strcpy(path, pathenv);
+		strncpy(path, pathenv, PATH_MAX);
 
 		for (pathd = strtok(path, ":"); path; pathd = strtok(NULL, ":")) {
-			char *pp;
-			size_t ppl;
+			char pp[PATH_MAX];
 
 			if (set) break;
 
-			ppl = strlen(pathd) + strlen(reqs.a[i]) + 2; /* / + \0 */
-			if (!(pp = malloc(ppl))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(pp, ppl, "%s/%s", pathd, reqs.a[i]);
+			if (PATH_MAX <= strlen(pathd) + strlen("/")
+			              + strlen(reqs.a[i]))
+				die("%s: PATH_MAX exceeded", argv0);
+			snprintf(pp, sizeof(pp), "%s/%s", pathd, reqs.a[i]);
 
 			if (!fileexists(pp)) continue;
 			set = 1;
@@ -640,41 +547,28 @@ findinpath(struct Requires reqs)
 	return new;
 }
 
-char *
-followsymlink(const char *f)
+void
+followsymlink(const char *f, char ff[PATH_MAX])
 {
-	char *p, *res;
 	struct stat sb;
 
-	if (!(p = malloc(PATH_MAX))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	strcpy(p, f);
+	strncpy(ff, f, PATH_MAX);
 
 	while (S_ISLNK(sb.st_mode)) {
 		ssize_t n;
 
-		if ((n = readlink(f, p, PATH_MAX - 1)) == -1) {
+		if (lstat(f, &sb)) {
+			perror("lstat");
+			exit(EXIT_FAILURE);
+		}
+
+		if ((n = readlink(f, ff, PATH_MAX - 1)) == -1) {
 			if (errno == EINVAL || errno == ENOENT) break;
 			perror("readlink");
 			exit(EXIT_FAILURE);
 		}
-		p[n] = '\0';
-
-		if (lstat(p, &sb)) {
-			perror("lstat");
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	if (!(res = malloc(strlen(p) + 1))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-	strcpy(res, p);
-	free(p);
-	return res;
+		ff[n] = '\0';
+	};
 }
 
 struct Packages
@@ -727,7 +621,7 @@ installpackage(char *pname, char *prefix)
 {
 	struct Depends deps;
 	struct Outs outs;
-	char *env;
+	char env[PATH_MAX];
 	int i;
 
 	if (packageisinstalled(pname, prefix)) {
@@ -735,7 +629,7 @@ installpackage(char *pname, char *prefix)
 		return;
 	}
 
-	env = createtmpdir(pname);
+	createtmpdir(pname, env);
 
 	deps = packagedepends(pname);
 	for (i = 0; i < deps.l; i++) {
@@ -754,38 +648,22 @@ installpackage(char *pname, char *prefix)
 
 	outs = packageouts(pname);
 	for (i = 0; i < outs.l; i++) {
-		char *s, *d;
-		size_t ss = strlen(env) + strlen(outs.a[i]) + 1,
-		       ds = strlen(prefix) + strlen(outs.a[i]) + 1;
+		char s[PATH_MAX], d[PATH_MAX];
 
-		if (!(s = malloc(ss))) {
-			free(env);
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(s, ss, "%s%s", env, outs.a[i]);
+		if (PATH_MAX <= strlen(env) + strlen(outs.a[i]))
+			die("%s: PATH_MAX exceeded", argv0);
+		snprintf(s, sizeof(s), "%s%s", env, outs.a[i]);
 
-		if (!fileexists(s)) {
-			free(env);
+		if (!fileexists(s))
 			die("%s: file %s in %s's outs in was not installed",
 			    argv0, s, pname);
-			free(s);
-			exit(EXIT_FAILURE);
-		}
 
-		if (!(d = malloc(ds))) {
-			free(s);
-			free(env);
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(d, ds, "%s%s", prefix, outs.a[i]);
+		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
+			die("%s: PATH_MAX exceeded", argv0);
+		snprintf(d, sizeof(d), "%s%s", prefix, outs.a[i]);
 
 		copyfile(s, d);
-		free(s);
-		free(d);
 	}
-	free(env);
 }
 
 void
@@ -834,14 +712,13 @@ packageisinstalled(char *pname, char *prefix)
 	int i;
 
 	for (i = 0; i < outs.l; i++) {
-		size_t fl = strlen(prefix) + strlen(outs.a[i]) + 2; /* / + \0 */
-		char *f = malloc(fl);
-		snprintf(f, fl, "%s/%s", prefix, outs.a[i]);
+		char f[PATH_MAX];
+		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
+			die("%s: PATH_MAX exceeded", argv0);
+		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
 		if (!fileexists(f)) {
-			free(f);
 			return 0;
 		}
-		free(f);
 	}
 
 	return 1;
@@ -1169,27 +1046,18 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 
 	printf("- uninstalling %s\n", pname);
 	for (i = 0; i < outs.l; i++) {
-		size_t fl = strlen(prefix) + strlen(outs.a[i]) + 2; /* / + \0 */
 		char *f;
 
-		if (!(f = malloc(fl))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		snprintf(f, fl, "%s/%s", prefix, outs.a[i]);
+		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
+			die("%s: PATH_MAX exceeded", argv0);
+		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
 
-		if (!fileexists(f)) {
-			free(f);
-			continue;
-		}
+		if (!fileexists(f)) continue;
 
 		if (remove(f)) {
-			free(f);
 			perror("remove");
 			exit(EXIT_FAILURE);
 		}
-
-		free(f);
 	}
 	printf("+ uninstalled %s\n", pname);
 
@@ -1234,8 +1102,9 @@ main(int argc, char *argv[])
 	int uninstall = 0,
 	    recuninstall = 0,
 	    printinst = 0;
-	char *prefix = defaultprefix;
-	unsigned int expprefix = 0;
+	char prefix[PATH_MAX];
+
+	strncpy(prefix, defaultprefix, PATH_MAX);
 
 	ARGBEGIN {
 	case 'l':
@@ -1243,8 +1112,7 @@ main(int argc, char *argv[])
 		break;
 	case 'p':
 		char *arg = EARGF(usage());
-		prefix = expandtilde(arg);
-		if (arg != prefix) expprefix = 1;
+		expandtilde(arg, prefix);
 		break;
 	case 'r':
 		recuninstall = 1;
@@ -1296,8 +1164,6 @@ main(int argc, char *argv[])
 			installpackage(*argv, prefix);
 		}
 	}
-
-	if (expprefix) free(prefix);
 
 	return EXIT_SUCCESS;
 }

@@ -167,6 +167,7 @@ buildpackage(char *pname, const char *tmpd)
 			exit(EXIT_FAILURE);
 		}
 		luaL_openlibs(luas);
+		registerluautils(luas);
 
 		if (!(logf = open("/prometheus.log", O_WRONLY, 0700))) {
 			perror("fopen");

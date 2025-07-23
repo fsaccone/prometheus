@@ -22,6 +22,7 @@
 
 #include "arg.h"
 #include "config.h"
+#include "lua.h"
 #include "sha256.h"
 
 #define DIE_MAX   1024
@@ -101,6 +102,7 @@ static struct Requires packagerequires(char *pname);
 static struct Sources packagesources(char *pname);
 static void printinstalled(char *prefix, struct Packages pkgs);
 static struct Lines readlines(const char *f);
+static void registerluautils(lua_State *luas);
 static unsigned int relpathisvalid(char *relpath);
 static void sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
                               uint8_t u[SHA256_DIGEST_LENGTH]);
@@ -964,6 +966,14 @@ readlines(const char *f)
 
 	fclose(fp);
 	return l;
+}
+
+void
+registerluautils(lua_State *luas)
+{
+	lua_register(luas, "cp", lua_cp);
+	lua_register(luas, "exec", lua_exec);
+	lua_register(luas, "mkdir", lua_mkdir);
 }
 
 unsigned int

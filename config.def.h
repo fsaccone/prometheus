@@ -10,8 +10,5 @@
 #define REQUIRES_MAX 10
 #define SOURCES_MAX  100
 
-/* the package repository */
-#define PACKAGE_REPOSITORY "/opt/olympus"
-
-/* the default prefix */
-#define DEFAULT_PREFIX "/"
+#define PACKAGE_REPOSITORY "/opt/olympus" /* the package repository */
+#define DEFAULT_PREFIX     "/"            /* the default prefix */

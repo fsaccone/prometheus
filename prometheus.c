@@ -34,6 +34,11 @@ struct DependNode {
 	struct DependNode *n;
 };
 
+struct Requires {
+	char a[REQUIRES_MAX][PROGRAM_MAX];
+	size_t l;
+};
+
 struct Source {
 	uint8_t sha256[SHA256_DIGEST_LENGTH];
 	char *url;
@@ -52,7 +57,7 @@ struct StringNode {
 
 static void buildpackage(char *pname, const char *tmpd);
 static void copyfile(const char *s, const char *d);
-static void copyrequires(struct StringNode *reqs, const char *tmpd);
+static void copyrequires(struct Requires reqs, const char *tmpd);
 static void copysources(struct SourceNode *srcs, const char *pdir,
                         const char *tmpd);
 static char *createtmpdir(char *pname);
@@ -62,7 +67,7 @@ static unsigned int direxists(const char *f);
 static char *expandtilde(const char *f);
 static void fetchfile(const char *url, const char *f);
 static unsigned int fileexists(const char *f);
-static struct StringNode *findinpath(struct StringNode *reqs);
+static struct Requires findinpath(struct Requires reqs);
 static char *followsymlink(const char *f);
 static void freedependllist(struct DependNode *n);
 static void freesourcellist(struct SourceNode *n);
@@ -75,7 +80,7 @@ static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
 static struct DependNode *packagedepends(char *pname);
 static struct StringNode *packageouts(char *pname);
-static struct StringNode *packagerequires(char *pname);
+static struct Requires packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct StringNode *pkgs);
 static struct StringNode *readlines(const char *f);
@@ -94,7 +99,7 @@ buildpackage(char *pname, const char *tmpd)
 {
 	char *pdir, *b, *db;
 	size_t pdirl, bl, dbl;
-	struct StringNode *reqs;
+	struct Requires reqs;
 	struct SourceNode *srcs;
 	pid_t pid;
 
@@ -130,7 +135,6 @@ buildpackage(char *pname, const char *tmpd)
 
 	reqs = packagerequires(pname);
 	copyrequires(reqs, tmpd);
-	freestringllist(reqs);
 
 	srcs = packagesources(pname);
 	copysources(srcs, pdir, tmpd);
@@ -237,42 +241,39 @@ copyfile(const char *s, const char *d)
 }
 
 void
-copyrequires(struct StringNode *reqs, const char *tmpd)
+copyrequires(struct Requires reqs, const char *tmpd)
 {
 	char *bin;
 	size_t binl;
-	struct StringNode *preqs, *r, *pr;
+	struct Requires preqs;
+	int i;
 
 	preqs = findinpath(reqs);
 
 	binl = strlen(tmpd) + 5; /* /bin + \0 */
 	if (!(bin = malloc(binl))) {
-		freestringllist(preqs);
 		perror("malloc");
 		exit(EXIT_FAILURE);
 	}
 	snprintf(bin, binl, "%s/bin", tmpd);
-	if (preqs && mkdir(bin, 0700) && errno != EEXIST) {
+	if (preqs.l > 0 && mkdir(bin, 0700) && errno != EEXIST) {
 		free(bin);
-		freestringllist(preqs);
 		perror("mkdir");
 		exit(EXIT_FAILURE);
 	}
 	free(bin);
 
-	for (r = reqs, pr = preqs; r && pr; r = r->n, pr = pr->n) {
+	for (i = 0; i < reqs.l; i++) {
 		char *d;
-		size_t dl = strlen(tmpd) + strlen(r->v) + 6; /* /bin/ + \0 */
+		size_t dl = strlen(tmpd) + strlen(reqs.a[i]) + 6; /* /bin/ + \0 */
 		if (!(d = malloc(dl))) {
-			freestringllist(preqs);
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
-		snprintf(d, dl, "%s/bin/%s", tmpd, r->v);
-		copyfile(pr->v, d);
+		snprintf(d, dl, "%s/bin/%s", tmpd, reqs.a[i]);
+		copyfile(preqs.a[i], d);
 		free(d);
 	}
-	freestringllist(preqs);
 }
 
 void
@@ -571,16 +572,17 @@ fileexists(const char *f)
 	return (!stat(f, &buf));
 }
 
-struct StringNode *
-findinpath(struct StringNode *progs)
+struct Requires
+findinpath(struct Requires progs)
 {
-	struct StringNode *p, *head = NULL, *tail = NULL;
+	struct Requires new;
 	char *pathenv;
+	size_t i;
 
 	if (!(pathenv = getenv("PATH")))
 		die("%s: PATH is not set", argv0);
 
-	for (p = progs; p; p = p->n) {
+	for (i = 0; i < progs.l; i++) {
 		char *path, *pathd;
 		unsigned int set = 0;
 
@@ -593,42 +595,30 @@ findinpath(struct StringNode *progs)
 		for (pathd = strtok(path, ":"); path; pathd = strtok(NULL, ":")) {
 			char *pp;
 			size_t ppl;
-			struct StringNode *new;
 
 			if (set) break;
 
-			ppl = strlen(pathd) + strlen(p->v) + 2; /* / + \0 */
+			ppl = strlen(pathd) + strlen(progs.a[i]) + 2; /* / + \0 */
 			if (!(pp = malloc(ppl))) {
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			snprintf(pp, ppl, "%s/%s", pathd, p->v);
+			snprintf(pp, ppl, "%s/%s", pathd, progs.a[i]);
 
 			if (!fileexists(pp)) continue;
 			set = 1;
 
-			if (!(new = malloc(sizeof(struct StringNode)))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			if (!(new->v = malloc(ppl + 1))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			strcpy(new->v, pp);
-			new->n = NULL;
-			if (!head)
-				head = new;
-			else
-				tail->n = new;
-			tail = new;
+			strncpy(new.a[i], pp, PROGRAM_MAX);
 		}
 
 		if (!set)
-			die("%s: program %s does not exist", argv0, p->v);
+			die("%s: program %s does not exist",
+			    argv0, progs.a[i]);
 	}
 
-	return head;
+	new.l = i;
+
+	return new;
 }
 
 char *
@@ -970,23 +960,27 @@ packageouts(char *pname)
 	return ls;
 }
 
-struct StringNode *packagerequires(char *pname)
+struct Requires packagerequires(char *pname)
 {
 	struct StringNode *ls, *l;
 	char f[1024];
+	size_t i;
+	struct Requires new;
 
 	snprintf(f, sizeof(f), "%s/%s/requires", pkgsrepodir, pname);
 	ls = readlines(f);
 
-	for (l = ls; l; l = l->n) {
+	for (l = ls; l; l = l->n, i++) {
 		if (l->v[0] == '\0') {
 			freestringllist(ls);
 			die("%s: empty line found in %s's requires",
 			    argv0, pname);
 		}
+		strncpy(new.a[i], l->v, PROGRAM_MAX);
 	}
+	new.l = i;
 
-	return ls;
+	return new;
 }
 
 struct SourceNode *

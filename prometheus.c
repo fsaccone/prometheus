@@ -960,7 +960,8 @@ packageouts(char *pname)
 	return ls;
 }
 
-struct Requires packagerequires(char *pname)
+struct Requires
+packagerequires(char *pname)
 {
 	struct StringNode *ls, *l;
 	char f[1024];

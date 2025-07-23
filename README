@@ -8,6 +8,7 @@ Requirements
 
 - C99 compiler
 - libc
+- libcurl
 - Lua
 
 Installaton

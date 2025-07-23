@@ -120,9 +120,10 @@ buildpackage(char *pname, const char *tmpd)
 	struct Sources srcs;
 	pid_t pid;
 
-	if (PATH_MAX <= strlen(pkgsrepodir) + strlen("/") + strlen(pname))
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen("/")
+	              + strlen(pname))
 		die("%s: PATH_MAX exceeded", argv0);
-	snprintf(pdir, sizeof(pdir), "%s/%s", pkgsrepodir, pname);
+	snprintf(pdir, sizeof(pdir), "%s/%s", PACKAGE_REPOSITORY, pname);
 
 	if (PATH_MAX <= strlen(pdir) + strlen("/build.lua"))
 		die("%s: PATH_MAX exceeded", argv0);
@@ -579,7 +580,7 @@ getpackages(void)
 	DIR *d;
 	struct dirent *e;
 
-	if(!(d = opendir(pkgsrepodir))) {
+	if(!(d = opendir(PACKAGE_REPOSITORY))) {
 		pkgs.l = 0;
 		return pkgs;
 	};
@@ -693,12 +694,12 @@ packageexists(char *pname)
 {
 	char bf[PATH_MAX], of[PATH_MAX], sf[PATH_MAX];
 
-	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("/build.lua")) /* the longest one */
 		die("%s: PATH_MAX exceeded", argv0);
-	snprintf(bf, sizeof(bf), "%s/%s/build.lua", pkgsrepodir, pname);
-	snprintf(of, sizeof(of), "%s/%s/outs", pkgsrepodir, pname);
-	snprintf(sf, sizeof(sf), "%s/%s/sources", pkgsrepodir, pname);
+	snprintf(bf, sizeof(bf), "%s/%s/build.lua", PACKAGE_REPOSITORY, pname);
+	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
+	snprintf(sf, sizeof(sf), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
 
 	if (fileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
 
@@ -732,10 +733,10 @@ packagedepends(char *pname)
 	char f[PATH_MAX];
 	struct Lines l;
 
-	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//depends"))
 		die("%s: PATH_MAX exceeded", argv0);
-	snprintf(f, sizeof(f), "%s/%s/depends", pkgsrepodir, pname);
+	snprintf(f, sizeof(f), "%s/%s/depends", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
 	for (i = 0; i < l.l; i++) {
@@ -779,10 +780,10 @@ packageouts(char *pname)
 	struct Lines l;
 	char f[PATH_MAX];
 
-	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//outs"))
 		die("%s: PATH_MAX exceeded");
-	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
+	snprintf(f, sizeof(f), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
 	for (i = 0; i < l.l; i++) {
@@ -810,10 +811,10 @@ packagerequires(char *pname)
 	size_t i;
 	struct Requires new;
 
-	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//requires"))
 		die("%s: PATH_MAX exceeded", argv0);
-	snprintf(f, sizeof(f), "%s/%s/requires", pkgsrepodir, pname);
+	snprintf(f, sizeof(f), "%s/%s/requires", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
 	for (i = 0; i < l.l; i++) {
@@ -836,10 +837,10 @@ packagesources(char *pname)
 	char f[PATH_MAX];
 	struct Lines l;
 
-	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//sources"))
 		die("%s: PATH_MAX exceeded");
-	snprintf(f, sizeof(f), "%s/%s/sources", pkgsrepodir, pname);
+	snprintf(f, sizeof(f), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
 	for (i = 0; i < l.l; i++) {
@@ -1102,9 +1103,7 @@ main(int argc, char *argv[])
 	int uninstall = 0,
 	    recuninstall = 0,
 	    printinst = 0;
-	char prefix[PATH_MAX];
-
-	strncpy(prefix, defaultprefix, PATH_MAX);
+	char prefix[PATH_MAX] = DEFAULT_PREFIX;
 
 	ARGBEGIN {
 	case 'l':

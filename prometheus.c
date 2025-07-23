@@ -153,7 +153,9 @@ buildpackage(char *pname, const char *tmpd)
 	copyrequires(reqs, tmpd);
 
 	srcs = packagesources(pname);
+	printf("- copying %s's sources\n", pname);
 	copysources(srcs, pdir, tmpd);
+	printf("+ copied %s's sources\n", pname);
 	free(pdir);
 
 	if ((pid = fork()) < 0) {

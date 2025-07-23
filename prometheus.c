@@ -829,8 +829,10 @@ installpackage(char *pname, char *prefix)
 void
 mkdirrecursive(const char *d)
 {
-	char buf[1024], *p = NULL;
+	char buf[PATH_MAX], *p = NULL;
 
+	if (PATH_MAX <= strlen(d))
+		die("%s: PATH_MAX exceeded", argv0);
 	strncpy(buf, d, sizeof(buf));
 	buf[sizeof(buf) - 1] = '\0';
 
@@ -849,8 +851,11 @@ mkdirrecursive(const char *d)
 unsigned int
 packageexists(char *pname)
 {
-	char bf[1024], of[1024], sf[1024];
+	char bf[PATH_MAX], of[PATH_MAX], sf[PATH_MAX];
 
+	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	              + strlen("/build.lua")) /* the longest one */
+		die("%s: PATH_MAX exceeded", argv0);
 	snprintf(bf, sizeof(bf), "%s/%s/build.lua", pkgsrepodir, pname);
 	snprintf(of, sizeof(of), "%s/%s/outs", pkgsrepodir, pname);
 	snprintf(sf, sizeof(sf), "%s/%s/sources", pkgsrepodir, pname);
@@ -883,11 +888,14 @@ packageisinstalled(char *pname, char *prefix)
 struct DependNode *
 packagedepends(char *pname)
 {
-	char f[1024];
+	char f[PATH_MAX];
 	struct Lines l;
 	struct DependNode *tail = NULL, *head = NULL;
 	int i;
 
+	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	              + strlen("//depends"))
+		die("%s: PATH_MAX exceeded", argv0);
 	snprintf(f, sizeof(f), "%s/%s/depends", pkgsrepodir, pname);
 	l = readlines(f);
 
@@ -945,8 +953,11 @@ packageouts(char *pname)
 	struct Outs outs;
 	size_t i;
 	struct Lines l;
-	char f[1024];
+	char f[PATH_MAX];
 
+	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	              + strlen("//outs"))
+		die("%s: PATH_MAX exceeded");
 	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
 	l = readlines(f);
 
@@ -971,10 +982,13 @@ struct Requires
 packagerequires(char *pname)
 {
 	struct Lines l;
-	char f[1024];
+	char f[PATH_MAX];
 	size_t i;
 	struct Requires new;
 
+	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	              + strlen("//requires"))
+		die("%s: PATH_MAX exceeded", argv0);
 	snprintf(f, sizeof(f), "%s/%s/requires", pkgsrepodir, pname);
 	l = readlines(f);
 
@@ -993,11 +1007,14 @@ packagerequires(char *pname)
 struct SourceNode *
 packagesources(char *pname)
 {
-	char f[1024];
+	char f[PATH_MAX];
 	struct Lines l;
 	int i;
 	struct SourceNode *tail = NULL, *head = NULL;
 
+	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
+	              + strlen("//sources"))
+		die("%s: PATH_MAX exceeded");
 	snprintf(f, sizeof(f), "%s/%s/sources", pkgsrepodir, pname);
 	l = readlines(f);
 

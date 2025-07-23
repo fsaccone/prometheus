@@ -738,7 +738,6 @@ getpackages(void)
 		 || !packageexists(e->d_name))
 			continue;
 
-
 		strncpy(pkgs.a[i], e->d_name, NAME_MAX);
 		i++;
 	}

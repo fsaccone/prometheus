@@ -109,7 +109,7 @@ static void sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
 static void sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
 static void sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH],
                               char c[2 * SHA256_DIGEST_LENGTH + 1]);
-static void sigcleanup();
+static void sigexit();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
                              struct Packages pkgs);
 static unsigned int urlisvalid(char *url);
@@ -1033,8 +1033,9 @@ sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH],
 }
 
 void
-sigcleanup()
+sigexit()
 {
+	printf("\n- quitting\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -1163,7 +1164,7 @@ main(int argc, char *argv[])
 	if (recuninstall && !uninstall)
 		usage();
 
-	handlesignals(sigcleanup);
+	handlesignals(sigexit);
 
 	if (prefix[strlen(prefix) - 1] == '/')
 		prefix[strlen(prefix) - 1] = '\0';

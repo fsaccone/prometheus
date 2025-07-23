@@ -119,8 +119,6 @@ buildpackage(char *pname, const char *tmpd)
 	struct Sources srcs;
 	pid_t pid;
 
-	printf("- building %s\n", pname);
-
 	pdirl = strlen(pkgsrepodir) + strlen(pname) + 2; /* / + \0 */
 	if (!(pdir = malloc(pdirl))) {
 		perror("malloc");
@@ -169,6 +167,8 @@ buildpackage(char *pname, const char *tmpd)
 			perror("chroot");
 			exit(EXIT_FAILURE);
 		}
+
+		printf("- building %s\n", pname);
 
 		if(!(luas = luaL_newstate())) {
 			perror("luaL_newstate");

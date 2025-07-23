@@ -101,7 +101,8 @@ static struct Sources packagesources(char *pname);
 static void printinstalled(char *prefix, struct Packages pkgs);
 static struct Lines readlines(const char *f);
 static unsigned int relpathisvalid(char *relpath);
-static uint8_t *sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1]);
+static void sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
+                              uint8_t u[SHA256_DIGEST_LENGTH]);
 static void sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
 static char *sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH]);
 static void sigcleanup();
@@ -966,7 +967,7 @@ packagesources(char *pname)
 		     url[PATH_MAX],
 		     relpath[PATH_MAX],
 		     *tok;
-		uint8_t *sha256bin;
+		uint8_t sha256bin[SHA256_DIGEST_LENGTH];
 		int nfields;
 
 		sha256[0] = '\0';
@@ -1007,9 +1008,8 @@ packagesources(char *pname)
 			die("%s: URL not present in one of %s's sources",
 			    argv0, pname);
 
-		sha256bin = sha256chartouint8(sha256);
+		sha256chartouint8(sha256, sha256bin);
 		memcpy(srcs.a[i].sha256, sha256bin, SHA256_DIGEST_LENGTH);
-		free(sha256bin);
 
 		url[strcspn(url, "\n")] = '\0';
 		if (!relpathisvalid(url) && !urlisvalid(url)) {
@@ -1082,21 +1082,13 @@ relpathisvalid(char *relpath)
 	                               && relpath[0] != '.');
 }
 
-uint8_t *
-sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1])
+void
+sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
+                  uint8_t u[SHA256_DIGEST_LENGTH])
 {
-	uint8_t *u;
 	int i;
-
-	if (!(u = malloc(SHA256_DIGEST_LENGTH * sizeof(uint8_t)))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-
 	for (i = 0; i < SHA256_DIGEST_LENGTH; i++)
 		sscanf(c + i * 2, "%2hhx", &u[i]);
-
-	return u;
 }
 
 void

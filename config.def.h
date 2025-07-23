@@ -14,5 +14,5 @@
 #define PACKAGE_REPOSITORY "/opt/olympus"
 /* check README for more informations about package repositories */
 
-/* the default prefix for installing packages */
+/* the default prefix */
 #define DEFAULT_PREFIX "/"

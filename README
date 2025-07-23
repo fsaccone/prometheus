@@ -10,32 +10,88 @@ Requirements
 - libc
 - Lua
 
-Structure of a package repository
----------------------------------
+Repositories
+============
 
 The repository tree must have a set of directories, each named after the
 package it represents: each of these directories must contain the following
-POSIX shell scripts:
+mandatory files:
 
-- retrieve:    Fetches and verifies the source of the package.
-- configure:   Sets the necessary configurations up before building.
-- build:       Compiles the source.
-- test:        Tests the build and returns error on failure.
-- install:     Installs the built package.
+- build.lua
+- outs
+- sources
 
-All these scripts will be called in this order with the $prefix variable
-exported.
+Each package directory may also contain the following optional files:
 
-Two other scripts must exist for every package:
+- depends
+- requires
 
-- uninstall:   Uninstalls the built package.
-- isinstalled: Returns error when the package is not installed.
+The program chroots in a temporary directory before building a package: it is
+initialized with an empty /src directory in it.
 
-These will be called with the $prefix variable exported too.
+build.lua
+---------
 
-In addition, package directories may also contain a dependencies file, which
-must list a package name on each line: every package in this file will be
-built prior to the package that contains the file.
+This file is a Lua script which is copied as /prometheus.build.lua in the
+package temporary directory and called from the /src directory.
 
-Every file inside each package directory will be copied to the temporary
-working directory where the package is built.
+Its job is to build the package from the files present in the /src directory
+and install what it needs to the root of the temporary directory.
+
+outs
+----
+
+Each line of the outs file must be the absolute path of each file to be
+installed to the system.
+
+Only files, and not directories, must be listed.
+
+When uninstalling, all listed files are removed from the system. A package is
+considered installed when all listed files exist.
+
+The recommended way to generate it is to install the package manually and use
+find to generate outs:
+
+	$ find $builddir -type f \
+	                 -exec echo {} \; | sed "s|^$builddir||" > outs
+
+sources
+-------
+
+Each line of the sources file must be of the following format:
+
+	SHA256 URL [RELPATH]
+
+A valid URL is the relative path to a file in the package directory, a
+HTTP/HTTPS address or a FTP address.
+
+If URL is a local file, it must not be a directory.
+
+Each source must have a corresponding SHA256 hash.
+
+An optional RELPATH field may be provided: it is the path, relative to /src,
+where the fetched source file is moved to after being retrieved and verified.
+
+depends
+-------
+
+Each line of the depends file must be of the following format:
+
+	PACKAGE [runtime]
+
+A valid PACKAGE is the name of a package in the repository.
+
+Each PACKAGE listed here is built prior to the package being built, is
+installed to the root of the temporary directory and is ignored when installing
+the package.
+
+Additionally, when "runtime" is present after PACKAGE, PACKAGE gets also
+installed to the system.
+
+requires
+--------
+
+Each line of the requires file must be a program which exists in any of the
+PATH directories.
+
+The listed programs are copied to the /bin of the package temporary directory.

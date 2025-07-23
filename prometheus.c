@@ -74,11 +74,6 @@ struct SourceNode {
 	struct SourceNode *n;
 };
 
-struct StringNode {
-	char *v;
-	struct StringNode *n;
-};
-
 static void buildpackage(char *pname, const char *tmpd);
 static void copyfile(const char *s, const char *d);
 static void copyrequires(struct Requires reqs, const char *tmpd);
@@ -94,7 +89,6 @@ static unsigned int fileexists(const char *f);
 static struct RequiresPath findinpath(struct Requires reqs);
 static char *followsymlink(const char *f);
 static void freesourcellist(struct SourceNode *n);
-static void freestringllist(struct StringNode *n);
 static struct Packages getpackages(void);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix);
@@ -693,17 +687,6 @@ freesourcellist(struct SourceNode *n)
 	}
 }
 
-void
-freestringllist(struct StringNode *n)
-{
-	while (n) {
-		struct StringNode *nn = n->n;
-		free(n->v);
-		free(n);
-		n = nn;
-	}
-}
-
 struct Packages
 getpackages(void)
 {
@@ -1190,8 +1173,6 @@ void
 uninstallpackage(char *pname, char *prefix, unsigned int rec,
                  struct Packages pkgs)
 {
-	char ideps[DEPENDS_MAX][PROGRAM_MAX];
-	size_t idepsl = 0;
 	struct Outs outs;
 	int i;
 
@@ -1213,30 +1194,6 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 				       "it\n", pname, pkgs.a[i]);
 				return;
 			}
-		}
-	}
-
-	if (rec) {
-		struct Depends deps = packagedepends(pname);
-
-		for (i = 0; i < deps.l; i++) {
-			char newidep[PROGRAM_MAX];
-
-			if (!deps.a[i].runtime) continue;
-
-			printf("+ found dependency %s for %s\n",
-			       deps.a[i].pname, pname);
-
-			if (!packageexists(deps.a[i].pname)) {
-				printf("+ dependency %s does not exist\n",
-				       deps.a[i].pname);
-				continue;
-			}
-
-			if (PROGRAM_MAX <= strlen(deps.a[i].pname))
-				die("%s: PROGRAM_MAX exceeded", argv0);
-			strcpy(ideps[idepsl], deps.a[i].pname);
-			idepsl++;
 		}
 	}
 
@@ -1266,8 +1223,24 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	}
 	printf("+ uninstalled %s\n", pname);
 
-	for (i = 0; i < idepsl; i++)
-		uninstallpackage(ideps[i], prefix, rec, pkgs);
+	if (rec) {
+		struct Depends deps = packagedepends(pname);
+
+		for (i = 0; i < deps.l; i++) {
+			if (!deps.a[i].runtime) continue;
+
+			printf("+ found dependency %s for %s\n",
+			       deps.a[i].pname, pname);
+
+			if (!packageexists(deps.a[i].pname)) {
+				printf("+ dependency %s does not exist\n",
+				       deps.a[i].pname);
+				continue;
+			}
+
+			uninstallpackage(deps.a[i].pname, prefix, rec, pkgs);
+		}
+	}
 }
 
 unsigned int

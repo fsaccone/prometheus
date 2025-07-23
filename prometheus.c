@@ -102,7 +102,7 @@ static void printinstalled(char *prefix, struct Packages pkgs);
 static struct Lines readlines(const char *f);
 static unsigned int relpathisvalid(char *relpath);
 static uint8_t *sha256chartouint8(const char *c);
-static uint8_t *sha256hash(const char *f);
+static void sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
 static char *sha256uint8tochar(const uint8_t *u);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
@@ -302,7 +302,7 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 		if (urlisvalid(srcs.a[i].url)) {
 			char *df;
 			size_t dfl;
-			uint8_t *h;
+			uint8_t h[SHA256_DIGEST_LENGTH];
 
 			dfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
 			if (!(df = malloc(dfl))) {
@@ -313,7 +313,7 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 			fetchfile(srcs.a[i].url, df);
 
-			h = sha256hash(df);
+			sha256hash(df, h);
 			free(df);
 			if (memcmp(h,
 			           srcs.a[i].sha256,
@@ -322,7 +322,6 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 				eh = sha256uint8tochar(h);
 				gh = sha256uint8tochar(srcs.a[i].sha256);
-				free(h);
 
 				printf("+ hash of %s does not match:\n",
 				       srcs.a[i].url);
@@ -334,7 +333,7 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 		} else if (relpathisvalid(srcs.a[i].url)) {
 			char *sf, *df;
 			size_t sfl, dfl;
-			uint8_t *h;
+			uint8_t h[SHA256_DIGEST_LENGTH];
 
 			sfl = strlen(pdir) + strlen(srcs.a[i].url) + 2; /* / + \0 */
 			if (!(sf = malloc(sfl))) {
@@ -355,13 +354,12 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 				die("%s: URL %s does not exist",
 				    argv0, srcs.a[i].url);
 
-			h = sha256hash(sf);
+			sha256hash(sf, h);
 			if (memcmp(h, srcs.a[i].sha256, SHA256_DIGEST_LENGTH)) {
 				char *eh, *gh;
 
 				eh = sha256uint8tochar(h);
 				gh = sha256uint8tochar(srcs.a[i].sha256);
-				free(h);
 
 				printf("+ hash of %s does not match:\n",
 				       srcs.a[i].url);
@@ -375,7 +373,6 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 				exit(EXIT_FAILURE);
 			}
 			copyfile(sf, df);
-			free(h);
 			free(sf);
 			free(df);
 		}
@@ -1102,11 +1099,10 @@ sha256chartouint8(const char *c)
 	return u;
 }
 
-uint8_t *
-sha256hash(const char *f)
+void
+sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH])
 {
 	unsigned char buf[4096];
-	uint8_t *res, hash[SHA256_DIGEST_LENGTH];
 	size_t br;
 	struct sha256 ctx;
 	FILE *ff;
@@ -1128,16 +1124,7 @@ sha256hash(const char *f)
 	}
 
 	fclose(ff);
-	sha256_sum(&ctx, hash);
-
-	if (!(res = malloc(SHA256_DIGEST_LENGTH))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-
-	memcpy(res, hash, SHA256_DIGEST_LENGTH);
-
-	return res;
+	sha256_sum(&ctx, h);
 }
 
 char *

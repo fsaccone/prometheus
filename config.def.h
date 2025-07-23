@@ -5,7 +5,8 @@
 /* maximum limit for package resources */
 #define DEPENDS_MAX  20
 #define OUTS_MAX     50
-#define PROGRAM_MAX  20 /* it also applies to package names */
+#define PACKAGES_MAX 500 /* number of packages in a repo */
+#define PROGRAM_MAX  20  /* it also applies to package names */
 #define REQUIRES_MAX 10
 #define SOURCES_MAX  100
 

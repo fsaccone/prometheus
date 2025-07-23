@@ -34,6 +34,11 @@ struct DependNode {
 	struct DependNode *n;
 };
 
+struct Packages {
+	char a[PACKAGES_MAX][NAME_MAX];
+	size_t l;
+};
+
 struct Outs {
 	char a[OUTS_MAX][PATH_MAX];
 	size_t l;
@@ -77,9 +82,9 @@ static char *followsymlink(const char *f);
 static void freedependllist(struct DependNode *n);
 static void freesourcellist(struct SourceNode *n);
 static void freestringllist(struct StringNode *n);
+static struct Packages getpackages(void);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix);
-static struct StringNode *listdirs(const char *d);
 static void mkdirrecursive(const char *d);
 static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
@@ -87,7 +92,7 @@ static struct DependNode *packagedepends(char *pname);
 static struct Outs packageouts(char *pname);
 static struct Requires packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
-static void printinstalled(char *prefix, struct StringNode *pkgs);
+static void printinstalled(char *prefix, struct Packages pkgs);
 static struct StringNode *readlines(const char *f);
 static unsigned int relpathisvalid(char *relpath);
 static uint8_t *sha256chartouint8(const char *c);
@@ -95,7 +100,7 @@ static uint8_t *sha256hash(const char *f);
 static char *sha256uint8tochar(const uint8_t *u);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
-                             struct StringNode *pkgs);
+                             struct Packages pkgs);
 static unsigned int urlisvalid(char *url);
 static void usage(void);
 
@@ -697,6 +702,37 @@ freestringllist(struct StringNode *n)
 	}
 }
 
+struct Packages
+getpackages(void)
+{
+	struct Packages pkgs;
+	size_t i;
+	DIR *d;
+	struct dirent *e;
+
+	if(!(d = opendir(pkgsrepodir))) {
+		pkgs.l = 0;
+		return pkgs;
+	};
+
+	while ((e = readdir(d))) {
+		char path[PATH_MAX];
+
+		if (e->d_name[0] == '.' || e->d_type != DT_DIR
+		 || !strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")
+		 || !packageexists(e->d_name))
+			continue;
+
+
+		strncpy(pkgs.a[i], e->d_name, NAME_MAX);
+		i++;
+	}
+	pkgs.l = i;
+
+	closedir(d);
+	return pkgs;
+}
+
 void
 handlesignals(void(*hdl)(int))
 {
@@ -774,57 +810,6 @@ installpackage(char *pname, char *prefix)
 		free(d);
 	}
 	free(env);
-}
-
-struct StringNode *
-listdirs(const char *f)
-{
-	DIR *d;
-	struct dirent *e;
-	struct stat s;
-	struct StringNode *head = NULL, *tail = NULL, *n;
-
-	if(!(d = opendir(f))) return NULL;
-
-	while ((e = readdir(d))) {
-		if (e->d_name[0] == '.' || !strcmp(e->d_name, ".")
-		                        || !strcmp(e->d_name, "..")) {
-			continue;
-		}
-
-		char path[1024];
-
-		snprintf(path, sizeof(path), "%s/%s", f, e->d_name);
-
-		if (!stat(path, &s) && S_ISDIR(s.st_mode)) {
-			if (!(n = malloc(sizeof(struct StringNode)))) {
-				closedir(d);
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-
-			if (!(n->v = malloc(strlen(e->d_name) + 1))) {
-				free(n);
-				closedir(d);
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-
-			strcpy(n->v, e->d_name);
-
-			n->n = NULL;
-
-			if (!head)
-				head = n;
-			else
-				tail->n = n;
-
-			tail = n;
-		}
-	}
-
-	closedir(d);
-	return head;
 }
 
 void
@@ -1072,13 +1057,13 @@ packagesources(char *pname)
 }
 
 void
-printinstalled(char *prefix, struct StringNode *pkgs)
+printinstalled(char *prefix, struct Packages pkgs)
 {
-	struct StringNode *p;
+	int i;
 
-	for (p = pkgs; p; p = p->n) {
-		if (packageisinstalled(p->v, prefix))
-			printf("%s\n", p->v);
+	for (i = 0; i < pkgs.l; i++) {
+		if (packageisinstalled(pkgs.a[i], prefix))
+			printf("%s\n", pkgs.a[i]);
 	}
 }
 
@@ -1213,9 +1198,9 @@ sigcleanup()
 
 void
 uninstallpackage(char *pname, char *prefix, unsigned int rec,
-                 struct StringNode *pkgs)
+                 struct Packages pkgs)
 {
-	struct StringNode *idep, *ideps = NULL, *pkg;
+	struct StringNode *idep, *ideps = NULL;
 	struct Outs outs;
 	int i;
 
@@ -1224,17 +1209,17 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		return;
 	}
 
-	for (pkg = pkgs; pkg; pkg = pkg->n) {
+	for (i = 0; i < pkgs.l; i++) {
 		struct DependNode *pdeps, *pd;
 
-		pdeps = packagedepends(pkg->v);
+		pdeps = packagedepends(pkgs.a[i]);
 
 		for (pd = pdeps; pd; pd = pd->n) {
 			if (!strcmp(pd->v.pname, pname)
 			    && pd->v.runtime
-			    && packageisinstalled(pkg->v, prefix)) {
+			    && packageisinstalled(pkgs.a[i], prefix)) {
 				printf("+ skipping %s since %s depends on "
-				       "it\n", pname, pkg->v);
+				       "it\n", pname, pkgs.a[i]);
 				freedependllist(pdeps);
 				return;
 			}
@@ -1387,9 +1372,8 @@ main(int argc, char *argv[])
 		die("%s: prefix %s does not exist", argv0, prefix);
 
 	if (printinst) {
-		struct StringNode *pkgs = listdirs(pkgsrepodir);
+		struct Packages pkgs = getpackages();
 		printinstalled(prefix, pkgs);
-		freestringllist(pkgs);
 	}
 
 	/* will not be evaluated when printinst is 1 */
@@ -1398,9 +1382,8 @@ main(int argc, char *argv[])
 			die("%s: package %s does not exist", argv0, *argv);
 
 		if (uninstall) {
-			struct StringNode *pkgs = listdirs(pkgsrepodir);
+			struct Packages pkgs = getpackages();
 			uninstallpackage(*argv, prefix, recuninstall, pkgs);
-			freestringllist(pkgs);
 		} else {
 			installpackage(*argv, prefix);
 		}

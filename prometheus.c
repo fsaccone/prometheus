@@ -69,15 +69,15 @@ struct Source {
 	char *relpath;
 };
 
-struct SourceNode {
-	struct Source v;
-	struct SourceNode *n;
+struct Sources {
+	struct Source a[SOURCES_MAX];
+	size_t l;
 };
 
 static void buildpackage(char *pname, const char *tmpd);
 static void copyfile(const char *s, const char *d);
 static void copyrequires(struct Requires reqs, const char *tmpd);
-static void copysources(struct SourceNode *srcs, const char *pdir,
+static void copysources(struct Sources srcs, const char *pdir,
                         const char *tmpd);
 static char *createtmpdir(char *pname);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
@@ -88,7 +88,6 @@ static void fetchfile(const char *url, const char *f);
 static unsigned int fileexists(const char *f);
 static struct RequiresPath findinpath(struct Requires reqs);
 static char *followsymlink(const char *f);
-static void freesourcellist(struct SourceNode *n);
 static struct Packages getpackages(void);
 static void handlesignals(void(*hdl)(int));
 static void installpackage(char *pname, char *prefix);
@@ -98,7 +97,7 @@ static unsigned int packageisinstalled(char *pname, char *prefix);
 static struct Depends packagedepends(char *pname);
 static struct Outs packageouts(char *pname);
 static struct Requires packagerequires(char *pname);
-static struct SourceNode *packagesources(char *pname);
+static struct Sources packagesources(char *pname);
 static void printinstalled(char *prefix, struct Packages pkgs);
 static struct Lines readlines(const char *f);
 static unsigned int relpathisvalid(char *relpath);
@@ -117,7 +116,7 @@ buildpackage(char *pname, const char *tmpd)
 	char *pdir, *b, *db;
 	size_t pdirl, bl, dbl;
 	struct Requires reqs;
-	struct SourceNode *srcs;
+	struct Sources srcs;
 	pid_t pid;
 
 	printf("- building %s\n", pname);
@@ -155,7 +154,6 @@ buildpackage(char *pname, const char *tmpd)
 
 	srcs = packagesources(pname);
 	copysources(srcs, pdir, tmpd);
-	freesourcellist(srcs);
 	free(pdir);
 
 	if ((pid = fork()) < 0) {
@@ -294,14 +292,14 @@ copyrequires(struct Requires reqs, const char *tmpd)
 }
 
 void
-copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
+copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 {
-	struct SourceNode *s;
+	int i;
 
-	for (s = srcs; s; s = s->n) {
-		char *b = basename(s->v.url);
+	for (i = 0; i < srcs.l; i++) {
+		char *b = basename(srcs.a[i].url);
 
-		if (urlisvalid(s->v.url)) {
+		if (urlisvalid(srcs.a[i].url)) {
 			char *df;
 			size_t dfl;
 			uint8_t *h;
@@ -313,35 +311,37 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 			}
 			snprintf(df, dfl, "%s/src/%s", tmpd, b);
 
-			fetchfile(s->v.url, df);
+			fetchfile(srcs.a[i].url, df);
 
 			h = sha256hash(df);
 			free(df);
-			if (memcmp(h, s->v.sha256, SHA256_DIGEST_LENGTH)) {
+			if (memcmp(h,
+			           srcs.a[i].sha256,
+			           SHA256_DIGEST_LENGTH)) {
 				char *eh, *gh;
 
 				eh = sha256uint8tochar(h);
-				gh = sha256uint8tochar(s->v.sha256);
+				gh = sha256uint8tochar(srcs.a[i].sha256);
 				free(h);
 
 				printf("+ hash of %s does not match:\n",
-				       s->v.url);
+				       srcs.a[i].url);
 				printf("  expected: %s\n", eh);
 				printf("  got:      %s\n", gh);
 
 				exit(EXIT_FAILURE);
 			}
-		} else if (relpathisvalid(s->v.url)) {
+		} else if (relpathisvalid(srcs.a[i].url)) {
 			char *sf, *df;
 			size_t sfl, dfl;
 			uint8_t *h;
 
-			sfl = strlen(pdir) + strlen(s->v.url) + 2; /* / + \0 */
+			sfl = strlen(pdir) + strlen(srcs.a[i].url) + 2; /* / + \0 */
 			if (!(sf = malloc(sfl))) {
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			snprintf(sf, sfl, "%s/%s", pdir, s->v.url);
+			snprintf(sf, sfl, "%s/%s", pdir, srcs.a[i].url);
 
 			dfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
 			if (!(df = malloc(dfl))) {
@@ -353,18 +353,18 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 
 			if (!fileexists(sf))
 				die("%s: URL %s does not exist",
-				    argv0, s->v.url);
+				    argv0, srcs.a[i].url);
 
 			h = sha256hash(sf);
-			if (memcmp(h, s->v.sha256, SHA256_DIGEST_LENGTH)) {
+			if (memcmp(h, srcs.a[i].sha256, SHA256_DIGEST_LENGTH)) {
 				char *eh, *gh;
 
 				eh = sha256uint8tochar(h);
-				gh = sha256uint8tochar(s->v.sha256);
+				gh = sha256uint8tochar(srcs.a[i].sha256);
 				free(h);
 
 				printf("+ hash of %s does not match:\n",
-				       s->v.url);
+				       srcs.a[i].url);
 				printf("  expected: %s\n", eh);
 				printf("  got:      %s\n", gh);
 
@@ -380,8 +380,8 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 			free(df);
 		}
 
-		if (s->v.relpath) {
-			char *sf, *df, *dn = dirname(s->v.relpath), *mvd;
+		if (srcs.a[i].relpath) {
+			char *sf, *df, *dn = dirname(srcs.a[i].relpath), *mvd;
 			size_t sfl, dfl, mvdl;
 
 			sfl = strlen(tmpd) + strlen(b) + 6; /* /src/ + \0 */
@@ -391,14 +391,15 @@ copysources(struct SourceNode *srcs, const char *pdir, const char *tmpd)
 			}
 			snprintf(sf, sfl, "%s/src/%s", tmpd, b);
 
-			dfl = strlen(tmpd) + strlen(s->v.relpath)
+			dfl = strlen(tmpd) + strlen(srcs.a[i].relpath)
 			    + 6; /* /src/ + \0 */
 			if (!(df = malloc(dfl))) {
 				free(sf);
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			snprintf(df, dfl, "%s/src/%s", tmpd, s->v.relpath);
+			snprintf(df, dfl, "%s/src/%s",
+			         tmpd, srcs.a[i].relpath);
 
 			mvdl = strlen(tmpd) + strlen(dn) + 6; /* /src/ + \0 */
 			if (!(mvd = malloc(mvdl))) {
@@ -675,18 +676,6 @@ followsymlink(const char *f)
 	return res;
 }
 
-void
-freesourcellist(struct SourceNode *n)
-{
-	while (n) {
-		struct SourceNode *nn = n->n;
-		free(n->v.url);
-		if (n->v.relpath) free(n->v.relpath);
-		free(n);
-		n = nn;
-	}
-}
-
 struct Packages
 getpackages(void)
 {
@@ -961,13 +950,13 @@ packagerequires(char *pname)
 	return new;
 }
 
-struct SourceNode *
+struct Sources
 packagesources(char *pname)
 {
+	struct Sources srcs;
+	size_t i;
 	char f[PATH_MAX];
 	struct Lines l;
-	int i;
-	struct SourceNode *tail = NULL, *head = NULL;
 
 	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
 	              + strlen("//sources"))
@@ -981,66 +970,50 @@ packagesources(char *pname)
 		     relpath[256];
 		uint8_t *sha256bin;
 		int nfields;
-		struct SourceNode *s = malloc(sizeof(struct SourceNode));
 
 		sha256[0] = '\0';
 		url[0] = '\0';
 		relpath[0] = '\0';
 
 		if ((nfields = sscanf(l.a[i], "%64s %255s %255s",
-		                      sha256, url, relpath)) < 2) {
-			free(s);
+		                      sha256, url, relpath)) < 2)
 			die("%s: URL or SHA256 not present in one of %s's "
 			    "sources",argv0, pname);
-		}
 		sha256bin = sha256chartouint8(sha256);
-		memcpy(s->v.sha256, sha256bin, SHA256_DIGEST_LENGTH);
+		memcpy(srcs.a[i].sha256, sha256bin, SHA256_DIGEST_LENGTH);
 		free(sha256bin);
 
 		url[strcspn(url, "\n")] = '\0';
 		if (!relpathisvalid(url) && !urlisvalid(url)) {
-			free(s);
 			die("%s: URL %s is not valid", argv0, url);
 		}
-		if (!(s->v.url = malloc(strlen(url) + 1))) {
-			free(s);
+		if (!(srcs.a[i].url = malloc(strlen(url) + 1))) {
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		};
-		strcpy(s->v.url, url);
-		s->v.url[255] = '\0';
+		strcpy(srcs.a[i].url, url);
+		srcs.a[i].url[255] = '\0';
 
 		if (nfields == 3) {
 			relpath[strcspn(relpath, "\n")] = '\0';
 			if (!relpathisvalid(relpath)) {
-				free(s->v.url);
-				free(s);
+				free(srcs.a[i].url);
 				die("%s: RELPATH %s is not valid",
 				    argv0, relpath);
 			}
-			if (!(s->v.relpath = malloc(strlen(relpath) + 1))) {
-				free(s->v.url);
-				free(s);
+			if (!(srcs.a[i].relpath = malloc(strlen(relpath) + 1))) {
+				free(srcs.a[i].url);
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			};
-			strcpy(s->v.relpath, relpath);
-			s->v.relpath[255] = '\0';
+			strcpy(srcs.a[i].relpath, relpath);
+			srcs.a[i].relpath[255] = '\0';
 		} else {
-			s->v.relpath = NULL;
+			srcs.a[i].relpath = NULL;
 		}
-
-		s->n = NULL;
-
-		if (!head)
-			head = s;
-		else
-			tail->n = s;
-
-		tail = s;
 	}
 
-	return head;
+	return srcs;
 }
 
 void

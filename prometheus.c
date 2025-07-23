@@ -1124,8 +1124,9 @@ usage(void)
 {
 	fprintf(stderr, "usage: %s -i [-p prefix] package ...\n"
 	                "       %s -u [-p prefix] [-r]  package ...\n"
-	                "       %s -l [-p prefix]\n",
-	                argv0, argv0, argv0);
+	                "       %s -l [-p prefix]\n"
+	                "       %s -a\n",
+	                argv0, argv0, argv0, argv0);
 	exit(EXIT_FAILURE);
 }
 
@@ -1135,7 +1136,9 @@ main(int argc, char *argv[])
 	int install = 0,
 	    uninstall = 0,
 	    recuninstall = 0,
-	    printinst = 0;
+	    printinst = 0,
+	    printall = 0,
+	    prefixdef = 0;
 	char prefix[PATH_MAX] = DEFAULT_PREFIX;
 
 	if (getuid()) {
@@ -1145,6 +1148,9 @@ main(int argc, char *argv[])
 	}
 
 	ARGBEGIN {
+	case 'a':
+		printall = 1;
+		break;
 	case 'i':
 		install = 1;
 		break;
@@ -1154,6 +1160,7 @@ main(int argc, char *argv[])
 	case 'p':
 		char *arg = EARGF(usage());
 		expandtilde(arg, prefix);
+		prefixdef = 1;
 		break;
 	case 'r':
 		recuninstall = 1;
@@ -1165,16 +1172,19 @@ main(int argc, char *argv[])
 		usage();
 	} ARGEND
 
-	if (printinst && argc)
+	if ((printinst || printall) && argc)
 		usage();
 
-	if (!printinst && !argc)
+	if (!(printinst || printall) && !argc)
 		usage();
 
-	if (install + printinst + uninstall != 1)
+	if (install + printinst + uninstall + printall != 1)
 		usage();
 
 	if (recuninstall && !uninstall)
+		usage();
+
+	if (printall && prefixdef)
 		usage();
 
 	handlesignals(sigexit);

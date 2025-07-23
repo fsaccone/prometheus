@@ -33,9 +33,9 @@ struct Depend {
 	unsigned int runtime;
 };
 
-struct DependNode {
-	struct Depend v;
-	struct DependNode *n;
+struct Depends {
+	struct Depend a[DEPENDS_MAX];
+	size_t l;
 };
 
 struct Lines {
@@ -93,7 +93,6 @@ static void fetchfile(const char *url, const char *f);
 static unsigned int fileexists(const char *f);
 static struct RequiresPath findinpath(struct Requires reqs);
 static char *followsymlink(const char *f);
-static void freedependllist(struct DependNode *n);
 static void freesourcellist(struct SourceNode *n);
 static void freestringllist(struct StringNode *n);
 static struct Packages getpackages(void);
@@ -102,7 +101,7 @@ static void installpackage(char *pname, char *prefix);
 static void mkdirrecursive(const char *d);
 static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
-static struct DependNode *packagedepends(char *pname);
+static struct Depends packagedepends(char *pname);
 static struct Outs packageouts(char *pname);
 static struct Requires packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
@@ -683,16 +682,6 @@ followsymlink(const char *f)
 }
 
 void
-freedependllist(struct DependNode *n)
-{
-	while (n) {
-		struct DependNode *nn = n->n;
-		free(n);
-		n = nn;
-	}
-}
-
-void
 freesourcellist(struct SourceNode *n)
 {
 	while (n) {
@@ -763,7 +752,7 @@ handlesignals(void(*hdl)(int))
 void
 installpackage(char *pname, char *prefix)
 {
-	struct DependNode *deps, *dep;
+	struct Depends deps;
 	struct Outs outs;
 	char *env;
 	int i;
@@ -776,16 +765,17 @@ installpackage(char *pname, char *prefix)
 	env = createtmpdir(pname);
 
 	deps = packagedepends(pname);
-	for (dep = deps; dep; dep = dep->n) {
-		printf("+ found dependency %s for %s\n", dep->v.pname, pname);
-		if (!packageexists(dep->v.pname)) {
+	for (i = 0; i < deps.l; i++) {
+		printf("+ found dependency %s for %s\n",
+		       deps.a[i].pname, pname);
+		if (!packageexists(deps.a[i].pname)) {
 			printf("+ dependency %s does not exist\n",
-			       dep->v.pname);
+			       deps.a[i].pname);
 			continue;
 		}
-		installpackage(dep->v.pname, dep->v.runtime ? prefix : env);
+		installpackage(deps.a[i].pname,
+		               deps.a[i].runtime ? prefix : env);
 	}
-	freedependllist(deps);
 
 	buildpackage(pname, env);
 
@@ -884,13 +874,13 @@ packageisinstalled(char *pname, char *prefix)
 	return 1;
 }
 
-struct DependNode *
+struct Depends
 packagedepends(char *pname)
 {
+	struct Depends deps;
+	size_t i;
 	char f[PATH_MAX];
 	struct Lines l;
-	struct DependNode *tail = NULL, *head = NULL;
-	int i;
 
 	if (PATH_MAX <= strlen(pkgsrepodir) + strlen(pname)
 	              + strlen("//depends"))
@@ -902,14 +892,12 @@ packagedepends(char *pname)
 		char dname[65],
 		     sndfield[8];
 		int nfields;
-		struct DependNode *d = malloc(sizeof(struct DependNode));
 
 		dname[0] = '\0';
 		sndfield[0] = '\0';
 
 		if ((nfields = sscanf(l.a[i], "%64s %7s", dname,
 		                      sndfield)) < 1) {
-			free(d);
 			die("%s: PACKAGE not present in one of %s's depends",
 			    argv0, pname);
 		}
@@ -917,29 +905,20 @@ packagedepends(char *pname)
 		dname[strcspn(dname, "\n")] = '\0';
 		if (PROGRAM_MAX <= strlen(dname))
 			die("%s: PROGRAM_MAX exceeded", argv0);
-		strncpy(d->v.pname, dname, PROGRAM_MAX);
-		d->v.pname[65] = '\0';
+		strncpy(deps.a[i].pname, dname, PROGRAM_MAX);
+		deps.a[i].pname[65] = '\0';
 		if (nfields < 2) {
-			d->v.runtime = 0;
+			deps.a[i].runtime = 0;
 		} else if (!strcmp(sndfield, "runtime")) {
-			d->v.runtime = 1;
+			deps.a[i].runtime = 1;
 		} else {
-			free(d);
 			die("%s: the second field in one of %s's depends is "
 			    "something different than runtime", argv0, pname);
 		}
-
-		d->n = NULL;
-
-		if (!head)
-			head = d;
-		else
-			tail->n = d;
-
-		tail = d;
 	}
+	deps.l = i;
 
-	return head;
+	return deps;
 }
 
 struct Outs
@@ -1211,7 +1190,8 @@ void
 uninstallpackage(char *pname, char *prefix, unsigned int rec,
                  struct Packages pkgs)
 {
-	struct StringNode *idep, *ideps = NULL;
+	char ideps[DEPENDS_MAX][PROGRAM_MAX];
+	size_t idepsl = 0;
 	struct Outs outs;
 	int i;
 
@@ -1221,64 +1201,43 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	}
 
 	for (i = 0; i < pkgs.l; i++) {
-		struct DependNode *pdeps, *pd;
+		struct Depends pdeps;
 
 		pdeps = packagedepends(pkgs.a[i]);
 
-		for (pd = pdeps; pd; pd = pd->n) {
-			if (!strcmp(pd->v.pname, pname)
-			    && pd->v.runtime
+		for (i = 0; i < pdeps.l; i++) {
+			if (!strcmp(pdeps.a[i].pname, pname)
+			    && pdeps.a[i].runtime
 			    && packageisinstalled(pkgs.a[i], prefix)) {
 				printf("+ skipping %s since %s depends on "
 				       "it\n", pname, pkgs.a[i]);
-				freedependllist(pdeps);
 				return;
 			}
 		}
-
-		freedependllist(pdeps);
 	}
 
 	if (rec) {
-		struct DependNode *dep, *deps = packagedepends(pname);
-		struct StringNode *idepstail = NULL;
+		struct Depends deps = packagedepends(pname);
 
-		for (dep = deps; dep; dep = dep->n) {
-			struct StringNode *newidep;
+		for (i = 0; i < deps.l; i++) {
+			char newidep[PROGRAM_MAX];
 
-			if (!dep->v.runtime) continue;
+			if (!deps.a[i].runtime) continue;
 
 			printf("+ found dependency %s for %s\n",
-			       dep->v.pname, pname);
+			       deps.a[i].pname, pname);
 
-			if (!packageexists(dep->v.pname)) {
+			if (!packageexists(deps.a[i].pname)) {
 				printf("+ dependency %s does not exist\n",
-				       dep->v.pname);
+				       deps.a[i].pname);
 				continue;
 			}
 
-			if (!(newidep = malloc(sizeof(struct StringNode)))) {
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			if (!(newidep->v = malloc(strlen(dep->v.pname) + 1))) {
-				free(newidep);
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			}
-			strcpy(newidep->v, dep->v.pname);
-
-			newidep->n = NULL;
-
-			if (!ideps)
-				ideps = newidep;
-			else
-				idepstail->n = newidep;
-
-			idepstail = newidep;
+			if (PROGRAM_MAX <= strlen(deps.a[i].pname))
+				die("%s: PROGRAM_MAX exceeded", argv0);
+			strcpy(ideps[idepsl], deps.a[i].pname);
+			idepsl++;
 		}
-
-		freedependllist(deps);
 	}
 
 	printf("- uninstalling %s\n", pname);
@@ -1287,7 +1246,6 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		char *f;
 
 		if (!(f = malloc(fl))) {
-			freestringllist(ideps);
 			perror("malloc");
 			exit(EXIT_FAILURE);
 		}
@@ -1300,7 +1258,6 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 
 		if (remove(f)) {
 			free(f);
-			freestringllist(ideps);
 			perror("remove");
 			exit(EXIT_FAILURE);
 		}
@@ -1309,11 +1266,8 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	}
 	printf("+ uninstalled %s\n", pname);
 
-	for (idep = ideps; idep; idep = idep->n) {
-		uninstallpackage(idep->v, prefix, rec, pkgs);
-	}
-
-	freestringllist(ideps);
+	for (i = 0; i < idepsl; i++)
+		uninstallpackage(ideps[i], prefix, rec, pkgs);
 }
 
 unsigned int

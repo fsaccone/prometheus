@@ -573,7 +573,7 @@ fileexists(const char *f)
 }
 
 struct Requires
-findinpath(struct Requires progs)
+findinpath(struct Requires reqs)
 {
 	struct Requires new;
 	char *pathenv;
@@ -582,7 +582,7 @@ findinpath(struct Requires progs)
 	if (!(pathenv = getenv("PATH")))
 		die("%s: PATH is not set", argv0);
 
-	for (i = 0; i < progs.l; i++) {
+	for (i = 0; i < reqs.l; i++) {
 		char *path, *pathd;
 		unsigned int set = 0;
 
@@ -598,12 +598,12 @@ findinpath(struct Requires progs)
 
 			if (set) break;
 
-			ppl = strlen(pathd) + strlen(progs.a[i]) + 2; /* / + \0 */
+			ppl = strlen(pathd) + strlen(reqs.a[i]) + 2; /* / + \0 */
 			if (!(pp = malloc(ppl))) {
 				perror("malloc");
 				exit(EXIT_FAILURE);
 			}
-			snprintf(pp, ppl, "%s/%s", pathd, progs.a[i]);
+			snprintf(pp, ppl, "%s/%s", pathd, reqs.a[i]);
 
 			if (!fileexists(pp)) continue;
 			set = 1;
@@ -613,7 +613,7 @@ findinpath(struct Requires progs)
 
 		if (!set)
 			die("%s: program %s does not exist",
-			    argv0, progs.a[i]);
+			    argv0, reqs.a[i]);
 	}
 
 	new.l = i;

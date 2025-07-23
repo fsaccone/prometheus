@@ -1,6 +1,7 @@
 /* See LICENSE file for copyright and license details. */
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <lua.h>
@@ -30,6 +31,26 @@ lua_cp(lua_State *luas)
 
 	fclose(sf);
 	fclose(df);
+
+	lua_pushboolean(luas, 1);
+
+	return 1;
+}
+
+int
+lua_exec(lua_State *luas)
+{
+	const char *c = luaL_checkstring(luas, 1);
+	int r = system(c);
+
+	if (r == -1) {
+		luaL_error(luas, "exec %s (system): %s", c, strerror(errno));
+	} else {
+		int s;
+		if((s = WEXITSTATUS(r)))
+			luaL_error(luas, "exec %s: failed with exit status %d",
+			                 c, s);
+	}
 
 	lua_pushboolean(luas, 1);
 

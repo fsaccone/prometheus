@@ -104,7 +104,8 @@ static unsigned int relpathisvalid(char *relpath);
 static void sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
                               uint8_t u[SHA256_DIGEST_LENGTH]);
 static void sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
-static char *sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH]);
+static void sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH],
+                              char c[2 * SHA256_DIGEST_LENGTH + 1]);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
                              struct Packages pkgs);
@@ -319,10 +320,11 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 			if (memcmp(h,
 			           srcs.a[i].sha256,
 			           SHA256_DIGEST_LENGTH)) {
-				char *eh, *gh;
+				char eh[2 * SHA256_DIGEST_LENGTH + 1],
+				     gh[2 * SHA256_DIGEST_LENGTH + 1];
 
-				eh = sha256uint8tochar(h);
-				gh = sha256uint8tochar(srcs.a[i].sha256);
+				sha256uint8tochar(h, eh);
+				sha256uint8tochar(srcs.a[i].sha256, gh);
 
 				printf("+ hash of %s does not match:\n",
 				       srcs.a[i].url);
@@ -357,10 +359,11 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 			sha256hash(sf, h);
 			if (memcmp(h, srcs.a[i].sha256, SHA256_DIGEST_LENGTH)) {
-				char *eh, *gh;
+				char eh[2 * SHA256_DIGEST_LENGTH + 1],
+				     gh[2 * SHA256_DIGEST_LENGTH + 1];
 
-				eh = sha256uint8tochar(h);
-				gh = sha256uint8tochar(srcs.a[i].sha256);
+				sha256uint8tochar(h, eh);
+				sha256uint8tochar(srcs.a[i].sha256, gh);
 
 				printf("+ hash of %s does not match:\n",
 				       srcs.a[i].url);
@@ -369,8 +372,6 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 				free(sf);
 				free(df);
-				free(eh);
-				free(gh);
 				exit(EXIT_FAILURE);
 			}
 			copyfile(sf, df);
@@ -1119,23 +1120,14 @@ sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH])
 	sha256_sum(&ctx, h);
 }
 
-char *
-sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH])
+void
+sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH],
+                  char c[2 * SHA256_DIGEST_LENGTH + 1])
 {
-	char *c;
 	int i;
-
-	if (!(c = malloc(64 * sizeof(char) + 1))) {
-		perror("malloc");
-		exit(EXIT_FAILURE);
-	}
-
 	for (i = 0; i < SHA256_DIGEST_LENGTH; i++)
 		snprintf(&c[i * 2], 3, "%02x", u[i]);
-
-	c[64] = '\0';
-
-	return c;
+	c[2 * SHA256_DIGEST_LENGTH] = '\0';
 }
 
 void

@@ -1127,6 +1127,12 @@ main(int argc, char *argv[])
 	    printinst = 0;
 	char prefix[PATH_MAX] = DEFAULT_PREFIX;
 
+	if (getuid()) {
+		fprintf(stderr, "%s: superuser privileges are required\n",
+		        argv[0]);
+		return EXIT_FAILURE;
+	}
+
 	ARGBEGIN {
 	case 'l':
 		printinst = 1;
@@ -1144,9 +1150,6 @@ main(int argc, char *argv[])
 	default:
 		usage();
 	} ARGEND
-
-	if (getuid())
-		die("superuser privileges are required");
 
 	if (printinst && argc)
 		usage();

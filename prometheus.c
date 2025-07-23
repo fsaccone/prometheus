@@ -1033,6 +1033,7 @@ packagesources(char *pname)
 			srcs.a[i].relpath[255] = '\0';
 		}
 	}
+	srcs.l = i;
 
 	return srcs;
 }

@@ -49,6 +49,11 @@ struct Requires {
 	size_t l;
 };
 
+struct RequiresPath {
+	char a[REQUIRES_MAX][PATH_MAX];
+	size_t l;
+};
+
 struct Source {
 	uint8_t sha256[SHA256_DIGEST_LENGTH];
 	char *url;
@@ -77,7 +82,7 @@ static unsigned int direxists(const char *f);
 static char *expandtilde(const char *f);
 static void fetchfile(const char *url, const char *f);
 static unsigned int fileexists(const char *f);
-static struct Requires findinpath(struct Requires reqs);
+static struct RequiresPath findinpath(struct Requires reqs);
 static char *followsymlink(const char *f);
 static void freedependllist(struct DependNode *n);
 static void freesourcellist(struct SourceNode *n);
@@ -255,7 +260,7 @@ copyrequires(struct Requires reqs, const char *tmpd)
 {
 	char *bin;
 	size_t binl;
-	struct Requires preqs;
+	struct RequiresPath preqs;
 	int i;
 
 	preqs = findinpath(reqs);
@@ -582,10 +587,10 @@ fileexists(const char *f)
 	return (!stat(f, &buf));
 }
 
-struct Requires
+struct RequiresPath
 findinpath(struct Requires reqs)
 {
-	struct Requires new;
+	struct RequiresPath new;
 	char *pathenv;
 	size_t i;
 
@@ -618,7 +623,7 @@ findinpath(struct Requires reqs)
 			if (!fileexists(pp)) continue;
 			set = 1;
 
-			strncpy(new.a[i], pp, PROGRAM_MAX);
+			strncpy(new.a[i], pp, PATH_MAX);
 		}
 
 		if (!set)

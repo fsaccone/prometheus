@@ -24,6 +24,7 @@
 #include "config.h"
 #include "sha256.h"
 
+#define DIE_MAX   1024
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define LINES_MAX MAX(MAX(DEPENDS_MAX, OUTS_MAX), \
                       MAX(REQUIRES_MAX, SOURCES_MAX))
@@ -122,15 +123,15 @@ buildpackage(char *pname, const char *tmpd)
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen("/")
 	              + strlen(pname))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(pdir, sizeof(pdir), "%s/%s", PACKAGE_REPOSITORY, pname);
 
 	if (PATH_MAX <= strlen(pdir) + strlen("/build.lua"))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(b, sizeof(b), "%s/build.lua", pdir);
 
 	if (PATH_MAX <= strlen(tmpd) + strlen("/prometheus.build.lua"))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(db, sizeof(db), "%s/prometheus.build.lua", tmpd);
 
 	copyfile(b, db);
@@ -252,7 +253,7 @@ copyrequires(struct Requires reqs, const char *tmpd)
 	preqs = findinpath(reqs);
 
 	if (PATH_MAX <= strlen(tmpd) + strlen("/bin"))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(bin, sizeof(bin), "%s/bin", tmpd);
 	if (preqs.l > 0 && mkdir(bin, 0700) && errno != EEXIST) {
 		perror("mkdir");
@@ -263,7 +264,7 @@ copyrequires(struct Requires reqs, const char *tmpd)
 		char d[PATH_MAX];
 		if (PATH_MAX <= strlen(tmpd) + strlen(reqs.a[i])
 		              + strlen("/bin/"))
-			die("%s: PATH_MAX exceeded", argv0);
+			die("PATH_MAX exceeded");
 		snprintf(d, sizeof(d), "%s/bin/%s", tmpd, reqs.a[i]);
 		copyfile(preqs.a[i], d);
 	}
@@ -283,7 +284,7 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 			if (PATH_MAX <= strlen(tmpd) + strlen(b)
 			              + strlen("/src/"))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
 
 			fetchfile(srcs.a[i].url, df);
@@ -311,17 +312,16 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 			if (PATH_MAX <= strlen(pdir) + strlen("/")
 			              + strlen(srcs.a[i].url))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			snprintf(sf, sizeof(sf), "%s/%s", pdir, srcs.a[i].url);
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(b))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
 
 			if (!fileexists(sf))
-				die("%s: URL %s does not exist",
-				    argv0, srcs.a[i].url);
+				die("URL %s does not exist", srcs.a[i].url);
 
 			sha256hash(sf, h);
 			if (memcmp(h, srcs.a[i].sha256, SHA256_DIGEST_LENGTH)) {
@@ -347,19 +347,19 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(b))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			snprintf(sf, sizeof(sf), "%s/src/%s", tmpd, b);
 
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(srcs.a[i].relpath))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			snprintf(df, sizeof(df), "%s/src/%s",
 			         tmpd, srcs.a[i].relpath);
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(dn))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			snprintf(mvd, sizeof(mvd), "%s/src/%s", tmpd, dn);
 
 			if (strrchr(dn, '/')) mkdirrecursive(mvd);
@@ -384,7 +384,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	}
 
 	if (PATH_MAX <= strlen("/tmp/prometheus--XXXXXX") + strlen(pname))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(dirtmp, sizeof(dirtmp), "/tmp/prometheus-%s-XXXXXX", pname);
 	strncpy(dir, dirtmp, PATH_MAX);
 	if (!mkdtemp(dir)) {
@@ -393,7 +393,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	}
 
 	if (PATH_MAX <= strlen(dir) + strlen("/prometheus.log"))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		perror("open");
@@ -402,7 +402,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	close(logfd);
 
 	if (PATH_MAX <= strlen(dir) + strlen("/src"))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(src, sizeof(src), "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
 		perror("mkdir");
@@ -419,11 +419,22 @@ curlwrite(void *d, size_t dl, size_t n, FILE *f)
 void
 die(const char *m, ...)
 {
+	char pm[DIE_MAX];
 	va_list va;
+
+	if (DIE_MAX <= strlen(argv0) + strlen(": ") + strlen(m)) {
+		fprintf(stderr, "die: DIE_MAX exceeded\n");
+		exit(EXIT_FAILURE);
+	}
+	snprintf(pm, sizeof(pm), "%s: %s", argv0, m);
+
 	va_start(va, m);
-	vfprintf(stderr, m, va);
+
+	vfprintf(stderr, pm, va);
 	putc('\n', stderr);
+
 	va_end(va);
+
 	exit(EXIT_FAILURE);
 }
 
@@ -447,7 +458,7 @@ expandtilde(const char *f, char ef[PATH_MAX])
 	}
 
 	if (!(home = getenv("HOME")))
-		die("%s: cannot expand tilde since HOME is undefined", argv0);
+		die("cannot expand tilde since HOME is undefined");
 
 	strncpy(ef, home, PATH_MAX);
 	strncat(ef, f + 1, PATH_MAX - strlen(home)); /* skip ~ */
@@ -464,8 +475,10 @@ fetchfile(const char *url, const char *f)
 
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECTNAME, VERSION);
 
-	if (!(c = curl_easy_init()))
-		die("curl: failed to initialize");
+	if (!(c = curl_easy_init())) {
+		fprintf(stderr, "curl: failed to initialize");
+		exit(EXIT_FAILURE);
+	}
 
 	if (!(ff = fopen(f, "wb"))) {
 		curl_easy_cleanup(c);
@@ -482,7 +495,8 @@ fetchfile(const char *url, const char *f)
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);
 		curl_easy_cleanup(c);
-		die("curl: %s", curl_easy_strerror(cc));
+		fprintf(stderr, "curl: %s", curl_easy_strerror(cc));
+		exit(EXIT_FAILURE);
 	}
 
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
@@ -514,7 +528,7 @@ findinpath(struct Requires reqs)
 	size_t i;
 
 	if (!(pathenv = getenv("PATH")))
-		die("%s: PATH is not set", argv0);
+		die("PATH is not set");
 
 	for (i = 0; i < reqs.l; i++) {
 		char *pathd, path[PATH_MAX];
@@ -529,7 +543,7 @@ findinpath(struct Requires reqs)
 
 			if (PATH_MAX <= strlen(pathd) + strlen("/")
 			              + strlen(reqs.a[i]))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			snprintf(pp, sizeof(pp), "%s/%s", pathd, reqs.a[i]);
 
 			if (!fileexists(pp)) continue;
@@ -539,8 +553,7 @@ findinpath(struct Requires reqs)
 		}
 
 		if (!set)
-			die("%s: program %s does not exist",
-			    argv0, reqs.a[i]);
+			die("program %s does not exist", reqs.a[i]);
 	}
 
 	new.l = i;
@@ -652,15 +665,15 @@ installpackage(char *pname, char *prefix)
 		char s[PATH_MAX], d[PATH_MAX];
 
 		if (PATH_MAX <= strlen(env) + strlen(outs.a[i]))
-			die("%s: PATH_MAX exceeded", argv0);
+			die("PATH_MAX exceeded");
 		snprintf(s, sizeof(s), "%s%s", env, outs.a[i]);
 
 		if (!fileexists(s))
-			die("%s: file %s in %s's outs in was not installed",
-			    argv0, s, pname);
+			die("file %s in %s's outs in was not installed",
+			    s, pname);
 
 		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
-			die("%s: PATH_MAX exceeded", argv0);
+			die("PATH_MAX exceeded");
 		snprintf(d, sizeof(d), "%s%s", prefix, outs.a[i]);
 
 		copyfile(s, d);
@@ -673,7 +686,7 @@ mkdirrecursive(const char *d)
 	char buf[PATH_MAX], *p = NULL;
 
 	if (PATH_MAX <= strlen(d))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	strncpy(buf, d, sizeof(buf));
 	buf[sizeof(buf) - 1] = '\0';
 
@@ -696,7 +709,7 @@ packageexists(char *pname)
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("/build.lua")) /* the longest one */
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(bf, sizeof(bf), "%s/%s/build.lua", PACKAGE_REPOSITORY, pname);
 	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
 	snprintf(sf, sizeof(sf), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
@@ -715,7 +728,7 @@ packageisinstalled(char *pname, char *prefix)
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
 		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
-			die("%s: PATH_MAX exceeded", argv0);
+			die("PATH_MAX exceeded");
 		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
 		if (!fileexists(f)) {
 			return 0;
@@ -735,7 +748,7 @@ packagedepends(char *pname)
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//depends"))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(f, sizeof(f), "%s/%s/depends", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
@@ -749,13 +762,13 @@ packagedepends(char *pname)
 
 		if ((nfields = sscanf(l.a[i], "%64s %7s", dname,
 		                      sndfield)) < 1) {
-			die("%s: PACKAGE not present in one of %s's depends",
-			    argv0, pname);
+			die("PACKAGE not present in one of %s's depends",
+			    pname);
 		}
 
 		dname[strcspn(dname, "\n")] = '\0';
 		if (PROGRAM_MAX <= strlen(dname))
-			die("%s: PROGRAM_MAX exceeded", argv0);
+			die("PROGRAM_MAX exceeded");
 		strncpy(deps.a[i].pname, dname, PROGRAM_MAX);
 		deps.a[i].pname[65] = '\0';
 		if (nfields < 2) {
@@ -763,8 +776,8 @@ packagedepends(char *pname)
 		} else if (!strcmp(sndfield, "runtime")) {
 			deps.a[i].runtime = 1;
 		} else {
-			die("%s: the second field in one of %s's depends is "
-			    "something different than runtime", argv0, pname);
+			die("the second field in one of %s's depends is "
+			    "something different than runtime", pname);
 		}
 	}
 	deps.l = i;
@@ -782,18 +795,18 @@ packageouts(char *pname)
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//outs"))
-		die("%s: PATH_MAX exceeded");
+		die("PATH_MAX exceeded");
 	snprintf(f, sizeof(f), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
 	for (i = 0; i < l.l; i++) {
 		if (l.a[i][0] == '\0') {
-			die("%s: empty path found in %s's outs", argv0, pname);
+			die("empty path found in %s's outs", pname);
 		}
 
 		if (l.a[i][0] != '/') {
-			die("%s: non-absolute path found in %s's outs",
-			    argv0, pname);
+			die("non-absolute path found in %s's outs",
+			    pname);
 		}
 
 		strncpy(outs.a[i], l.a[i], PATH_MAX);
@@ -813,14 +826,13 @@ packagerequires(char *pname)
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//requires"))
-		die("%s: PATH_MAX exceeded", argv0);
+		die("PATH_MAX exceeded");
 	snprintf(f, sizeof(f), "%s/%s/requires", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
 	for (i = 0; i < l.l; i++) {
 		if (l.a[i][0] == '\0') {
-			die("%s: empty line found in %s's requires",
-			    argv0, pname);
+			die("empty line found in %s's requires", pname);
 		}
 		strncpy(new.a[i], l.a[i], PROGRAM_MAX);
 	}
@@ -839,7 +851,7 @@ packagesources(char *pname)
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//sources"))
-		die("%s: PATH_MAX exceeded");
+		die("PATH_MAX exceeded");
 	snprintf(f, sizeof(f), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
 	l = readlines(f);
 
@@ -860,19 +872,19 @@ packagesources(char *pname)
 			switch (nfields) {
 			case 0:
 				if (2 * SHA256_DIGEST_LENGTH != strlen(tok))
-					die("%s: SHA256 is not valid", argv0);
+					die("SHA256 is not valid");
 				strncpy(sha256, tok, 2 * SHA256_DIGEST_LENGTH);
 				sha256[2 * SHA256_DIGEST_LENGTH] = '\0';
 				break;
 			case 1:
 				if (PATH_MAX <= strlen(tok))
-					die("%s: PATH_MAX exceeded", argv0);
+					die("PATH_MAX exceeded");
 				strncpy(url, tok, PATH_MAX);
 				url[PATH_MAX - 1] = '\0';
 				break;
 			case 2:
 				if (PATH_MAX <= strlen(tok))
-					die("%s: PATH_MAX exceeded", argv0);
+					die("PATH_MAX exceeded");
 				strncpy(relpath, tok, PATH_MAX);
 				sha256[PATH_MAX - 1] = '\0';
 				break;
@@ -883,32 +895,30 @@ packagesources(char *pname)
 		}
 
 		if (nfields < 1)
-			die("%s: SHA256 not present in one of %s's sources",
-			    argv0, pname);
+			die("SHA256 not present in one of %s's sources",
+			    pname);
 		else if (nfields < 2)
-			die("%s: URL not present in one of %s's sources",
-			    argv0, pname);
+			die("URL not present in one of %s's sources", pname);
 
 		sha256chartouint8(sha256, sha256bin);
 		memcpy(srcs.a[i].sha256, sha256bin, SHA256_DIGEST_LENGTH);
 
 		url[strcspn(url, "\n")] = '\0';
 		if (!relpathisvalid(url) && !urlisvalid(url)) {
-			die("%s: URL %s is not valid", argv0, url);
+			die("URL %s is not valid", url);
 		}
 		if (PATH_MAX <= strlen(url))
-			die("%s: PATH_MAX exceeded", argv0);
+			die("PATH_MAX exceeded");
 		strncpy(srcs.a[i].url, url, PATH_MAX);
 		srcs.a[i].url[255] = '\0';
 
 		if (nfields == 3) {
 			relpath[strcspn(relpath, "\n")] = '\0';
 			if (!relpathisvalid(relpath)) {
-				die("%s: RELPATH %s is not valid",
-				    argv0, relpath);
+				die("RELPATH %s is not valid", relpath);
 			}
 			if (PATH_MAX <= strlen(relpath))
-				die("%s: PATH_MAX exceeded", argv0);
+				die("PATH_MAX exceeded");
 			strncpy(srcs.a[i].relpath, relpath, PATH_MAX);
 			srcs.a[i].relpath[255] = '\0';
 		}
@@ -948,7 +958,7 @@ readlines(const char *f)
 		buf[strcspn(buf, "\n")] = '\0';
 		strncpy(l.a[i], buf, LINE_MAX);
 		i++;
-		if (i >= LINES_MAX) die("%s: LINES_MAX exceeded", argv0);
+		if (i >= LINES_MAX) die("LINES_MAX exceeded");
 	}
 	l.l = i;
 
@@ -1050,7 +1060,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		char *f;
 
 		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
-			die("%s: PATH_MAX exceeded", argv0);
+			die("PATH_MAX exceeded");
 		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
 
 		if (!fileexists(f)) continue;
@@ -1093,8 +1103,9 @@ urlisvalid(char *url)
 void
 usage(void)
 {
-	die("usage: %s [-u [-r]] [-p prefix] package ...\n"
-	    "       %s -l [-p prefix]", argv0, argv0);
+	fprintf(stderr, "usage: %s [-u [-r]] [-p prefix] package ...\n"
+	                "       %s -l [-p prefix]", argv0, argv0);
+	exit(EXIT_FAILURE);
 }
 
 int
@@ -1124,7 +1135,7 @@ main(int argc, char *argv[])
 	} ARGEND
 
 	if (getuid())
-		die("%s: superuser privileges are required", argv0);
+		die("superuser privileges are required");
 
 	if (printinst && argc)
 		usage();
@@ -1144,7 +1155,7 @@ main(int argc, char *argv[])
 		prefix[strlen(prefix) - 1] = '\0';
 
 	if (strlen(prefix) && !direxists(prefix))
-		die("%s: prefix %s does not exist", argv0, prefix);
+		die("prefix %s does not exist", prefix);
 
 	if (printinst) {
 		struct Packages pkgs = getpackages();
@@ -1154,7 +1165,7 @@ main(int argc, char *argv[])
 	/* will not be evaluated when printinst is 1 */
 	for (; *argv; argc--, argv++) {
 		if (!packageexists(*argv))
-			die("%s: package %s does not exist", argv0, *argv);
+			die("package %s does not exist", *argv);
 
 		if (uninstall) {
 			struct Packages pkgs = getpackages();

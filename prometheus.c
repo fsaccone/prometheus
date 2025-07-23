@@ -24,6 +24,10 @@
 #include "config.h"
 #include "sha256.h"
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define LINES_MAX MAX(MAX(DEPENDS_MAX, OUTS_MAX), \
+                      MAX(REQUIRES_MAX, SOURCES_MAX))
+
 struct Depend {
 	char *pname;
 	unsigned int runtime;
@@ -32,6 +36,11 @@ struct Depend {
 struct DependNode {
 	struct Depend v;
 	struct DependNode *n;
+};
+
+struct Lines {
+	char a[LINES_MAX][LINE_MAX];
+	size_t l;
 };
 
 struct Packages {
@@ -98,7 +107,7 @@ static struct Outs packageouts(char *pname);
 static struct Requires packagerequires(char *pname);
 static struct SourceNode *packagesources(char *pname);
 static void printinstalled(char *prefix, struct Packages pkgs);
-static struct StringNode *readlines(const char *f);
+static struct Lines readlines(const char *f);
 static unsigned int relpathisvalid(char *relpath);
 static uint8_t *sha256chartouint8(const char *c);
 static uint8_t *sha256hash(const char *f);
@@ -875,13 +884,14 @@ struct DependNode *
 packagedepends(char *pname)
 {
 	char f[1024];
-	struct StringNode *l;
+	struct Lines l;
 	struct DependNode *tail = NULL, *head = NULL;
+	int i;
 
 	snprintf(f, sizeof(f), "%s/%s/depends", pkgsrepodir, pname);
 	l = readlines(f);
 
-	for (; l; l = l->n) {
+	for (i = 0; i < l.l; i++) {
 		char dname[65],
 		     sndfield[8];
 		int nfields;
@@ -890,7 +900,8 @@ packagedepends(char *pname)
 		dname[0] = '\0';
 		sndfield[0] = '\0';
 
-		if ((nfields = sscanf(l->v, "%64s %7s", dname, sndfield)) < 1) {
+		if ((nfields = sscanf(l.a[i], "%64s %7s", dname,
+		                      sndfield)) < 1) {
 			free(d);
 			die("%s: PACKAGE not present in one of %s's depends",
 			    argv0, pname);
@@ -933,50 +944,46 @@ packageouts(char *pname)
 {
 	struct Outs outs;
 	size_t i;
-	struct StringNode *ls, *l;
+	struct Lines l;
 	char f[1024];
 
 	snprintf(f, sizeof(f), "%s/%s/outs", pkgsrepodir, pname);
-	ls = readlines(f);
+	l = readlines(f);
 
-	for (l = ls; l; l = l->n, i++) {
-		if (l->v[0] == '\0') {
-			freestringllist(ls);
+	for (i = 0; i < l.l; i++) {
+		if (l.a[i][0] == '\0') {
 			die("%s: empty path found in %s's outs", argv0, pname);
 		}
 
-		if (l->v[0] != '/') {
-			freestringllist(ls);
+		if (l.a[i][0] != '/') {
 			die("%s: non-absolute path found in %s's outs",
 			    argv0, pname);
 		}
 
-		strncpy(outs.a[i], l->v, PATH_MAX);
+		strncpy(outs.a[i], l.a[i], PATH_MAX);
 	}
 	outs.l = i;
 
-	freestringllist(ls);
 	return outs;
 }
 
 struct Requires
 packagerequires(char *pname)
 {
-	struct StringNode *ls, *l;
+	struct Lines l;
 	char f[1024];
 	size_t i;
 	struct Requires new;
 
 	snprintf(f, sizeof(f), "%s/%s/requires", pkgsrepodir, pname);
-	ls = readlines(f);
+	l = readlines(f);
 
-	for (l = ls; l; l = l->n, i++) {
-		if (l->v[0] == '\0') {
-			freestringllist(ls);
+	for (i = 0; i < l.l; i++) {
+		if (l.a[i][0] == '\0') {
 			die("%s: empty line found in %s's requires",
 			    argv0, pname);
 		}
-		strncpy(new.a[i], l->v, PROGRAM_MAX);
+		strncpy(new.a[i], l.a[i], PROGRAM_MAX);
 	}
 	new.l = i;
 
@@ -987,26 +994,27 @@ struct SourceNode *
 packagesources(char *pname)
 {
 	char f[1024];
-	struct StringNode *l;
+	struct Lines l;
+	int i;
 	struct SourceNode *tail = NULL, *head = NULL;
 
 	snprintf(f, sizeof(f), "%s/%s/sources", pkgsrepodir, pname);
 	l = readlines(f);
 
-	for (; l; l = l->n) {
+	for (i = 0; i < l.l; i++) {
 		char sha256[65],
 		     url[256],
 		     relpath[256];
 		uint8_t *sha256bin;
-		int nfields, i;
+		int nfields;
 		struct SourceNode *s = malloc(sizeof(struct SourceNode));
 
 		sha256[0] = '\0';
 		url[0] = '\0';
 		relpath[0] = '\0';
 
-		if ((nfields = sscanf(l->v, "%64s %255s %255s",
-		                     sha256, url, relpath)) < 2) {
+		if ((nfields = sscanf(l.a[i], "%64s %255s %255s",
+		                      sha256, url, relpath)) < 2) {
 			free(s);
 			die("%s: URL or SHA256 not present in one of %s's "
 			    "sources",argv0, pname);
@@ -1072,45 +1080,30 @@ printinstalled(char *prefix, struct Packages pkgs)
 	}
 }
 
-struct StringNode *
+struct Lines
 readlines(const char *f)
 {
-	struct StringNode *head = NULL, *tail = NULL;
+	struct Lines l;
+	size_t i;
 	FILE *fp;
-	char buf[1024];
+	char buf[LINE_MAX];
 
 	fp = fopen(f, "r");
-	if (!fp) return NULL;
+	if (!fp) {
+		l.l = 0;
+		return l;
+	};
 
 	while (fgets(buf,sizeof(buf), fp) != NULL) {
-		struct StringNode *newl = malloc(sizeof(struct StringNode));
-		if (!newl) {
-			fclose(fp);
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-
 		buf[strcspn(buf, "\n")] = '\0';
-		if (!(newl->v = malloc(strlen(buf) + 1))) {
-			free(newl);
-			fclose(fp);
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		}
-		strcpy(newl->v, buf);
-
-		newl->n = NULL;
-
-		if (!head)
-			head = newl;
-		else
-			tail->n = newl;
-
-		tail = newl;
+		strncpy(l.a[i], buf, LINE_MAX);
+		i++;
+		if (i >= LINES_MAX) die("%s: LINES_MAX exceeded", argv0);
 	}
+	l.l = i;
 
 	fclose(fp);
-	return head;
+	return l;
 }
 
 unsigned int

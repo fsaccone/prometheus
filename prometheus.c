@@ -729,6 +729,7 @@ getpackages(void)
 		return pkgs;
 	};
 
+	i = 0;
 	while ((e = readdir(d))) {
 		char path[PATH_MAX];
 
@@ -1094,6 +1095,7 @@ readlines(const char *f)
 		return l;
 	};
 
+	i = 0;
 	while (fgets(buf,sizeof(buf), fp) != NULL) {
 		buf[strcspn(buf, "\n")] = '\0';
 		strncpy(l.a[i], buf, LINE_MAX);

@@ -101,6 +101,7 @@ static struct Outs packageouts(char *pname);
 static struct Requires packagerequires(char *pname);
 static struct Sources packagesources(char *pname);
 static void printinstalled(char *prefix, struct Packages pkgs);
+static void printpackages(struct Packages pkgs);
 static struct Lines readlines(const char *f);
 static void registerluautils(lua_State *luas);
 static unsigned int relpathisvalid(char *relpath);
@@ -939,6 +940,13 @@ printinstalled(char *prefix, struct Packages pkgs)
 		if (packageisinstalled(pkgs.a[i], prefix))
 			printf("%s\n", pkgs.a[i]);
 	}
+}
+
+void
+printpackages(struct Packages pkgs)
+{
+	int i;
+	for (i = 0; i < pkgs.l; i++) printf("%s\n", pkgs.a[i]);
 }
 
 struct Lines

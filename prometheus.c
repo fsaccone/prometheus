@@ -101,9 +101,9 @@ static struct Sources packagesources(char *pname);
 static void printinstalled(char *prefix, struct Packages pkgs);
 static struct Lines readlines(const char *f);
 static unsigned int relpathisvalid(char *relpath);
-static uint8_t *sha256chartouint8(const char c[2 * SHA256_DIGEST_LENGTH + 1]);
+static uint8_t *sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1]);
 static void sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
-static char *sha256uint8tochar(const uint8_t *u);
+static char *sha256uint8tochar(uint8_t *u);
 static void sigcleanup();
 static void uninstallpackage(char *pname, char *prefix, unsigned int rec,
                              struct Packages pkgs);
@@ -1083,7 +1083,7 @@ relpathisvalid(char *relpath)
 }
 
 uint8_t *
-sha256chartouint8(const char c[2 * SHA256_DIGEST_LENGTH + 1])
+sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1])
 {
 	uint8_t *u;
 	int i;
@@ -1128,7 +1128,7 @@ sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH])
 }
 
 char *
-sha256uint8tochar(const uint8_t *u)
+sha256uint8tochar(uint8_t *u)
 {
 	char *c;
 	int i;

@@ -10,6 +10,12 @@ Requirements
 - libc
 - Lua
 
+Installaton
+-----------
+
+	$ make
+	# make install
+
 Usage
 -----
 

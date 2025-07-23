@@ -65,8 +65,8 @@ struct RequiresPath {
 
 struct Source {
 	uint8_t sha256[SHA256_DIGEST_LENGTH];
-	char *url;
-	char *relpath;
+	char url[PATH_MAX];
+	char relpath[PATH_MAX];
 };
 
 struct Sources {
@@ -966,8 +966,8 @@ packagesources(char *pname)
 
 	for (i = 0; i < l.l; i++) {
 		char sha256[65],
-		     url[256],
-		     relpath[256];
+		     url[PATH_MAX],
+		     relpath[PATH_MAX];
 		uint8_t *sha256bin;
 		int nfields;
 
@@ -987,29 +987,21 @@ packagesources(char *pname)
 		if (!relpathisvalid(url) && !urlisvalid(url)) {
 			die("%s: URL %s is not valid", argv0, url);
 		}
-		if (!(srcs.a[i].url = malloc(strlen(url) + 1))) {
-			perror("malloc");
-			exit(EXIT_FAILURE);
-		};
-		strcpy(srcs.a[i].url, url);
+		if (PATH_MAX <= strlen(url))
+			die("%s: PATH_MAX exceeded", argv0);
+		strncpy(srcs.a[i].url, url, PATH_MAX);
 		srcs.a[i].url[255] = '\0';
 
 		if (nfields == 3) {
 			relpath[strcspn(relpath, "\n")] = '\0';
 			if (!relpathisvalid(relpath)) {
-				free(srcs.a[i].url);
 				die("%s: RELPATH %s is not valid",
 				    argv0, relpath);
 			}
-			if (!(srcs.a[i].relpath = malloc(strlen(relpath) + 1))) {
-				free(srcs.a[i].url);
-				perror("malloc");
-				exit(EXIT_FAILURE);
-			};
-			strcpy(srcs.a[i].relpath, relpath);
+			if (PATH_MAX <= strlen(relpath))
+				die("%s: PATH_MAX exceeded", argv0);
+			strncpy(srcs.a[i].relpath, relpath, PATH_MAX);
 			srcs.a[i].relpath[255] = '\0';
-		} else {
-			srcs.a[i].relpath = NULL;
 		}
 	}
 

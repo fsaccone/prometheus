@@ -471,9 +471,9 @@ fetchfile(const char *url, const char *f)
 	CURLcode cc;
 	FILE *ff;
 	long r;
-	char ua[sizeof(PROJECTNAME) + sizeof(VERSION)]; /* -2^\0 +/ +\0 */
+	char ua[sizeof(PROJECT_NAME) + sizeof(VERSION)]; /* -2^\0 +/ +\0 */
 
-	snprintf(ua, sizeof(ua), "%s/%s", PROJECTNAME, VERSION);
+	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
 	if (!(c = curl_easy_init())) {
 		fprintf(stderr, "curl: failed to initialize");

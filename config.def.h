@@ -12,7 +12,6 @@
 
 /* the directory containing the package repository */
 #define PACKAGE_REPOSITORY "/opt/olympus"
-/* check README for more informations about package repositories */
 
 /* the default prefix */
 #define DEFAULT_PREFIX "/"

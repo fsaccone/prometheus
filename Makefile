@@ -2,7 +2,7 @@
 
 include config.mk
 
-SRCS = prometheus.c sha256.c
+SRCS = lua.c prometheus.c sha256.c
 BIN = prometheus
 
 OBJS = $(SRCS:.c=.o)

@@ -1173,7 +1173,7 @@ void
 usage(void)
 {
 	fprintf(stderr, "usage: %s -i [-p prefix] package ...\n"
-	                "       %s -u [-p prefix] [-r]  package ...\n"
+	                "       %s -u [-p prefix] [-r] package ...\n"
 	                "       %s -l [-p prefix]\n"
 	                "       %s -a\n",
 	                argv0, argv0, argv0, argv0);

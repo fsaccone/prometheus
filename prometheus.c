@@ -1172,7 +1172,7 @@ urlisvalid(char *url)
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s -i [-p prefix] package ...\n"
+	fprintf(stderr, "usage: %s -i [-p prefix] [-y] package ...\n"
 	                "       %s -u [-p prefix] [-r] package ...\n"
 	                "       %s -l [-p prefix]\n"
 	                "       %s -a\n",
@@ -1184,6 +1184,7 @@ int
 main(int argc, char *argv[])
 {
 	int install = 0,
+	    y = 0,
 	    uninstall = 0,
 	    recuninstall = 0,
 	    printinst = 0,
@@ -1217,6 +1218,9 @@ main(int argc, char *argv[])
 	case 'r':
 		recuninstall = 1;
 		break;
+	case 'y':
+		y = 1;
+		break;
 	case 'u':
 		uninstall = 1;
 		break;
@@ -1231,6 +1235,9 @@ main(int argc, char *argv[])
 		usage();
 
 	if (install + printinst + uninstall + printall != 1)
+		usage();
+
+	if (y && !install)
 		usage();
 
 	if (recuninstall && !uninstall)

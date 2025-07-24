@@ -1041,6 +1041,7 @@ void
 registerluautils(lua_State *luas)
 {
 	lua_register(luas, "cd", lua_cd);
+	lua_register(luas, "chmod", lua_chmod);
 	lua_register(luas, "cp", lua_cp);
 	lua_register(luas, "echo", lua_echo);
 	lua_register(luas, "exec", lua_exec);

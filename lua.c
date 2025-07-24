@@ -20,6 +20,16 @@ lua_cd(lua_State *luas)
 }
 
 int
+lua_chmod(lua_State *luas)
+{
+	const char *f = luaL_checkstring(luas, 1);
+	mode_t m = (mode_t)luaL_checkinteger(luas, 2);
+	if (chmod(f, m))
+		luaL_error(luas, "chmod %s: %s", f, strerror(errno));
+	return 0;
+}
+
+int
 lua_cp(lua_State *luas)
 {
 	const char *s = luaL_checkstring(luas, 1),

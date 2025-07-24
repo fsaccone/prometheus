@@ -7,6 +7,7 @@
 #include <lualib.h>
 
 int lua_cd(lua_State *luas);
+int lua_chmod(lua_State *luas);
 int lua_cp(lua_State *luas);
 int lua_echo(lua_State *luas);
 int lua_exec(lua_State *luas);

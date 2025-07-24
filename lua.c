@@ -56,16 +56,22 @@ lua_echo(lua_State *luas)
 int
 lua_exec(lua_State *luas)
 {
-	const char *c = luaL_checkstring(luas, 1);
-	int r = system(c);
+	int argc = lua_gettop(luas), i, s;
+	char *argv[argc];
 
-	if (r == -1) {
-		luaL_error(luas, "exec %s: %s", c, strerror(errno));
-	} else {
-		int s;
-		if((s = WEXITSTATUS(r)))
+	if (argc < 1) luaL_error(luas, "usage: exec(cmd, [arg, ...])");
+
+	for (i = 0; i < argc; i++)
+		argv[i] = (char *)luaL_checkstring(luas, i + 1);
+	argv[argc] = NULL;
+
+	if ((s = execvp(argv[0], argv))) {
+		if (s == -1)
+			luaL_error(luas, "exec %s: %s",
+		                   argv[0], strerror(errno));
+		else
 			luaL_error(luas, "exec %s: failed with exit status %d",
-			                 c, s);
+			           argv[0], s);
 	}
 
 	return 0;

@@ -507,7 +507,8 @@ fetchfile(const char *url, const char *f)
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);
 		curl_easy_cleanup(c);
-		fprintf(stderr, "+ curl: %s\n", curl_easy_strerror(cc));
+		fprintf(stderr, "+ curl %s: %s\n",
+		        url, curl_easy_strerror(cc));
 		return EXIT_FAILURE;
 	}
 
@@ -515,8 +516,7 @@ fetchfile(const char *url, const char *f)
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
 
 	if (r >= 400) {
-		printf("+ Failed to fetch URL %s: response code is %ld\n",
-		       url, r);
+		printf("+ curl %s: Response code %ld\n", url, r);
 		fclose(ff);
 		curl_easy_cleanup(c);
 		return EXIT_FAILURE;

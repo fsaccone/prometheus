@@ -1078,8 +1078,7 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 			}
 			snprintf(mvd, sizeof(mvd), "%s/src/%s", tmpd, dn);
 
-			if (strrchr(dn, '/') && mkdirrecursive(mvd))
-				return EXIT_FAILURE;
+			if (mkdirrecursive(mvd)) return EXIT_FAILURE;
 
 			if (rename(sf, df)) {
 				perror("+ rename");

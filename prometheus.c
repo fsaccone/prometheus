@@ -79,6 +79,7 @@ static int followsymlink(const char *f, char ff[PATH_MAX]);
 static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
 static int installpackage(char *pname, char *prefix, unsigned int y);
+static int installouts(struct Outs outs, char sd[PATH_MAX], char dd[PATH_MAX]);
 static int mkdirrecursive(const char *d);
 static int packagedepends(char *pname, struct Depends *deps);
 static int packageexists(char *pname);
@@ -591,40 +592,50 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 	if (buildpackage(pname, tmpd, nochr)) return EXIT_FAILURE;
 
+	if (installouts(outs, tmpd, prefix)) return EXIT_FAILURE;
+	printf("+ Installed %s\n", pname);
+
+	return EXIT_SUCCESS;
+}
+
+int
+installouts(struct Outs outs, char sd[PATH_MAX], char dd[PATH_MAX])
+{
+	int i;
+
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX];
 
-		if (PATH_MAX <= strlen(tmpd) + strlen(outs.a[i])) {
+		if (PATH_MAX <= strlen(sd) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");
 			return EXIT_FAILURE;
 		}
-		snprintf(s, sizeof(s), "%s%s", tmpd, outs.a[i]);
+		snprintf(s, sizeof(s), "%s%s", sd, outs.a[i]);
 
 		if (!fileexists(s)) {
 			printferr("Out file %s has not been installed to %s",
-			          outs.a[i], tmpd);
+			          outs.a[i], sd);
 			return EXIT_FAILURE;
 		}
 	}
+
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX], d[PATH_MAX];
 
-		if (PATH_MAX <= strlen(tmpd) + strlen(outs.a[i])) {
+		if (PATH_MAX <= strlen(sd) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");
 			return EXIT_FAILURE;
 		}
-		snprintf(s, sizeof(s), "%s%s", tmpd, outs.a[i]);
+		snprintf(s, sizeof(s), "%s%s", sd, outs.a[i]);
 
-		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
+		if (PATH_MAX <= strlen(dd) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");
 			return EXIT_FAILURE;
 		}
-		snprintf(d, sizeof(d), "%s%s", prefix, outs.a[i]);
+		snprintf(d, sizeof(d), "%s%s", dd, outs.a[i]);
 
 		if (copyfile(s, d)) return EXIT_FAILURE;
 	}
-
-	printf("+ Installed %s\n", pname);
 
 	return EXIT_SUCCESS;
 }

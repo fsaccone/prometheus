@@ -426,10 +426,10 @@ die(const char *m, ...)
 	va_list va;
 
 	if (DIE_MAX <= strlen(argv0) + strlen(": ") + strlen(m)) {
-		fprintf(stderr, "die: DIE_MAX exceeded\n");
+		fprintf(stderr, "+ die: DIE_MAX exceeded\n");
 		exit(EXIT_FAILURE);
 	}
-	snprintf(pm, sizeof(pm), "%s: %s", argv0, m);
+	snprintf(pm, sizeof(pm), "+ %s: %s", argv0, m);
 
 	va_start(va, m);
 
@@ -479,7 +479,7 @@ fetchfile(const char *url, const char *f)
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
 	if (!(c = curl_easy_init())) {
-		fprintf(stderr, "curl: failed to initialize\n");
+		fprintf(stderr, "+ curl: failed to initialize\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -506,7 +506,7 @@ fetchfile(const char *url, const char *f)
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);
 		curl_easy_cleanup(c);
-		fprintf(stderr, "curl: %s\n", curl_easy_strerror(cc));
+		fprintf(stderr, "+ curl: %s\n", curl_easy_strerror(cc));
 		exit(EXIT_FAILURE);
 	}
 

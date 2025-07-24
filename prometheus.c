@@ -1213,7 +1213,7 @@ main(int argc, char *argv[])
 		printpackages(pkgs);
 	}
 
-	/* will not be evaluated when printinst is 1 */
+	/* will not be evaluated when either printinst or prinstall is 1 */
 	for (; *argv; argc--, argv++) {
 		if (!packageexists(*argv))
 			die("package %s does not exist", *argv);

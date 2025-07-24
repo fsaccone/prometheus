@@ -614,7 +614,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 {
 	struct Depends deps;
 	struct Outs outs;
-	char env[PATH_MAX], nochrf[PATH_MAX];
+	char tmpd[PATH_MAX], nochrf[PATH_MAX];
 	int i, pii;
 	unsigned int nochr;
 
@@ -672,7 +672,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		printf("\n");
 	}
 
-	if (createtmpdir(pname, env)) return EXIT_FAILURE;
+	if (createtmpdir(pname, tmpd)) return EXIT_FAILURE;
 
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
@@ -687,26 +687,26 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			continue;
 		}
 		if (installpackage(deps.a[i].pname,
-		                   deps.a[i].runtime ? prefix : env,
+		                   deps.a[i].runtime ? prefix : tmpd,
 		                   y))
 			return EXIT_FAILURE;
 	}
 
-	if (buildpackage(pname, env, nochr)) return EXIT_FAILURE;
+	if (buildpackage(pname, tmpd, nochr)) return EXIT_FAILURE;
 
 	if (packageouts(pname, &outs)) return EXIT_FAILURE;
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX], d[PATH_MAX];
 
-		if (PATH_MAX <= strlen(env) + strlen(outs.a[i])) {
+		if (PATH_MAX <= strlen(tmpd) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");
 			return EXIT_FAILURE;
 		}
-		snprintf(s, sizeof(s), "%s%s", env, outs.a[i]);
+		snprintf(s, sizeof(s), "%s%s", tmpd, outs.a[i]);
 
 		if (!fileexists(s)) {
 			printferr("Out file %s has not been installed to %s",
-			          outs.a[i], env);
+			          outs.a[i], tmpd);
 			return EXIT_FAILURE;
 		}
 

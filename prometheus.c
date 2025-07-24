@@ -966,43 +966,51 @@ packagesources(char *pname, struct Sources *srcs)
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
-		char sha256[2 * SHA256_DIGEST_LENGTH + 1],
-		     url[PATH_MAX],
-		     relpath[PATH_MAX],
-		     *tok;
-		uint8_t sha256bin[SHA256_DIGEST_LENGTH];
+		char *tok;
 		int nfields;
-
-		sha256[0] = '\0';
-		url[0] = '\0';
-		relpath[0] = '\0';
 
 		tok = strtok(l.a[i], " \t\n");
 		while (tok && nfields < 3) {
+			char sha256[2 * SHA256_DIGEST_LENGTH + 1];
+
 			switch (nfields) {
 			case 0:
 				if (2 * SHA256_DIGEST_LENGTH != strlen(tok)) {
-					die("SHA256 is not valid");
+					die("SHA256 %s is not valid", tok);
 					return EXIT_FAILURE;
 				}
 				strncpy(sha256, tok, 2 * SHA256_DIGEST_LENGTH);
 				sha256[2 * SHA256_DIGEST_LENGTH] = '\0';
+				sha256chartouint8(sha256, srcs->a[i].sha256);
 				break;
 			case 1:
 				if (PATH_MAX <= strlen(tok)) {
 					die("PATH_MAX exceeded");
 					return EXIT_FAILURE;
 				}
-				strncpy(url, tok, PATH_MAX);
-				url[PATH_MAX - 1] = '\0';
+				if (!relpathisvalid(tok) && !urlisvalid(tok)) {
+					die("URL %s is not valid", tok);
+					return EXIT_FAILURE;
+				}
+				strncpy(srcs->a[i].url, tok, PATH_MAX);
+				srcs->a[i]
+				    .url[strcspn(srcs->a[i].url, "\n")] = '\0';
+				srcs->a[i].url[PATH_MAX] = '\0';
 				break;
 			case 2:
 				if (PATH_MAX <= strlen(tok)) {
 					die("PATH_MAX exceeded");
 					return EXIT_FAILURE;
 				}
-				strncpy(relpath, tok, PATH_MAX);
-				sha256[PATH_MAX - 1] = '\0';
+				if (!relpathisvalid(tok)) {
+					die("RELPATH %s is not valid", tok);
+					return EXIT_FAILURE;
+				}
+				strncpy(srcs->a[i].relpath, tok, PATH_MAX);
+				srcs->a[i]
+				    .relpath[strcspn(srcs->a[i].relpath, "\n")]
+				    = '\0';
+				srcs->a[i].relpath[PATH_MAX] = '\0';
 				break;
 			default:
 			}
@@ -1017,35 +1025,6 @@ packagesources(char *pname, struct Sources *srcs)
 		} else if (nfields < 2) {
 			die("URL not present in one of %s's sources", pname);
 			return EXIT_FAILURE;
-		}
-
-		sha256chartouint8(sha256, sha256bin);
-		memcpy(srcs->a[i].sha256, sha256bin, SHA256_DIGEST_LENGTH);
-
-		url[strcspn(url, "\n")] = '\0';
-		if (!relpathisvalid(url) && !urlisvalid(url)) {
-			die("URL %s is not valid", url);
-			return EXIT_FAILURE;
-		}
-		if (PATH_MAX <= strlen(url)) {
-			die("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		strncpy(srcs->a[i].url, url, PATH_MAX);
-		srcs->a[i].url[255] = '\0';
-
-		if (nfields == 3) {
-			relpath[strcspn(relpath, "\n")] = '\0';
-			if (!relpathisvalid(relpath)) {
-				die("RELPATH %s is not valid", relpath);
-				return EXIT_FAILURE;
-			}
-			if (PATH_MAX <= strlen(relpath)) {
-				die("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			strncpy(srcs->a[i].relpath, relpath, PATH_MAX);
-			srcs->a[i].relpath[255] = '\0';
 		}
 	}
 	srcs->l = i;

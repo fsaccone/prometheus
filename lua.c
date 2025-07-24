@@ -86,10 +86,7 @@ int
 lua_mkdir(lua_State *luas)
 {
 	const char *d = luaL_checkstring(luas, 1);
-	int r;
-
-	if ((r = mkdir(d, 0700)))
+	if (mkdir(d, 0700))
 		luaL_error(luas, "mkdir %s: %s", d, strerror(errno));
-
 	return 0;
 }

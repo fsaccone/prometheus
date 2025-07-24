@@ -28,12 +28,12 @@ lua_cp(lua_State *luas)
 	FILE *sf, *df;
 
 	if (!(sf = fopen(s, "rb")))
-		luaL_error(luas, "cp %s %s (fopen s): %s",
+		luaL_error(luas, "cp (%s) %s: %s",
 		           s, d, strerror(errno));
 
 	if (!(df = fopen(d, "wb"))) {
 		fclose(sf);
-		luaL_error(luas, "cp %s %s (fopen d): %s",
+		luaL_error(luas, "cp %s (%s): %s",
 		           s, d, strerror(errno));
 	}
 

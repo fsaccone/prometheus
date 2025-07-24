@@ -680,6 +680,12 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		printf("\n");
 	}
 
+	if (packageouts(pname, &outs)) return EXIT_FAILURE;
+	if (!outs.l) {
+		printferr("Package %s has no outs", pname);
+		return EXIT_FAILURE;
+	}
+
 	if (createtmpdir(pname, tmpd)) return EXIT_FAILURE;
 
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
@@ -702,7 +708,6 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 	if (buildpackage(pname, tmpd, nochr)) return EXIT_FAILURE;
 
-	if (packageouts(pname, &outs)) return EXIT_FAILURE;
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX];
 

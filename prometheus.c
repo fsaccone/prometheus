@@ -27,8 +27,7 @@
 
 #define DIE_MAX   1024
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define LINES_MAX MAX(MAX(DEPENDS_MAX, OUTS_MAX), \
-                      MAX(REQUIRES_MAX, SOURCES_MAX))
+#define LINES_MAX MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
 
 struct Depend {
 	char pname[PROGRAM_MAX];
@@ -55,16 +54,6 @@ struct Outs {
 	size_t l;
 };
 
-struct Requires {
-	char a[REQUIRES_MAX][PROGRAM_MAX];
-	size_t l;
-};
-
-struct RequiresPath {
-	char a[REQUIRES_MAX][PATH_MAX];
-	size_t l;
-};
-
 struct Source {
 	uint8_t sha256[SHA256_DIGEST_LENGTH];
 	char url[PATH_MAX];
@@ -78,7 +67,6 @@ struct Sources {
 
 static int buildpackage(char *pname, const char *tmpd);
 static int copyfile(const char *s, const char *d);
-static int copyrequires(struct Requires reqs, const char *tmpd);
 static int copysources(struct Sources srcs, const char *pdir,
                        const char *tmpd);
 static int createtmpdir(char *pname, char dir[PATH_MAX]);
@@ -90,7 +78,6 @@ static unsigned int direxists(const char *f);
 static int expandtilde(const char *f, char ef[PATH_MAX]);
 static int fetchfile(const char *url, const char *f);
 static unsigned int fileexists(const char *f);
-static int findinpath(struct Requires reqs, struct RequiresPath *reqsp);
 static int followsymlink(const char *f, char ff[PATH_MAX]);
 static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
@@ -100,7 +87,6 @@ static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
 static int packagedepends(char *pname, struct Depends *deps);
 static int packageouts(char *pname, struct Outs *outs);
-static int packagerequires(char *pname, struct Requires *reqs);
 static int packagesources(char *pname, struct Sources *srcs);
 static void printinstalled(char *prefix, struct Packages pkgs);
 static void printpackages(struct Packages pkgs);
@@ -122,7 +108,6 @@ int
 buildpackage(char *pname, const char *tmpd)
 {
 	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX];
-	struct Requires reqs;
 	struct Sources srcs;
 	pid_t pid;
 
@@ -147,11 +132,8 @@ buildpackage(char *pname, const char *tmpd)
 
 	if (copyfile(b, db)) return EXIT_FAILURE;
 
-	if (packagerequires(pname, &reqs)) return EXIT_FAILURE;
-	printf("- copying %s's sources\n", pname);
-	if (copyrequires(reqs, tmpd)) return EXIT_FAILURE;
-
 	if (packagesources(pname, &srcs)) return EXIT_FAILURE;
+	printf("- copying %s's sources\n", pname);
 	if (copysources(srcs, pdir, tmpd)) return EXIT_FAILURE;
 	printf("+ copied %s's sources\n", pname);
 
@@ -251,28 +233,6 @@ copyfile(const char *s, const char *d)
 
 	close(sfd);
 	close(dfd);
-
-	return EXIT_SUCCESS;
-}
-
-int
-copyrequires(struct Requires reqs, const char *tmpd)
-{
-	struct RequiresPath preqs;
-	int i;
-
-	if ((findinpath(reqs, &preqs))) return EXIT_FAILURE;
-
-	for (i = 0; i < reqs.l; i++) {
-		char d[PATH_MAX];
-		if (PATH_MAX <= strlen(tmpd) + strlen(reqs.a[i])
-		              + strlen("/bin/")) {
-			die("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		snprintf(d, sizeof(d), "%s/bin/%s", tmpd, reqs.a[i]);
-		if (copyfile(preqs.a[i], d)) return EXIT_FAILURE;
-	}
 
 	return EXIT_SUCCESS;
 }
@@ -592,52 +552,6 @@ fileexists(const char *f)
 }
 
 int
-findinpath(struct Requires reqs, struct RequiresPath *reqsp)
-{
-	char *pathenv;
-	size_t i;
-
-	if (!(pathenv = getenv("PATH"))) {
-		die("PATH is not set");
-		return EXIT_FAILURE;
-	}
-
-	for (i = 0; i < reqs.l; i++) {
-		char *pathd, path[PATH_MAX];
-		unsigned int set = 0;
-
-		strncpy(path, pathenv, PATH_MAX);
-
-		for (pathd = strtok(path, ":"); path; pathd = strtok(NULL, ":")) {
-			char pp[PATH_MAX];
-
-			if (set) break;
-
-			if (PATH_MAX <= strlen(pathd) + strlen("/")
-			              + strlen(reqs.a[i])) {
-				die("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(pp, sizeof(pp), "%s/%s", pathd, reqs.a[i]);
-
-			if (!fileexists(pp)) continue;
-			set = 1;
-
-			strncpy(reqsp->a[i], pp, PATH_MAX);
-		}
-
-		if (!set) {
-			die("program %s does not exist", reqs.a[i]);
-			return EXIT_FAILURE;
-		}
-	}
-
-	reqsp->l = i;
-
-	return EXIT_SUCCESS;
-}
-
-int
 followsymlink(const char *f, char ff[PATH_MAX])
 {
 	struct stat sb;
@@ -921,33 +835,6 @@ packageouts(char *pname, struct Outs *outs)
 		strncpy(outs->a[i], l.a[i], PATH_MAX);
 	}
 	outs->l = i;
-
-	return EXIT_SUCCESS;
-}
-
-int
-packagerequires(char *pname, struct Requires *reqs)
-{
-	struct Lines l;
-	char f[PATH_MAX];
-	size_t i;
-
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
-	              + strlen("//requires")) {
-		die("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(f, sizeof(f), "%s/%s/requires", PACKAGE_REPOSITORY, pname);
-	if (readlines(f, &l)) return EXIT_FAILURE;
-
-	for (i = 0; i < l.l; i++) {
-		if (l.a[i][0] == '\0') {
-			die("empty line found in %s's requires", pname);
-			return EXIT_FAILURE;
-		}
-		strncpy(reqs->a[i], l.a[i], PROGRAM_MAX);
-	}
-	reqs->l = i;
 
 	return EXIT_SUCCESS;
 }

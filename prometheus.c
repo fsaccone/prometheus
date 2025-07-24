@@ -550,6 +550,9 @@ fetchfile(const char *url, const char *f)
 	curl_easy_setopt(c, CURLOPT_URL, url);
 	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlwrite);
 	curl_easy_setopt(c, CURLOPT_WRITEDATA, ff);
+	curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(c, CURLOPT_XFERINFODATA, url);
+	curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, curlprogress);
 	curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(c, CURLOPT_USERAGENT, ua);
 	curl_easy_setopt(c, CURLOPT_TIMEOUT, 0L);
@@ -568,6 +571,7 @@ fetchfile(const char *url, const char *f)
 		return EXIT_FAILURE;
 	}
 
+	printf("\n"); /* needed after curlprogress has been used */
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
 
 	if (r >= 400) {

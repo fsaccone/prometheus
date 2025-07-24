@@ -856,7 +856,7 @@ packagedepends(char *pname, struct Depends *deps)
 		char *tok;
 		int nfields = 0;
 
-		tok = strtok(l.a[i], " \t\n");
+		tok = strtok(l.a[i], " \t");
 		while (tok && nfields < 2) {
 			char depname[PROGRAM_MAX];
 
@@ -867,11 +867,7 @@ packagedepends(char *pname, struct Depends *deps)
 					return EXIT_FAILURE;
 				}
 				strncpy(deps->a[i].pname, tok, PROGRAM_MAX);
-				if (tok[strlen(tok) - 1] == '\n')
-					deps->a[i]
-					     .pname[strlen(tok) - 1] = '\0';
-				else
-					deps->a[i].pname[strlen(tok)] = '\0';
+				deps->a[i].pname[strlen(tok)] = '\0';
 				break;
 			case 1:
 				if (strncmp(tok, "runtime", 7)) {
@@ -886,7 +882,7 @@ packagedepends(char *pname, struct Depends *deps)
 			default:
 			}
 			nfields++;
-			tok = strtok(NULL, " \t\n");
+			tok = strtok(NULL, " \t");
 		}
 
 		if (nfields < 1) {
@@ -980,7 +976,7 @@ packagesources(char *pname, struct Sources *srcs)
 		char *tok;
 		int nfields;
 
-		tok = strtok(l.a[i], " \t\n");
+		tok = strtok(l.a[i], " \t");
 		while (tok && nfields < 3) {
 			char sha256[2 * SHA256_DIGEST_LENGTH + 1];
 
@@ -1004,9 +1000,7 @@ packagesources(char *pname, struct Sources *srcs)
 					return EXIT_FAILURE;
 				}
 				strncpy(srcs->a[i].url, tok, PATH_MAX);
-				srcs->a[i]
-				    .url[strcspn(srcs->a[i].url, "\n")] = '\0';
-				srcs->a[i].url[PATH_MAX] = '\0';
+				srcs->a[i].url[strlen(tok)] = '\0';
 				break;
 			case 2:
 				if (PATH_MAX <= strlen(tok)) {
@@ -1018,15 +1012,12 @@ packagesources(char *pname, struct Sources *srcs)
 					return EXIT_FAILURE;
 				}
 				strncpy(srcs->a[i].relpath, tok, PATH_MAX);
-				srcs->a[i]
-				    .relpath[strcspn(srcs->a[i].relpath, "\n")]
-				    = '\0';
-				srcs->a[i].relpath[PATH_MAX] = '\0';
+				srcs->a[i].relpath[strlen(tok)] = '\0';
 				break;
 			default:
 			}
 			nfields++;
-			tok = strtok(NULL, " \t\n");
+			tok = strtok(NULL, " \t");
 		}
 
 		if (nfields < 1) {

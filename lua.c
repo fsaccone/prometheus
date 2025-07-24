@@ -68,9 +68,7 @@ lua_exec(lua_State *luas)
 			                 c, s);
 	}
 
-	lua_pushboolean(luas, 1);
-
-	return 1;
+	return 0;
 }
 
 int

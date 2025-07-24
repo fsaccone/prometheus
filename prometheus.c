@@ -373,7 +373,7 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 int
 createtmpdir(char *pname, char dir[PATH_MAX])
 {
-	char dirtmp[PATH_MAX], log[PATH_MAX], bin[PATH_MAX], src[PATH_MAX];
+	char dirtmp[PATH_MAX], log[PATH_MAX], src[PATH_MAX];
 	int logfd;
 
 	if (mkdir("/tmp", 0700) == -1 && errno != EEXIST) {
@@ -409,16 +409,6 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	}
 	snprintf(src, sizeof(src), "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
-		perror("+ mkdir");
-		return EXIT_FAILURE;
-	}
-
-	if (PATH_MAX <= strlen(dir) + strlen("/bin")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(bin, sizeof(bin), "%s/bin", dir);
-	if (mkdir(bin, 0700) == -1 && errno != EEXIST) {
 		perror("+ mkdir");
 		return EXIT_FAILURE;
 	}

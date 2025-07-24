@@ -81,7 +81,7 @@ static unsigned int fileexists(const char *f);
 static int followsymlink(const char *f, char ff[PATH_MAX]);
 static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
-static int installpackage(char *pname, char *prefix);
+static int installpackage(char *pname, char *prefix, unsigned int y);
 static int mkdirrecursive(const char *d);
 static int packagedepends(char *pname, struct Depends *deps);
 static unsigned int packageexists(char *pname);
@@ -631,7 +631,7 @@ handlesignals(void(*hdl)(int))
 }
 
 int
-installpackage(char *pname, char *prefix)
+installpackage(char *pname, char *prefix, unsigned int y)
 {
 	struct Depends deps;
 	struct Outs outs;
@@ -652,7 +652,7 @@ installpackage(char *pname, char *prefix)
 	snprintf(nochrf, sizeof(nochrf), "%s/%s/nochroot",
 	         PACKAGE_REPOSITORY, pname);
 	if (fileexists(nochrf)) {
-		char y;
+		char yp;
 		struct Lines l;
 
 		if (readlines(nochrf, &l)) return EXIT_FAILURE;
@@ -674,11 +674,16 @@ installpackage(char *pname, char *prefix)
 		}
 
 		printf("> continue? (y) ");
-		y = getchar();
 
-		if (y && y != '\n' && y != 'y' && y != 'Y') {
-			printf("- quitting\n");
-			return EXIT_FAILURE;
+		if (!y) {
+			yp = getchar();
+
+			if (yp && yp != '\n' && yp != 'y' && yp != 'Y') {
+				printf("- quitting\n");
+				return EXIT_FAILURE;
+			}
+		} else {
+			printf("y\n");
 		}
 
 		nochr = 1;
@@ -697,7 +702,8 @@ installpackage(char *pname, char *prefix)
 			continue;
 		}
 		if (installpackage(deps.a[i].pname,
-		                            deps.a[i].runtime ? prefix : env))
+		                   deps.a[i].runtime ? prefix : env,
+		                   y))
 			return EXIT_FAILURE;
 	}
 
@@ -1286,7 +1292,7 @@ main(int argc, char *argv[])
 			return uninstallpackage(*argv, rprefix, recuninstall,
 			                        pkgs);
 		} else {
-			return installpackage(*argv, rprefix);
+			return installpackage(*argv, rprefix, y);
 		}
 	}
 

@@ -206,6 +206,8 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 			lua_close(luas);
 			exit(EXIT_FAILURE);
 		}
+
+		lua_close(luas);
 	} else {
 		int s;
 		waitpid(pid, &s, 0);

@@ -1169,6 +1169,8 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		}
 	}
 
+	if (packageouts(pname, &outs)) return EXIT_FAILURE;
+
 	printf("- Uninstalling %s\n", pname);
 	for (i = 0; i < outs.l; i++) {
 		char *f;

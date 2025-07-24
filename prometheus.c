@@ -832,7 +832,7 @@ packagedepends(char *pname, struct Depends *deps)
 int
 packageexists(char *pname)
 {
-	char bf[PATH_MAX], of[PATH_MAX], sf[PATH_MAX];
+	char bf[PATH_MAX], of[PATH_MAX];
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//build.lua")) { /* the longest one */
@@ -841,9 +841,8 @@ packageexists(char *pname)
 	}
 	snprintf(bf, sizeof(bf), "%s/%s/build.lua", PACKAGE_REPOSITORY, pname);
 	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
-	snprintf(sf, sizeof(sf), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
 
-	if (fileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
+	if (fileexists(bf) && fileexists(of)) return 1;
 
 	return 0;
 }

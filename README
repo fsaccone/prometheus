@@ -47,11 +47,11 @@ initialized with a /src directory, a /bin directory and a /prometheus.log file.
 build.lua
 ---------
 
-This file is a Lua script which is copied as /build.lua in the package
-temporary directory and called from the /src directory.
+This file is a Lua script which is copied to the /src directory of the
+temporary directory and called from it.
 
-Its job is to build the package from the files present in the /src directory
-and install what it needs to the root of the temporary directory.
+Its job is to build the package and install it to the root of the temporary
+directory.
 
 outs
 ----

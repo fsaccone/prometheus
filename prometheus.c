@@ -1054,7 +1054,6 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 			}
 			snprintf(sf, sizeof(sf), "%s/src/%s", tmpd, b);
 
-
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(srcs.a[i].relpath)) {
 				printferr("PATH_MAX exceeded");

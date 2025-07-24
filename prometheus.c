@@ -424,7 +424,7 @@ unsigned int
 fileexists(const char *f)
 {
 	struct stat buf;
-	return (!stat(f, &buf));
+	return (!stat(f, &buf) && !S_ISDIR(buf.st_mode));
 }
 
 int

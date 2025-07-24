@@ -135,9 +135,9 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 	if (copyfile(b, db)) return EXIT_FAILURE;
 
 	if (packagesources(pname, &srcs)) return EXIT_FAILURE;
-	printf("- copying %s's sources\n", pname);
+	printf("- Copying %s's sources\n", pname);
 	if (copysources(srcs, pdir, tmpd)) return EXIT_FAILURE;
-	printf("+ copied %s's sources\n", pname);
+	printf("+ Copied %s's sources\n", pname);
 
 	if (nochr && PATH_MAX <= strlen(tmpd) + strlen("/prometheus.log")) {
 		printferr("PATH_MAX exceeded");
@@ -160,7 +160,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 			exit(EXIT_FAILURE);
 		}
 
-		printf("- building %s\n", pname);
+		printf("- Building %s\n", pname);
 
 		if(!(luas = luaL_newstate())) {
 			perror("+ luaL_newstate");
@@ -206,12 +206,12 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		waitpid(pid, &s, 0);
 		if (WIFEXITED(s)) {
 			if (WEXITSTATUS(s)) {
-				printf("+ failed to build %s, see "
+				printf("+ Failed to build %s, see "
 				       "%s/prometheus.log\n",
 				       pname, tmpd);
 				return EXIT_FAILURE;
 			}
-			printf("+ built %s\n", pname);
+			printf("+ Built %s\n", pname);
 		}
 	}
 
@@ -281,10 +281,10 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				printf("+ hash of %s does not match:\n",
+				printf("+ Hash of %s does not match:\n",
 				       srcs.a[i].url);
-				printf("  expected: %s\n", eh);
-				printf("  got:      %s\n", gh);
+				printf("  Expected: %s\n", eh);
+				printf("  Got:      %s\n", gh);
 
 				return EXIT_FAILURE;
 			}
@@ -320,10 +320,10 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				printf("+ hash of %s does not match:\n",
+				printf("+ Hash of %s does not match:\n",
 				       srcs.a[i].url);
-				printf("  expected: %s\n", eh);
-				printf("  got:      %s\n", gh);
+				printf("  Expected: %s\n", eh);
+				printf("  Got:      %s\n", gh);
 
 				return EXIT_FAILURE;
 			}
@@ -421,7 +421,7 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
              curl_off_t upl)
 {
 	if (dltot > 0) {
-		printf("\r- downloading %s: %.2f%%",
+		printf("\r- Downloading %s: %.2f%%",
 		       p, (double)dlnow / dltot * 100.0);
 		fflush(stdout);
 	}
@@ -455,7 +455,7 @@ expandtilde(const char *f, char ef[PATH_MAX])
 	}
 
 	if (!(home = getenv("HOME"))) {
-		printferr("cannot expand tilde since HOME is undefined");
+		printferr("Cannot expand tilde since HOME is undefined");
 		return EXIT_FAILURE;
 	}
 
@@ -477,7 +477,7 @@ fetchfile(const char *url, const char *f)
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
 	if (!(c = curl_easy_init())) {
-		fprintf(stderr, "+ curl: failed to initialize\n");
+		fprintf(stderr, "+ curl: Failed to initialize\n");
 		return EXIT_FAILURE;
 	}
 
@@ -515,7 +515,7 @@ fetchfile(const char *url, const char *f)
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
 
 	if (r >= 400) {
-		printf("+ failed to fetch URL %s: response code is %ld\n",
+		printf("+ Failed to fetch URL %s: response code is %ld\n",
 		       url, r);
 		fclose(ff);
 		curl_easy_cleanup(c);
@@ -615,7 +615,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 	unsigned int nochr;
 
 	if (packageisinstalled(pname, prefix)) {
-		printf("+ skipping %s since it is already installed\n", pname);
+		printf("+ Skipping %s since it is already installed\n", pname);
 		return EXIT_SUCCESS;
 	}
 
@@ -632,8 +632,8 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 		if (readlines(nochrf, &l)) return EXIT_FAILURE;
 
-		printf("\n+ %s is a nochroot package: this means it will "
-		       "have full access over your machine while "
+		printf("\n+ Package %s is a nochroot package: this means it "
+		       "will have full access over your machine while "
 		       "building.\n\n",
 		       pname);
 
@@ -648,13 +648,13 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			printf("\n");
 		}
 
-		printf("> continue? (y) ");
+		printf("> Continue? (y) ");
 
 		if (!y) {
 			yp = getchar();
 
 			if (yp && yp != '\n' && yp != 'y' && yp != 'Y') {
-				printf("- quitting\n");
+				printf("- Quitting\n");
 				return EXIT_FAILURE;
 			}
 		} else {
@@ -669,10 +669,10 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
-		printf("+ found dependency %s for %s\n",
+		printf("+ Found dependency %s for %s\n",
 		       deps.a[i].pname, pname);
 		if (!packageexists(deps.a[i].pname)) {
-			printf("+ dependency %s does not exist\n",
+			printf("+ Dependency %s does not exist\n",
 			       deps.a[i].pname);
 			continue;
 		}
@@ -695,7 +695,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		snprintf(s, sizeof(s), "%s%s", env, outs.a[i]);
 
 		if (!fileexists(s)) {
-			printferr("file %s in %s's outs in was not installed",
+			printferr("File %s in %s's outs in was not installed",
 			          s, pname);
 			return EXIT_FAILURE;
 		}
@@ -770,7 +770,7 @@ packagedepends(char *pname, struct Depends *deps)
 				break;
 			case 1:
 				if (strncmp(tok, "runtime", 7)) {
-					printferr("the second field of %s in "
+					printferr("The second field of %s in "
 					          "%s's depends is something "
 					          "different than 'runtime'",
 					          deps->a[i].pname, pname);
@@ -854,12 +854,12 @@ packageouts(char *pname, struct Outs *outs)
 
 	for (i = 0; i < l.l; i++) {
 		if (l.a[i][0] == '\0') {
-			printferr("empty path found in %s's outs", pname);
+			printferr("Empty path found in %s's outs", pname);
 			return EXIT_FAILURE;
 		}
 
 		if (l.a[i][0] != '/') {
-			printferr("non-absolute path found in %s's outs",
+			printferr("Non-absolute path found in %s's outs",
 			    pname);
 			return EXIT_FAILURE;
 		}
@@ -1091,7 +1091,7 @@ sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH],
 void
 sigexit()
 {
-	printf("\n- quitting\n");
+	printf("\n- Quitting\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -1103,7 +1103,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	int i;
 
 	if (!packageisinstalled(pname, prefix)) {
-		printf("+ skipping %s since it is not installed\n", pname);
+		printf("+ Skipping %s since it is not installed\n", pname);
 		return EXIT_SUCCESS;
 	}
 
@@ -1116,14 +1116,14 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 			if (!strcmp(pdeps.a[i].pname, pname)
 			    && pdeps.a[i].runtime
 			    && packageisinstalled(pkgs.a[i], prefix)) {
-				printf("+ skipping %s since %s depends on "
+				printf("+ Skipping %s since %s depends on "
 				       "it\n", pname, pkgs.a[i]);
 				return EXIT_SUCCESS;
 			}
 		}
 	}
 
-	printf("- uninstalling %s\n", pname);
+	printf("- Uninstalling %s\n", pname);
 	for (i = 0; i < outs.l; i++) {
 		char *f;
 
@@ -1138,7 +1138,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 			return EXIT_FAILURE;
 		}
 	}
-	printf("+ uninstalled %s\n", pname);
+	printf("+ Uninstalled %s\n", pname);
 
 	if (rec) {
 		struct Depends deps;
@@ -1148,11 +1148,11 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		for (i = 0; i < deps.l; i++) {
 			if (!deps.a[i].runtime) continue;
 
-			printf("+ found dependency %s for %s\n",
+			printf("+ Found dependency %s for %s\n",
 			       deps.a[i].pname, pname);
 
 			if (!packageexists(deps.a[i].pname)) {
-				printf("+ dependency %s does not exist\n",
+				printf("+ Dependency %s does not exist\n",
 				       deps.a[i].pname);
 				continue;
 			}
@@ -1176,7 +1176,7 @@ urlisvalid(char *url)
 void
 usage(void)
 {
-	fprintf(stderr, "usage: %s -i [-p prefix] [-y] package ...\n"
+	fprintf(stderr, "Usage: %s -i [-p prefix] [-y] package ...\n"
 	                "       %s -u [-p prefix] [-r] package ...\n"
 	                "       %s -l [-p prefix]\n"
 	                "       %s -a\n",
@@ -1198,7 +1198,7 @@ main(int argc, char *argv[])
 	     rprefix[PATH_MAX];
 
 	if (getuid()) {
-		fprintf(stderr, "%s: superuser privileges are required\n",
+		fprintf(stderr, "%s: Superuser privileges are required\n",
 		        argv[0]);
 		return EXIT_FAILURE;
 	}
@@ -1256,12 +1256,12 @@ main(int argc, char *argv[])
 		rprefix[strlen(rprefix) - 1] = '\0';
 
 	if (!rprefix) {
-		printferr("prefix %s could not be read", rprefix);
+		printferr("Prefix %s could not be read", rprefix);
 		return EXIT_FAILURE;
 	}
 
 	if (strlen(rprefix) && !direxists(rprefix)) {
-		printferr("prefix %s does not exist", rprefix);
+		printferr("Prefix %s does not exist", rprefix);
 		return EXIT_FAILURE;
 	}
 
@@ -1280,7 +1280,7 @@ main(int argc, char *argv[])
 	/* will not be evaluated when either printinst or prinstall is 1 */
 	for (; *argv; argc--, argv++) {
 		if (!packageexists(*argv)) {
-			printferr("package %s does not exist", *argv);
+			printferr("Package %s does not exist", *argv);
 			return EXIT_FAILURE;
 		}
 

@@ -59,6 +59,8 @@ outs
 Each line of the outs file must be the absolute path of each file to be
 installed to the system.
 
+Empty lines and lines starting with # are ignored.
+
 Only files, and not directories, must be listed.
 
 When uninstalling, all listed files are removed from the system. A package is
@@ -77,6 +79,8 @@ Each line of the sources file must be of the following format:
 
 	SHA256 URL [RELPATH]
 
+Empty lines and lines starting with # are ignored.
+
 A valid URL is the relative path to a file in the package directory, a
 HTTP/HTTPS address or a FTP address.
 
@@ -94,6 +98,8 @@ Each line of the depends file must be of the following format:
 
 	PACKAGE [runtime]
 
+Empty lines and lines starting with # are ignored.
+
 A valid PACKAGE is the name of a package in the repository.
 
 Each PACKAGE listed here is built prior to the package being built, is
@@ -108,5 +114,7 @@ requires
 
 Each line of the requires file must be a program which exists in any of the
 PATH directories.
+
+Empty lines and lines starting with # are ignored.
 
 The listed programs are copied to the /bin of the package temporary directory.

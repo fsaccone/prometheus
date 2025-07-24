@@ -82,6 +82,8 @@ static int copyrequires(struct Requires reqs, const char *tmpd);
 static int copysources(struct Sources srcs, const char *pdir,
                        const char *tmpd);
 static int createtmpdir(char *pname, char dir[PATH_MAX]);
+static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
+                        curl_off_t utot, curl_off_t upl);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
 static void die(const char *m, ...);
 static unsigned int direxists(const char *f);
@@ -452,6 +454,19 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	}
 
 	return EXIT_SUCCESS;
+}
+
+int
+curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
+             curl_off_t upl)
+{
+	if (dltot > 0) {
+		printf("\r- downloading %s: %.2f%%",
+		       p, (double)dlnow / dltot * 100.0);
+		fflush(stdout);
+	}
+
+	return 0;
 }
 
 size_t

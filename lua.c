@@ -42,9 +42,7 @@ lua_cp(lua_State *luas)
 	fclose(sf);
 	fclose(df);
 
-	lua_pushboolean(luas, 1);
-
-	return 1;
+	return 0;
 }
 
 int

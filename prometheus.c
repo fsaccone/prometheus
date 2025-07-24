@@ -1053,6 +1053,7 @@ registerluautils(lua_State *luas)
 	lua_register(luas, "cp", lua_cp);
 	lua_register(luas, "echo", lua_echo);
 	lua_register(luas, "exec", lua_exec);
+	lua_register(luas, "getenv", lua_getenv);
 	lua_register(luas, "mkdir", lua_mkdir);
 	lua_register(luas, "setenv", lua_setenv);
 	lua_register(luas, "uname", lua_uname);

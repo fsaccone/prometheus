@@ -94,6 +94,18 @@ lua_exec(lua_State *luas)
 }
 
 int
+lua_getenv(lua_State *luas)
+{
+	const char *n = luaL_checkstring(luas, 1);
+	char *v = getenv(n);
+	if (v)
+		lua_pushstring(luas, v);
+	else
+		lua_pushnil(luas);
+	return 1;
+}
+
+int
 lua_mkdir(lua_State *luas)
 {
 	const char *d = luaL_checkstring(luas, 1);

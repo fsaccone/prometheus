@@ -34,12 +34,12 @@ mandatory files:
 
 - build.lua
 - outs
-- sources
 
 Each package directory may also contain the following optional files:
 
 - depends
 - nochroot
+- sources
 
 The program chroots in a temporary directory before building a package: it is
 initialized with a /src directory, a /bin directory and a /prometheus.log file.
@@ -72,25 +72,6 @@ find to generate outs:
 	$ find $builddir -type f \
 	                 -exec echo {} \; | sed "s|^$builddir||" > outs
 
-sources
--------
-
-Each line of the sources file must be of the following format:
-
-	SHA256 URL [RELPATH]
-
-Empty lines and lines starting with # are ignored.
-
-A valid URL is the relative path to a file in the package directory, a
-HTTP/HTTPS address or a FTP address.
-
-If URL is a local file, it must not be a directory.
-
-Each source must have a corresponding SHA256 hash.
-
-An optional RELPATH field may be provided: it is the path, relative to /src,
-where the fetched source file is moved to after being retrieved and verified.
-
 depends
 -------
 
@@ -117,3 +98,22 @@ temporary directory before building the package.
 
 The content of the file may be a motivation for the need of a nochroot
 environment.
+
+sources
+-------
+
+Each line of the sources file must be of the following format:
+
+	SHA256 URL [RELPATH]
+
+Empty lines and lines starting with # are ignored.
+
+A valid URL is the relative path to a file in the package directory, a
+HTTP/HTTPS address or a FTP address.
+
+If URL is a local file, it must not be a directory.
+
+Each source must have a corresponding SHA256 hash.
+
+An optional RELPATH field may be provided: it is the path, relative to /src,
+where the fetched source file is moved to after being retrieved and verified.

@@ -135,9 +135,11 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 	if (copyfile(b, db)) return EXIT_FAILURE;
 
 	if (packagesources(pname, &srcs)) return EXIT_FAILURE;
-	printf("- Retrieving %s's sources\n", pname);
-	if (retrievesources(srcs, pdir, tmpd)) return EXIT_FAILURE;
-	printf("+ Retrieved %s's sources\n", pname);
+	if (srcs.l) {
+		printf("- Retrieving %s's sources\n", pname);
+		if (retrievesources(srcs, pdir, tmpd)) return EXIT_FAILURE;
+		printf("+ Retrieved %s's sources\n", pname);
+	}
 
 	if (nochr && PATH_MAX <= strlen(tmpd) + strlen("/prometheus.log")) {
 		printferr("PATH_MAX exceeded");

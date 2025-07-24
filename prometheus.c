@@ -232,7 +232,7 @@ int
 copyfile(const char *s, const char *d)
 {
 	int sfd, dfd;
-	char buf[1024], syms[PATH_MAX];
+	char buf[1024], syms[PATH_MAX], dn[PATH_MAX];
 	ssize_t b;
 
 	if (followsymlink(s, syms)) return EXIT_FAILURE;
@@ -242,7 +242,9 @@ copyfile(const char *s, const char *d)
 		return EXIT_FAILURE;
 	}
 
-	if (strrchr(d, '/') && mkdirrecursive(d)) return EXIT_FAILURE;
+	strncpy(dn, d, PATH_MAX);
+	dirname(dn);
+	if (mkdirrecursive(dn)) return EXIT_FAILURE;
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		close(sfd);

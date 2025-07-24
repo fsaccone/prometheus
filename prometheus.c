@@ -313,7 +313,8 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 			}
 
 			if (sha256hash(sf, h)) return EXIT_FAILURE;
-			if (memcmp(h, srcs.a[i].sha256, SHA256_DIGEST_LENGTH)) {
+			if (memcmp(h, srcs.a[i].sha256,
+			           SHA256_DIGEST_LENGTH)) {
 				char eh[2 * SHA256_DIGEST_LENGTH + 1],
 				     gh[2 * SHA256_DIGEST_LENGTH + 1];
 

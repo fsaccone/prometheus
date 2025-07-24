@@ -361,7 +361,7 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 			if (copyfile(sf, df)) return EXIT_FAILURE;
 		}
 
-		if (srcs.a[i].relpath) {
+		if (strlen(srcs.a[i].relpath)) {
 			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
 			     *dn = dirname(srcs.a[i].relpath);
 
@@ -1025,6 +1025,8 @@ packagesources(char *pname, struct Sources *srcs)
 		} else if (nfields < 2) {
 			die("URL not present in one of %s's sources", pname);
 			return EXIT_FAILURE;
+		} else if (nfields < 3) {
+			srcs->a[i].relpath[0] = '\0';
 		}
 	}
 	srcs->l = i;

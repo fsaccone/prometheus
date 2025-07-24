@@ -164,7 +164,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 
 		printf("- Building %s\n", pname);
 
-		if(!(luas = luaL_newstate())) {
+		if (!(luas = luaL_newstate())) {
 			perror("+ luaL_newstate");
 			exit(EXIT_FAILURE);
 		}
@@ -460,7 +460,7 @@ getpackages(struct Packages *pkgs)
 	DIR *d;
 	struct dirent *e;
 
-	if(!(d = opendir(PACKAGE_REPOSITORY))) {
+	if (!(d = opendir(PACKAGE_REPOSITORY))) {
 		pkgs->l = 0;
 		return EXIT_SUCCESS;
 	};

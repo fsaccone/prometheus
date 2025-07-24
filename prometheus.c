@@ -139,11 +139,11 @@ buildpackage(char *pname, const char *tmpd)
 	}
 	snprintf(b, sizeof(b), "%s/build.lua", pdir);
 
-	if (PATH_MAX <= strlen(tmpd) + strlen("/prometheus.build.lua")) {
+	if (PATH_MAX <= strlen(tmpd) + strlen("/build.lua")) {
 		die("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(db, sizeof(db), "%s/prometheus.build.lua", tmpd);
+	snprintf(db, sizeof(db), "%s/build.lua", tmpd);
 
 	if (copyfile(b, db)) return EXIT_FAILURE;
 
@@ -199,7 +199,7 @@ buildpackage(char *pname, const char *tmpd)
 			exit(EXIT_FAILURE);
 		}
 
-		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
+		if (luaL_dofile(luas, "/build.lua") != LUA_OK) {
 			fprintf(stderr, "%s\n", lua_tostring(luas, -1));
 			lua_pop(luas, 1);
 			lua_close(luas);

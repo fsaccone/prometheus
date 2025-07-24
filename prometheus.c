@@ -67,8 +67,6 @@ struct Sources {
 
 static int buildpackage(char *pname, const char *tmpd, unsigned int nochr);
 static int copyfile(const char *s, const char *d);
-static int copysources(struct Sources srcs, const char *pdir,
-                       const char *tmpd);
 static int createtmpdir(char *pname, char dir[PATH_MAX]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
                         curl_off_t utot, curl_off_t upl);
@@ -93,6 +91,8 @@ static void printpackages(struct Packages pkgs);
 static int readlines(const char *f, struct Lines *l);
 static void registerluautils(lua_State *luas);
 static unsigned int relpathisvalid(char *relpath);
+static int retrievesources(struct Sources srcs, const char *pdir,
+                           const char *tmpd);
 static void sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
                               uint8_t u[SHA256_DIGEST_LENGTH]);
 static int sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
@@ -136,7 +136,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 
 	if (packagesources(pname, &srcs)) return EXIT_FAILURE;
 	printf("- Retrieving %s's sources\n", pname);
-	if (copysources(srcs, pdir, tmpd)) return EXIT_FAILURE;
+	if (retrievesources(srcs, pdir, tmpd)) return EXIT_FAILURE;
 	printf("+ Retrieved %s's sources\n", pname);
 
 	if (nochr && PATH_MAX <= strlen(tmpd) + strlen("/prometheus.log")) {
@@ -254,127 +254,6 @@ copyfile(const char *s, const char *d)
 
 	close(sfd);
 	close(dfd);
-
-	return EXIT_SUCCESS;
-}
-
-int
-copysources(struct Sources srcs, const char *pdir, const char *tmpd)
-{
-	int i;
-
-	for (i = 0; i < srcs.l; i++) {
-		char *b = basename(srcs.a[i].url);
-
-		if (urlisvalid(srcs.a[i].url)) {
-			char df[PATH_MAX];
-			uint8_t h[SHA256_DIGEST_LENGTH];
-
-			if (PATH_MAX <= strlen(tmpd) + strlen(b)
-			              + strlen("/src/")) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
-
-			if (fetchfile(srcs.a[i].url, df)) return EXIT_FAILURE;
-
-			if (sha256hash(df, h)) return EXIT_FAILURE;
-			if (memcmp(h,
-			           srcs.a[i].sha256,
-			           SHA256_DIGEST_LENGTH)) {
-				char eh[2 * SHA256_DIGEST_LENGTH + 1],
-				     gh[2 * SHA256_DIGEST_LENGTH + 1];
-
-				sha256uint8tochar(h, eh);
-				sha256uint8tochar(srcs.a[i].sha256, gh);
-
-				printf("+ Hash of %s does not match:\n",
-				       srcs.a[i].url);
-				printf("  Expected: %s\n", eh);
-				printf("  Got:      %s\n", gh);
-
-				return EXIT_FAILURE;
-			}
-		} else if (relpathisvalid(srcs.a[i].url)) {
-			char sf[PATH_MAX], df[PATH_MAX];
-			uint8_t h[SHA256_DIGEST_LENGTH];
-
-			if (PATH_MAX <= strlen(pdir) + strlen("/")
-			              + strlen(srcs.a[i].url)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(sf, sizeof(sf), "%s/%s", pdir, srcs.a[i].url);
-
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(b)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
-
-			if (!fileexists(sf)) {
-				printferr("URL %s does not exist",
-				          srcs.a[i].url);
-				return EXIT_FAILURE;
-			}
-
-			if (sha256hash(sf, h)) return EXIT_FAILURE;
-			if (memcmp(h, srcs.a[i].sha256,
-			           SHA256_DIGEST_LENGTH)) {
-				char eh[2 * SHA256_DIGEST_LENGTH + 1],
-				     gh[2 * SHA256_DIGEST_LENGTH + 1];
-
-				sha256uint8tochar(h, eh);
-				sha256uint8tochar(srcs.a[i].sha256, gh);
-
-				printf("+ Hash of %s does not match:\n",
-				       srcs.a[i].url);
-				printf("  Expected: %s\n", eh);
-				printf("  Got:      %s\n", gh);
-
-				return EXIT_FAILURE;
-			}
-			if (copyfile(sf, df)) return EXIT_FAILURE;
-		}
-
-		if (strlen(srcs.a[i].relpath)) {
-			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
-			     *dn = dirname(srcs.a[i].relpath);
-
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(b)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(sf, sizeof(sf), "%s/src/%s", tmpd, b);
-
-
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(srcs.a[i].relpath)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(df, sizeof(df), "%s/src/%s",
-			         tmpd, srcs.a[i].relpath);
-
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(dn)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(mvd, sizeof(mvd), "%s/src/%s", tmpd, dn);
-
-			if (strrchr(dn, '/') && mkdirrecursive(mvd))
-				return EXIT_FAILURE;
-
-			if (rename(sf, df)) {
-				perror("+ rename");
-				return EXIT_FAILURE;
-			}
-		}
-	}
 
 	return EXIT_SUCCESS;
 }
@@ -1072,6 +951,127 @@ relpathisvalid(char *relpath)
 	return (!strstr(relpath, "..") && !strstr(relpath, ":")
 	                               && relpath[0] != '/'
 	                               && relpath[0] != '.');
+}
+
+int
+retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
+{
+	int i;
+
+	for (i = 0; i < srcs.l; i++) {
+		char *b = basename(srcs.a[i].url);
+
+		if (urlisvalid(srcs.a[i].url)) {
+			char df[PATH_MAX];
+			uint8_t h[SHA256_DIGEST_LENGTH];
+
+			if (PATH_MAX <= strlen(tmpd) + strlen(b)
+			              + strlen("/src/")) {
+				printferr("PATH_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
+
+			if (fetchfile(srcs.a[i].url, df)) return EXIT_FAILURE;
+
+			if (sha256hash(df, h)) return EXIT_FAILURE;
+			if (memcmp(h,
+			           srcs.a[i].sha256,
+			           SHA256_DIGEST_LENGTH)) {
+				char eh[2 * SHA256_DIGEST_LENGTH + 1],
+				     gh[2 * SHA256_DIGEST_LENGTH + 1];
+
+				sha256uint8tochar(h, eh);
+				sha256uint8tochar(srcs.a[i].sha256, gh);
+
+				printf("+ Hash of %s does not match:\n",
+				       srcs.a[i].url);
+				printf("  Expected: %s\n", eh);
+				printf("  Got:      %s\n", gh);
+
+				return EXIT_FAILURE;
+			}
+		} else if (relpathisvalid(srcs.a[i].url)) {
+			char sf[PATH_MAX], df[PATH_MAX];
+			uint8_t h[SHA256_DIGEST_LENGTH];
+
+			if (PATH_MAX <= strlen(pdir) + strlen("/")
+			              + strlen(srcs.a[i].url)) {
+				printferr("PATH_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+			snprintf(sf, sizeof(sf), "%s/%s", pdir, srcs.a[i].url);
+
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(b)) {
+				printferr("PATH_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
+
+			if (!fileexists(sf)) {
+				printferr("URL %s does not exist",
+				          srcs.a[i].url);
+				return EXIT_FAILURE;
+			}
+
+			if (sha256hash(sf, h)) return EXIT_FAILURE;
+			if (memcmp(h, srcs.a[i].sha256,
+			           SHA256_DIGEST_LENGTH)) {
+				char eh[2 * SHA256_DIGEST_LENGTH + 1],
+				     gh[2 * SHA256_DIGEST_LENGTH + 1];
+
+				sha256uint8tochar(h, eh);
+				sha256uint8tochar(srcs.a[i].sha256, gh);
+
+				printf("+ Hash of %s does not match:\n",
+				       srcs.a[i].url);
+				printf("  Expected: %s\n", eh);
+				printf("  Got:      %s\n", gh);
+
+				return EXIT_FAILURE;
+			}
+			if (copyfile(sf, df)) return EXIT_FAILURE;
+		}
+
+		if (strlen(srcs.a[i].relpath)) {
+			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
+			     *dn = dirname(srcs.a[i].relpath);
+
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(b)) {
+				printferr("PATH_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+			snprintf(sf, sizeof(sf), "%s/src/%s", tmpd, b);
+
+
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(srcs.a[i].relpath)) {
+				printferr("PATH_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+			snprintf(df, sizeof(df), "%s/src/%s",
+			         tmpd, srcs.a[i].relpath);
+
+			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
+			              + strlen(dn)) {
+				printferr("PATH_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+			snprintf(mvd, sizeof(mvd), "%s/src/%s", tmpd, dn);
+
+			if (strrchr(dn, '/') && mkdirrecursive(mvd))
+				return EXIT_FAILURE;
+
+			if (rename(sf, df)) {
+				perror("+ rename");
+				return EXIT_FAILURE;
+			}
+		}
+	}
+
+	return EXIT_SUCCESS;
 }
 
 void

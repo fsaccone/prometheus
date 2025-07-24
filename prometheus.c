@@ -853,34 +853,45 @@ packagedepends(char *pname, struct Depends *deps)
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
-		char dname[65],
-		     sndfield[8];
-		int nfields;
+		char *tok;
+		int nfields = 0;
 
-		dname[0] = '\0';
-		sndfield[0] = '\0';
+		tok = strtok(l.a[i], " \t\n");
+		while (tok && nfields < 2) {
+			char depname[PROGRAM_MAX];
 
-		if ((nfields = sscanf(l.a[i], "%64s %7s", dname,
-		                      sndfield)) < 1) {
-			die("PACKAGE not present in one of %s's depends",
+			switch (nfields) {
+			case 0:
+				if (PROGRAM_MAX <= strlen(tok)) {
+					die("PROGRAM_MAX exceeded");
+					return EXIT_FAILURE;
+				}
+				strncpy(deps->a[i].pname, tok, PROGRAM_MAX);
+				if (tok[strlen(tok) - 1] == '\n')
+					deps->a[i]
+					     .pname[strlen(tok) - 1] = '\0';
+				else
+					deps->a[i].pname[strlen(tok)] = '\0';
+				break;
+			case 1:
+				if (strncmp(tok, "runtime", 7)) {
+					die("the second field of %s in %s's "
+					    "depends is something different "
+					    "than 'runtime'",
+					    deps->a[i].pname, pname);
+					return EXIT_FAILURE;
+				}
+				deps->a[i].runtime = 1;
+				break;
+			default:
+			}
+			nfields++;
+			tok = strtok(NULL, " \t\n");
+		}
+
+		if (nfields < 1) {
+			die("PROGRAM not present in one of %s's depends",
 			    pname);
-			return EXIT_FAILURE;
-		}
-
-		dname[strcspn(dname, "\n")] = '\0';
-		if (PROGRAM_MAX <= strlen(dname)) {
-			die("PROGRAM_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		strncpy(deps->a[i].pname, dname, PROGRAM_MAX);
-		deps->a[i].pname[65] = '\0';
-		if (nfields < 2) {
-			deps->a[i].runtime = 0;
-		} else if (!strcmp(sndfield, "runtime")) {
-			deps->a[i].runtime = 1;
-		} else {
-			die("the second field in one of %s's depends is "
-			    "something different than runtime", pname);
 			return EXIT_FAILURE;
 		}
 	}

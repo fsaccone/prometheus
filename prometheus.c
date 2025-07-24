@@ -854,11 +854,6 @@ packageouts(char *pname, struct Outs *outs)
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
-		if (l.a[i][0] == '\0') {
-			printferr("Empty path found in %s's outs", pname);
-			return EXIT_FAILURE;
-		}
-
 		if (l.a[i][0] != '/') {
 			printferr("Non-absolute path found in %s's outs",
 			    pname);

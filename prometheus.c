@@ -810,7 +810,15 @@ packageexists(char *pname)
 	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
 	snprintf(sf, sizeof(sf), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
 
-	if (fileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
+	if (fileexists(bf) && fileexists(of) && fileexists(sf)) {
+		struct Sources srcs;
+		struct Outs outs;
+
+		if (packagesources(pname, &srcs)) return 0;
+		if (packageouts(pname, &outs)) return 0;
+
+		if (srcs.l && outs.l) return 1;
+	}
 
 	return 0;
 }

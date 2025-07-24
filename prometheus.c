@@ -736,6 +736,8 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		if (copyfile(s, d)) return EXIT_FAILURE;
 	}
 
+	printf("+ Installed %s\n", pname);
+
 	return EXIT_SUCCESS;
 }
 

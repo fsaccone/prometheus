@@ -769,7 +769,7 @@ packageexists(char *pname)
 	char bf[PATH_MAX], of[PATH_MAX], sf[PATH_MAX];
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
-	              + strlen("/build.lua")) { /* the longest one */
+	              + strlen("//build.lua")) { /* the longest one */
 		die("PATH_MAX exceeded");
 		return 0;
 	}

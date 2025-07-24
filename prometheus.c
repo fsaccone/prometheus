@@ -205,6 +205,7 @@ buildpackage(char *pname, const char *tmpd)
 		}
 
 		if (luaL_dofile(luas, "/prometheus.build.lua") != LUA_OK) {
+			fprintf(stderr, "%s\n", lua_tostring(luas, -1));
 			lua_pop(luas, 1);
 			lua_close(luas);
 			exit(EXIT_FAILURE);

@@ -243,7 +243,7 @@ copyfile(const char *s, const char *d)
 	}
 
 	strncpy(dn, d, PATH_MAX);
-	dirname(dn);
+	strncpy(dn, dirname(dn), PATH_MAX);
 	if (mkdirrecursive(dn)) return EXIT_FAILURE;
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
@@ -1054,7 +1054,7 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 			     dn[PATH_MAX], *tok, buf[PATH_MAX];
 
 			strncpy(dn, srcs.a[i].relpath, PATH_MAX);
-			dirname(dn);
+			strncpy(dn, dirname(dn), PATH_MAX);
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(b)) {

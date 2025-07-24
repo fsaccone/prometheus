@@ -681,10 +681,11 @@ packagedepends(char *pname, struct Depends *deps)
 
 	for (i = 0; i < l.l; i++) {
 		char *tok;
-		int nfields = 0;
+		int nfields;
 
-		tok = strtok(l.a[i], " \t");
-		while (tok && nfields < 2) {
+		for (tok = strtok(l.a[i], " \t"), nfields = 0;
+		     tok && nfields < 2;
+		     tok = strtok(NULL, " \t"), nfields++) {
 			char depname[PROGRAM_MAX];
 
 			switch (nfields) {
@@ -708,8 +709,6 @@ packagedepends(char *pname, struct Depends *deps)
 				break;
 			default:
 			}
-			nfields++;
-			tok = strtok(NULL, " \t");
 		}
 
 		if (nfields < 1) {
@@ -810,10 +809,11 @@ packagesources(char *pname, struct Sources *srcs)
 
 	for (i = 0; i < l.l; i++) {
 		char *tok;
-		int nfields = 0;
+		int nfields;
 
-		tok = strtok(l.a[i], " \t");
-		while (tok && nfields < 3) {
+		for (tok = strtok(l.a[i], " \t"), nfields = 0;
+		     tok && nfields < 3;
+		     tok = strtok(NULL, " \t"), nfields++) {
 			char sha256[2 * SHA256_DIGEST_LENGTH + 1];
 
 			switch (nfields) {
@@ -854,8 +854,6 @@ packagesources(char *pname, struct Sources *srcs)
 				break;
 			default:
 			}
-			nfields++;
-			tok = strtok(NULL, " \t");
 		}
 
 		if (nfields < 1) {

@@ -1173,7 +1173,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 
 	printf("- Uninstalling %s\n", pname);
 	for (i = 0; i < outs.l; i++) {
-		char *f;
+		char f[PATH_MAX];
 
 		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
 			printferr("PATH_MAX exceeded");

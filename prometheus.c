@@ -639,7 +639,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 		if (!l.l) {
 			printf("  The package provided no motivation for "
-			       "it.\n");
+			       "it.\n\n");
 		} else {
 			int i;
 			printf("  The following is the motivation provided "

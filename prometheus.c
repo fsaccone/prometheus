@@ -65,7 +65,7 @@ struct Sources {
 	size_t l;
 };
 
-static int buildpackage(char *pname, const char *tmpd);
+static int buildpackage(char *pname, const char *tmpd, unsigned int nochr);
 static int copyfile(const char *s, const char *d);
 static int copysources(struct Sources srcs, const char *pdir,
                        const char *tmpd);
@@ -105,9 +105,11 @@ static unsigned int urlisvalid(char *url);
 static void usage(void);
 
 int
-buildpackage(char *pname, const char *tmpd)
+buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 {
-	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX];
+	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX], log[PATH_MAX],
+	     src[PATH_MAX];
+	const char *reltmpd = nochr ? tmpd : "";
 	struct Sources srcs;
 	pid_t pid;
 
@@ -137,6 +139,13 @@ buildpackage(char *pname, const char *tmpd)
 	if (copysources(srcs, pdir, tmpd)) return EXIT_FAILURE;
 	printf("+ copied %s's sources\n", pname);
 
+	if (nochr && PATH_MAX <= strlen(tmpd) + strlen("/prometheus.log")) {
+		die("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(log, sizeof(log), "%s/prometheus.log", reltmpd);
+	snprintf(src, sizeof(src), "%s/src", reltmpd);
+
 	if ((pid = fork()) < 0) {
 		perror("fork");
 		return EXIT_FAILURE;
@@ -146,7 +155,7 @@ buildpackage(char *pname, const char *tmpd)
 		lua_State *luas;
 		int logf;
 
-		if (chroot(tmpd)) {
+		if (!nochr && chroot(tmpd)) {
 			perror("chroot");
 			exit(EXIT_FAILURE);
 		}
@@ -160,7 +169,7 @@ buildpackage(char *pname, const char *tmpd)
 		luaL_openlibs(luas);
 		registerluautils(luas);
 
-		if (!(logf = open("/prometheus.log", O_WRONLY, 0700))) {
+		if (!(logf = open(log, O_WRONLY, 0700))) {
 			perror("fopen");
 			exit(EXIT_FAILURE);
 		}
@@ -176,12 +185,12 @@ buildpackage(char *pname, const char *tmpd)
 		}
 		close(logf);
 
-		if (chdir("/src")) {
+		if (chdir(src)) {
 			perror("chdir");
 			exit(EXIT_FAILURE);
 		}
 
-		if (luaL_dofile(luas, "/build.lua") != LUA_OK) {
+		if (luaL_dofile(luas, "../build.lua") != LUA_OK) {
 			fprintf(stderr, "%s\n", lua_tostring(luas, -1));
 			lua_pop(luas, 1);
 			lua_close(luas);
@@ -626,12 +635,54 @@ installpackage(char *pname, char *prefix)
 {
 	struct Depends deps;
 	struct Outs outs;
-	char env[PATH_MAX];
+	char env[PATH_MAX], nochrf[PATH_MAX];
 	int i;
+	unsigned int nochr;
 
 	if (packageisinstalled(pname, prefix)) {
 		printf("+ skipping %s since it is already installed\n", pname);
 		return EXIT_SUCCESS;
+	}
+
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
+	              + strlen("//nochroot")) {
+		die("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(nochrf, sizeof(nochrf), "%s/%s/nochroot",
+	         PACKAGE_REPOSITORY, pname);
+	if (fileexists(nochrf)) {
+		char y;
+		struct Lines l;
+
+		if (readlines(nochrf, &l)) return EXIT_FAILURE;
+
+		printf("\n+ %s is a nochroot package: this means it will "
+		       "have full access over your machine while "
+		       "building.\n\n",
+		       pname);
+
+		if (!l.l) {
+			printf("  The package provided no motivation for "
+			       "it.\n");
+		} else {
+			int i;
+			printf("  The following is the motivation provided "
+			       "by the package:\n\n");
+			for (i = 0; i < l.l; i++) printf("\t%s\n", l.a[i]);
+			printf("\n");
+		}
+
+		printf("> continue? (y) ");
+		y = getchar();
+
+		if (y && y != '\n' && y != 'y' && y != 'Y') {
+			printf("- quitting\n");
+			return EXIT_FAILURE;
+		}
+
+		nochr = 1;
+		printf("\n");
 	}
 
 	if (createtmpdir(pname, env)) return EXIT_FAILURE;
@@ -650,7 +701,7 @@ installpackage(char *pname, char *prefix)
 			return EXIT_FAILURE;
 	}
 
-	if (buildpackage(pname, env)) return EXIT_FAILURE;
+	if (buildpackage(pname, env, nochr)) return EXIT_FAILURE;
 
 	if (packageouts(pname, &outs)) return EXIT_FAILURE;
 	for (i = 0; i < outs.l; i++) {

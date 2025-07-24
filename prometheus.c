@@ -593,7 +593,7 @@ followsymlink(const char *f, char ff[PATH_MAX])
 			exit(EXIT_FAILURE);
 		}
 		ff[n] = '\0';
-	};
+	}
 }
 
 struct Packages

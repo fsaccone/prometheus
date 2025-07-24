@@ -194,11 +194,6 @@ buildpackage(char *pname, const char *tmpd)
 		}
 		close(logf);
 
-		if (setenv("PATH", "/bin", 1)) {
-			perror("setenv");
-			exit(EXIT_FAILURE);
-		}
-
 		if (chdir("/src")) {
 			perror("chdir");
 			exit(EXIT_FAILURE);

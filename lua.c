@@ -60,7 +60,7 @@ lua_exec(lua_State *luas)
 	int r = system(c);
 
 	if (r == -1) {
-		luaL_error(luas, "exec %s (system): %s", c, strerror(errno));
+		luaL_error(luas, "exec %s: %s", c, strerror(errno));
 	} else {
 		int s;
 		if((s = WEXITSTATUS(r)))

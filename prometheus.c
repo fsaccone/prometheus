@@ -584,10 +584,16 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			       deps.a[i].pname);
 			continue;
 		}
-		if (installpackage(deps.a[i].pname,
-		                   deps.a[i].runtime ? prefix : tmpd,
-		                   y))
+		if (packageisinstalled(deps.a[i].pname, prefix)) {
+			struct Outs douts;
+			if (packageouts(deps.a[i].pname, &douts))
+				return EXIT_FAILURE;
+			installouts(douts, prefix, tmpd);
+		} else if (installpackage(deps.a[i].pname,
+		                          deps.a[i].runtime ? prefix : tmpd,
+		                          y)) {
 			return EXIT_FAILURE;
+		}
 	}
 
 	if (buildpackage(pname, tmpd, nochr)) return EXIT_FAILURE;

@@ -147,7 +147,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 	snprintf(src, sizeof(src), "%s/src", reltmpd);
 
 	if ((pid = fork()) < 0) {
-		perror("fork");
+		perror("+ fork");
 		return EXIT_FAILURE;
 	}
 
@@ -156,37 +156,37 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		int logf;
 
 		if (!nochr && chroot(tmpd)) {
-			perror("chroot");
+			perror("+ chroot");
 			exit(EXIT_FAILURE);
 		}
 
 		printf("- building %s\n", pname);
 
 		if(!(luas = luaL_newstate())) {
-			perror("luaL_newstate");
+			perror("+ luaL_newstate");
 			exit(EXIT_FAILURE);
 		}
 		luaL_openlibs(luas);
 		registerluautils(luas);
 
 		if (!(logf = open(log, O_WRONLY, 0700))) {
-			perror("fopen");
+			perror("+ fopen");
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDOUT_FILENO) == -1) {
-			perror("dup2");
+			perror("+ dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDERR_FILENO) == -1) {
-			perror("dup2");
+			perror("+ dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
 		close(logf);
 
 		if (chdir(src)) {
-			perror("chdir");
+			perror("+ chdir");
 			exit(EXIT_FAILURE);
 		}
 
@@ -223,7 +223,7 @@ copyfile(const char *s, const char *d)
 	if (followsymlink(s, syms)) return EXIT_FAILURE;
 
 	if ((sfd = open(syms, O_RDONLY)) == -1) {
-		perror("open");
+		perror("+ open");
 		return EXIT_FAILURE;
 	}
 
@@ -231,7 +231,7 @@ copyfile(const char *s, const char *d)
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		close(sfd);
-		perror("open");
+		perror("+ open");
 		return EXIT_FAILURE;
 	}
 
@@ -356,7 +356,7 @@ copysources(struct Sources srcs, const char *pdir, const char *tmpd)
 				return EXIT_FAILURE;
 
 			if (rename(sf, df)) {
-				perror("rename");
+				perror("+ rename");
 				return EXIT_FAILURE;
 			}
 		}
@@ -372,7 +372,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	int logfd;
 
 	if (mkdir("/tmp", 0700) == -1 && errno != EEXIST) {
-		perror("mkdir");
+		perror("+ mkdir");
 		return EXIT_FAILURE;
 	}
 
@@ -383,7 +383,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	snprintf(dirtmp, sizeof(dirtmp), "/tmp/prometheus-%s-XXXXXX", pname);
 	strncpy(dir, dirtmp, PATH_MAX);
 	if (!mkdtemp(dir)) {
-		perror("mkdtemp");
+		perror("+ mkdtemp");
 		return EXIT_FAILURE;
 	}
 
@@ -393,7 +393,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	}
 	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
-		perror("open");
+		perror("+ open");
 		return EXIT_FAILURE;
 	}
 	close(logfd);
@@ -404,7 +404,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	}
 	snprintf(src, sizeof(src), "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
-		perror("mkdir");
+		perror("+ mkdir");
 		return EXIT_FAILURE;
 	}
 
@@ -414,7 +414,7 @@ createtmpdir(char *pname, char dir[PATH_MAX])
 	}
 	snprintf(bin, sizeof(bin), "%s/bin", dir);
 	if (mkdir(bin, 0700) == -1 && errno != EEXIST) {
-		perror("mkdir");
+		perror("+ mkdir");
 		return EXIT_FAILURE;
 	}
 
@@ -488,7 +488,7 @@ fetchfile(const char *url, const char *f)
 
 	if (!(ff = fopen(f, "wb"))) {
 		curl_easy_cleanup(c);
-		perror("fopen");
+		perror("+ fopen");
 		return EXIT_FAILURE;
 	}
 
@@ -551,13 +551,13 @@ followsymlink(const char *f, char ff[PATH_MAX])
 		ssize_t n;
 
 		if (lstat(f, &sb)) {
-			perror("lstat");
+			perror("+ lstat");
 			return EXIT_FAILURE;
 		}
 
 		if ((n = readlink(f, ff, PATH_MAX - 1)) == -1) {
 			if (errno == EINVAL || errno == ENOENT) break;
-			perror("readlink");
+			perror("+ readlink");
 			return EXIT_FAILURE;
 		}
 		ff[n] = '\0';
@@ -731,7 +731,7 @@ mkdirrecursive(const char *d)
 		if (*p == '/') {
 			*p = '\0';
 			if (mkdir(buf, 0700) && errno != EEXIST) {
-				perror("mkdir");
+				perror("+ mkdir");
 				return EXIT_FAILURE;
 			}
 			*p = '/';
@@ -1064,7 +1064,7 @@ sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH])
 	sha256_init(&ctx);
 
 	if (!(ff = fopen(f, "rb"))) {
-		perror("fopen");
+		perror("+ fopen");
 		return EXIT_FAILURE;
 	}
 
@@ -1073,7 +1073,7 @@ sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH])
 
 	if (ferror(ff)) {
 		fclose(ff);
-		perror("ferror");
+		perror("+ ferror");
 		return EXIT_FAILURE;
 	}
 
@@ -1139,7 +1139,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		if (!fileexists(f)) continue;
 
 		if (remove(f)) {
-			perror("remove");
+			perror("+ remove");
 			return EXIT_FAILURE;
 		}
 	}

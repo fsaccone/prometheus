@@ -951,8 +951,7 @@ unsigned int
 relpathisvalid(char *relpath)
 {
 	return (!strstr(relpath, "..") && !strstr(relpath, ":")
-	                               && relpath[0] != '/'
-	                               && relpath[0] != '.');
+	     && relpath[0] != '/' && relpath[0] != '.' && relpath[0] != '\0');
 }
 
 int

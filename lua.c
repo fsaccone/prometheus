@@ -48,6 +48,14 @@ lua_cp(lua_State *luas)
 }
 
 int
+lua_echo(lua_State *luas)
+{
+	const char *s = luaL_checkstring(luas, 1);
+	printf("%s\n", s);
+	return 0;
+}
+
+int
 lua_exec(lua_State *luas)
 {
 	const char *c = luaL_checkstring(luas, 1);

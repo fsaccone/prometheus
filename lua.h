@@ -8,6 +8,7 @@
 
 int lua_cd(lua_State *luas);
 int lua_cp(lua_State *luas);
+int lua_echo(lua_State *luas);
 int lua_exec(lua_State *luas);
 int lua_mkdir(lua_State *luas);
 

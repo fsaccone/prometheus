@@ -1147,7 +1147,8 @@ main(int argc, char *argv[])
 	    printinst = 0,
 	    printall = 0,
 	    prefixdef = 0;
-	char prefix[PATH_MAX] = DEFAULT_PREFIX;
+	char prefix[PATH_MAX] = DEFAULT_PREFIX,
+	     rprefix[PATH_MAX];
 
 	if (getuid()) {
 		fprintf(stderr, "%s: superuser privileges are required\n",
@@ -1168,6 +1169,7 @@ main(int argc, char *argv[])
 	case 'p':
 		char *arg = EARGF(usage());
 		expandtilde(arg, prefix);
+		realpath(prefix, rprefix);
 		prefixdef = 1;
 		break;
 	case 'r':
@@ -1197,15 +1199,18 @@ main(int argc, char *argv[])
 
 	handlesignals(sigexit);
 
-	if (prefix[strlen(prefix) - 1] == '/')
-		prefix[strlen(prefix) - 1] = '\0';
+	if (rprefix[strlen(rprefix) - 1] == '/')
+		rprefix[strlen(rprefix) - 1] = '\0';
 
-	if (strlen(prefix) && !direxists(prefix))
-		die("prefix %s does not exist", prefix);
+	if (!rprefix)
+		die("prefix %s could not be read", rprefix);
+
+	if (strlen(rprefix) && !direxists(rprefix))
+		die("prefix %s does not exist", rprefix);
 
 	if (printinst) {
 		struct Packages pkgs = getpackages();
-		printinstalled(prefix, pkgs);
+		printinstalled(rprefix, pkgs);
 	}
 
 	if (printall) {
@@ -1220,9 +1225,9 @@ main(int argc, char *argv[])
 
 		if (uninstall) {
 			struct Packages pkgs = getpackages();
-			uninstallpackage(*argv, prefix, recuninstall, pkgs);
+			uninstallpackage(*argv, rprefix, recuninstall, pkgs);
 		} else {
-			installpackage(*argv, prefix);
+			installpackage(*argv, rprefix);
 		}
 	}
 

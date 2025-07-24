@@ -83,8 +83,8 @@ static void handlesignals(void(*hdl)(int));
 static int installpackage(char *pname, char *prefix, unsigned int y);
 static int mkdirrecursive(const char *d);
 static int packagedepends(char *pname, struct Depends *deps);
-static unsigned int packageexists(char *pname);
-static unsigned int packageisinstalled(char *pname, char *prefix);
+static int packageexists(char *pname);
+static int packageisinstalled(char *pname, char *prefix);
 static int packageouts(char *pname, struct Outs *outs);
 static int packagesources(char *pname, struct Sources *srcs);
 static void printferr(const char *m, ...);
@@ -577,10 +577,13 @@ getpackages(struct Packages *pkgs)
 	i = 0;
 	while ((e = readdir(d))) {
 		char path[PATH_MAX];
+		int pe;
+
+		if ((pe = packageexists(e->d_name)) == -1) return EXIT_FAILURE;
 
 		if (e->d_name[0] == '.' || e->d_type != DT_DIR
 		 || !strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")
-		 || !packageexists(e->d_name))
+		 || !pe)
 			continue;
 
 		strncpy(pkgs->a[i], e->d_name, NAME_MAX);
@@ -612,10 +615,13 @@ installpackage(char *pname, char *prefix, unsigned int y)
 	struct Depends deps;
 	struct Outs outs;
 	char env[PATH_MAX], nochrf[PATH_MAX];
-	int i;
+	int i, pii;
 	unsigned int nochr;
 
-	if (packageisinstalled(pname, prefix)) {
+	if ((pii = packageisinstalled(pname, prefix)) == -1)
+		return EXIT_FAILURE;
+
+	if (pii) {
 		printf("+ Skipping %s since it is already installed\n", pname);
 		return EXIT_SUCCESS;
 	}
@@ -670,9 +676,12 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
+		int pe;
+		if ((pe = packageexists(deps.a[i].pname)) == -1)
+			return EXIT_FAILURE;
 		printf("+ Found dependency %s for %s\n",
 		       deps.a[i].pname, pname);
-		if (!packageexists(deps.a[i].pname)) {
+		if (!pe) {
 			printf("+ Dependency %s does not exist\n",
 			       deps.a[i].pname);
 			continue;
@@ -796,7 +805,7 @@ packagedepends(char *pname, struct Depends *deps)
 	return EXIT_SUCCESS;
 }
 
-unsigned int
+int
 packageexists(char *pname)
 {
 	char bf[PATH_MAX], of[PATH_MAX], sf[PATH_MAX];
@@ -804,7 +813,7 @@ packageexists(char *pname)
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
 	              + strlen("//build.lua")) { /* the longest one */
 		printferr("PATH_MAX exceeded");
-		return 0;
+		return -1;
 	}
 	snprintf(bf, sizeof(bf), "%s/%s/build.lua", PACKAGE_REPOSITORY, pname);
 	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
@@ -814,8 +823,8 @@ packageexists(char *pname)
 		struct Sources srcs;
 		struct Outs outs;
 
-		if (packagesources(pname, &srcs)) return 0;
-		if (packageouts(pname, &outs)) return 0;
+		if (packagesources(pname, &srcs)) return -1;
+		if (packageouts(pname, &outs)) return -1;
 
 		if (srcs.l && outs.l) return 1;
 	}
@@ -823,19 +832,19 @@ packageexists(char *pname)
 	return 0;
 }
 
-unsigned int
+int
 packageisinstalled(char *pname, char *prefix)
 {
 	struct Outs outs;
 	int i;
 
-	if (packageouts(pname, &outs)) return 0;
+	if (packageouts(pname, &outs)) return -1;
 
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
 		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");
-			return 0;
+			return -1;
 		}
 		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
 		if (!fileexists(f)) {
@@ -983,7 +992,10 @@ printinstalled(char *prefix, struct Packages pkgs)
 	int i;
 
 	for (i = 0; i < pkgs.l; i++) {
-		if (packageisinstalled(pkgs.a[i], prefix))
+		int pii;
+		if ((pii = packageisinstalled(pkgs.a[i], prefix)) == -1)
+			EXIT_FAILURE;
+		if (pii)
 			printf("%s\n", pkgs.a[i]);
 	}
 }
@@ -1104,9 +1116,12 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
                  struct Packages pkgs)
 {
 	struct Outs outs;
-	int i;
+	int i, pii;
 
-	if (!packageisinstalled(pname, prefix)) {
+	if ((pii = packageisinstalled(pname, prefix)) == -1)
+		return EXIT_FAILURE;
+
+	if (!pii) {
 		printf("+ Skipping %s since it is not installed\n", pname);
 		return EXIT_SUCCESS;
 	}
@@ -1117,9 +1132,13 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		if (packagedepends(pkgs.a[i], &pdeps)) return EXIT_FAILURE;
 
 		for (i = 0; i < pdeps.l; i++) {
+			int dpii;
+			if ((dpii = packageisinstalled(pkgs.a[i],
+			                               prefix)) == -1)
+				return EXIT_FAILURE;
 			if (!strcmp(pdeps.a[i].pname, pname)
 			    && pdeps.a[i].runtime
-			    && packageisinstalled(pkgs.a[i], prefix)) {
+			    && dpii) {
 				printf("+ Skipping %s since %s depends on "
 				       "it\n", pname, pkgs.a[i]);
 				return EXIT_SUCCESS;
@@ -1150,12 +1169,17 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		if (packagedepends(pname, &deps)) return EXIT_FAILURE;
 
 		for (i = 0; i < deps.l; i++) {
+			int pe;
+
+			if ((pe = packageexists(deps.a[i].pname)) == -1)
+				return EXIT_FAILURE;
+
 			if (!deps.a[i].runtime) continue;
 
 			printf("+ Found dependency %s for %s\n",
 			       deps.a[i].pname, pname);
 
-			if (!packageexists(deps.a[i].pname)) {
+			if (!pe) {
 				printf("+ Dependency %s does not exist\n",
 				       deps.a[i].pname);
 				continue;
@@ -1283,7 +1307,11 @@ main(int argc, char *argv[])
 
 	/* will not be evaluated when either printinst or prinstall is 1 */
 	for (; *argv; argc--, argv++) {
-		if (!packageexists(*argv)) {
+		int pe;
+
+		if ((pe = packageexists(*argv)) == -1) return EXIT_FAILURE;
+
+		if (!pe) {
 			printferr("Package %s does not exist", *argv);
 			return EXIT_FAILURE;
 		}

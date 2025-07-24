@@ -1051,7 +1051,10 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 		if (strlen(srcs.a[i].relpath)) {
 			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
-			     *dn = dirname(srcs.a[i].relpath);
+			     dn[PATH_MAX];
+
+			strncpy(dn, srcs.a[i].relpath, PATH_MAX);
+			dirname(dn);
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(b)) {

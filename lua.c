@@ -103,6 +103,16 @@ lua_mkdir(lua_State *luas)
 }
 
 int
+lua_setenv(lua_State *luas)
+{
+	const char *n = luaL_checkstring(luas, 1),
+	           *v = luaL_checkstring(luas, 2);
+	if (setenv(n, v, 1))
+		luaL_error(luas, "setenv %s: %s", n, strerror(errno));
+	return 0;
+}
+
+int
 lua_uname(lua_State *luas)
 {
 	struct utsname u;

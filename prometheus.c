@@ -696,8 +696,8 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		snprintf(s, sizeof(s), "%s%s", env, outs.a[i]);
 
 		if (!fileexists(s)) {
-			printferr("File %s in %s's outs in was not installed",
-			          s, pname);
+			printferr("Out file %s has not been installed to %s",
+			          outs.a[i], env);
 			return EXIT_FAILURE;
 		}
 

@@ -1014,8 +1014,7 @@ packagesources(char *pname, struct Sources *srcs)
 			die("SHA256 not present in one of %s's sources",
 			    pname);
 			return EXIT_FAILURE;
-		}
-		else if (nfields < 2) {
+		} else if (nfields < 2) {
 			die("URL not present in one of %s's sources", pname);
 			return EXIT_FAILURE;
 		}

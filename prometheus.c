@@ -83,9 +83,9 @@ static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
 static int installpackage(char *pname, char *prefix);
 static int mkdirrecursive(const char *d);
+static int packagedepends(char *pname, struct Depends *deps);
 static unsigned int packageexists(char *pname);
 static unsigned int packageisinstalled(char *pname, char *prefix);
-static int packagedepends(char *pname, struct Depends *deps);
 static int packageouts(char *pname, struct Outs *outs);
 static int packagesources(char *pname, struct Sources *srcs);
 static void printinstalled(char *prefix, struct Packages pkgs);
@@ -704,48 +704,6 @@ mkdirrecursive(const char *d)
 	return EXIT_SUCCESS;
 }
 
-unsigned int
-packageexists(char *pname)
-{
-	char bf[PATH_MAX], of[PATH_MAX], sf[PATH_MAX];
-
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
-	              + strlen("/build.lua")) { /* the longest one */
-		die("PATH_MAX exceeded");
-		return 0;
-	}
-	snprintf(bf, sizeof(bf), "%s/%s/build.lua", PACKAGE_REPOSITORY, pname);
-	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
-	snprintf(sf, sizeof(sf), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
-
-	if (fileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
-
-	return 0;
-}
-
-unsigned int
-packageisinstalled(char *pname, char *prefix)
-{
-	struct Outs outs;
-	int i;
-
-	if (packageouts(pname, &outs)) return 0;
-
-	for (i = 0; i < outs.l; i++) {
-		char f[PATH_MAX];
-		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
-			die("PATH_MAX exceeded");
-			return 0;
-		}
-		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
-		if (!fileexists(f)) {
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
 int
 packagedepends(char *pname, struct Depends *deps)
 {
@@ -803,6 +761,48 @@ packagedepends(char *pname, struct Depends *deps)
 	deps->l = i;
 
 	return EXIT_SUCCESS;
+}
+
+unsigned int
+packageexists(char *pname)
+{
+	char bf[PATH_MAX], of[PATH_MAX], sf[PATH_MAX];
+
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
+	              + strlen("/build.lua")) { /* the longest one */
+		die("PATH_MAX exceeded");
+		return 0;
+	}
+	snprintf(bf, sizeof(bf), "%s/%s/build.lua", PACKAGE_REPOSITORY, pname);
+	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
+	snprintf(sf, sizeof(sf), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
+
+	if (fileexists(bf) && fileexists(of) && fileexists(sf)) return 1;
+
+	return 0;
+}
+
+unsigned int
+packageisinstalled(char *pname, char *prefix)
+{
+	struct Outs outs;
+	int i;
+
+	if (packageouts(pname, &outs)) return 0;
+
+	for (i = 0; i < outs.l; i++) {
+		char f[PATH_MAX];
+		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
+			die("PATH_MAX exceeded");
+			return 0;
+		}
+		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
+		if (!fileexists(f)) {
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 int

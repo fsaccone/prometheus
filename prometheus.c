@@ -331,7 +331,7 @@ unsigned int
 direxists(const char *f)
 {
 	struct stat buf;
-	if (stat(f, &buf) != 0) return 0;
+	if (stat(f, &buf)) return 0;
 	if (S_ISDIR(buf.st_mode)) return 1;
 	return 0;
 }

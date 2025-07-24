@@ -190,6 +190,11 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 			exit(EXIT_FAILURE);
 		}
 
+		if (!nochr && setenv("PATH", "/bin", 1)) {
+			perror("+ setenv");
+			exit(EXIT_FAILURE);
+		}
+
 		if (luaL_dofile(luas, "../build.lua") != LUA_OK) {
 			fprintf(stderr, "%s\n", lua_tostring(luas, -1));
 			lua_pop(luas, 1);

@@ -704,7 +704,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 	if (packageouts(pname, &outs)) return EXIT_FAILURE;
 	for (i = 0; i < outs.l; i++) {
-		char s[PATH_MAX], d[PATH_MAX];
+		char s[PATH_MAX];
 
 		if (PATH_MAX <= strlen(tmpd) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");
@@ -717,6 +717,15 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			          outs.a[i], tmpd);
 			return EXIT_FAILURE;
 		}
+	}
+	for (i = 0; i < outs.l; i++) {
+		char s[PATH_MAX], d[PATH_MAX];
+
+		if (PATH_MAX <= strlen(tmpd) + strlen(outs.a[i])) {
+			printferr("PATH_MAX exceeded");
+			return EXIT_FAILURE;
+		}
+		snprintf(s, sizeof(s), "%s%s", tmpd, outs.a[i]);
 
 		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");

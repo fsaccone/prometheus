@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/utsname.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -99,4 +100,37 @@ lua_mkdir(lua_State *luas)
 	if (mkdir(d, 0700))
 		luaL_error(luas, "mkdir %s: %s", d, strerror(errno));
 	return 0;
+}
+
+int
+lua_uname(lua_State *luas)
+{
+	struct utsname u;
+
+	if (uname(&u) < -1)
+		luaL_error(luas, "uname: %s", strerror(errno));
+
+	lua_newtable(luas);
+
+	lua_pushstring(luas, "s");
+	lua_pushstring(luas, u.sysname);
+	lua_settable(luas, -3);
+
+	lua_pushstring(luas, "n");
+	lua_pushstring(luas, u.nodename);
+	lua_settable(luas, -3);
+
+	lua_pushstring(luas, "r");
+	lua_pushstring(luas, u.release);
+	lua_settable(luas, -3);
+
+	lua_pushstring(luas, "v");
+	lua_pushstring(luas, u.version);
+	lua_settable(luas, -3);
+
+	lua_pushstring(luas, "m");
+	lua_pushstring(luas, u.machine);
+	lua_settable(luas, -3);
+
+	return 1;
 }

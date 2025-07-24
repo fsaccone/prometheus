@@ -80,7 +80,5 @@ lua_mkdir(lua_State *luas)
 	if ((r = mkdir(d, 0700)))
 		luaL_error(luas, "mkdir %s: %s", d, strerror(errno));
 
-	lua_pushboolean(luas, 1);
-
-	return 1;
+	return 0;
 }

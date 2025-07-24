@@ -656,6 +656,10 @@ mkdirrecursive(const char *d)
 			*p = '/';
 		}
 	}
+	if (mkdir(d, 0700) && errno != EEXIST) {
+		perror("+ mkdir");
+		return EXIT_FAILURE;
+	}
 
 	return EXIT_SUCCESS;
 }

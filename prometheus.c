@@ -479,7 +479,7 @@ fetchfile(const char *url, const char *f)
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
 	if (!(c = curl_easy_init())) {
-		fprintf(stderr, "curl: failed to initialize");
+		fprintf(stderr, "curl: failed to initialize\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -506,7 +506,7 @@ fetchfile(const char *url, const char *f)
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);
 		curl_easy_cleanup(c);
-		fprintf(stderr, "curl: %s", curl_easy_strerror(cc));
+		fprintf(stderr, "curl: %s\n", curl_easy_strerror(cc));
 		exit(EXIT_FAILURE);
 	}
 

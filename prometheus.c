@@ -1084,6 +1084,7 @@ readlines(const char *f, struct Lines *l)
 void
 registerluautils(lua_State *luas)
 {
+	lua_register(luas, "cd", lua_cd);
 	lua_register(luas, "cp", lua_cp);
 	lua_register(luas, "exec", lua_exec);
 	lua_register(luas, "mkdir", lua_mkdir);

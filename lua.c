@@ -4,10 +4,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
+
+int
+lua_cd(lua_State *luas)
+{
+	const char *d = luaL_checkstring(luas, 1);
+	if (chdir(d)) luaL_error(luas, "cd %s: %s", d, strerror(errno));
+	return 0;
+}
 
 int
 lua_cp(lua_State *luas)

@@ -797,7 +797,7 @@ packagesources(char *pname, struct Sources *srcs)
 
 	for (i = 0; i < l.l; i++) {
 		char *tok;
-		int nfields;
+		int nfields = 0;
 
 		tok = strtok(l.a[i], " \t");
 		while (tok && nfields < 3) {

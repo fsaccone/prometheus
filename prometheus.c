@@ -227,12 +227,12 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		waitpid(pid, &s, 0);
 		if (WIFEXITED(s)) {
 			if (WEXITSTATUS(s)) {
-				printf("\r\033[K+ Failed to build %s, see "
+				printf("\r\033[K+ Failed to build %s: see "
 				       "%s/prometheus.log\n",
 				       pname, tmpd);
 				return EXIT_FAILURE;
 			} else {
-				printf("\r\033[K+ Built %s\n", pname);
+				printf("\r\033[K+ Package %s built\n", pname);
 			}
 		}
 	}
@@ -644,7 +644,7 @@ installpackage(char *pname, char *prefix)
 	if (buildpackage(pname, tmpd, nochr)) return EXIT_FAILURE;
 
 	if (installouts(outs, tmpd, prefix)) return EXIT_FAILURE;
-	printf("+ Installed %s\n", pname);
+	printf("+ Package %s installed\n", pname);
 
 	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);
 	strncpy(instpkgs.a[instpkgs.l].tmpd, tmpd, PATH_MAX);
@@ -1274,7 +1274,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 			return EXIT_FAILURE;
 		}
 	}
-	printf("\r\033[K+ Uninstalled %s\n", pname);
+	printf("\r\033[K+ Package %s uninstalled\n", pname);
 
 	if (rec) {
 		struct Depends deps;

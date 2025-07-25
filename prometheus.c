@@ -197,6 +197,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 			              + strlen("://bin")) {
 				fprintf(stderr, "\n");
 				printferr("PATH_MAX exceeded");
+				exit(EXIT_FAILURE);
 			}
 			snprintf(np, sizeof(np), "%s:%s/bin", p, tmpd);
 			if (setenv("PATH", np, 1)) {
@@ -703,8 +704,10 @@ mkdirrecursive(const char *d)
 {
 	char buf[PATH_MAX], *p = NULL;
 
-	if (PATH_MAX <= strlen(d))
+	if (PATH_MAX <= strlen(d)) {
 		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
 	strncpy(buf, d, sizeof(buf));
 	buf[sizeof(buf) - 1] = '\0';
 

@@ -39,6 +39,16 @@ struct Depends {
 	size_t l;
 };
 
+struct InstalledPackage {
+	char pname[NAME_MAX];
+	char tmpd[PATH_MAX];
+};
+
+struct InstalledPackages {
+	struct InstalledPackage a[PACKAGES_MAX];
+	size_t l;
+};
+
 struct Lines {
 	char a[LINES_MAX][LINE_MAX];
 	size_t l;
@@ -105,7 +115,7 @@ static int uninstallpackage(char *pname, char *prefix, unsigned int rec,
 static unsigned int urlisvalid(char *url);
 static void usage(void);
 
-static struct Packages instpkgs = { .l = 0 };
+static struct InstalledPackages instpkgs = { .l = 0 };
 
 int
 buildpackage(char *pname, const char *tmpd, unsigned int nochr)
@@ -608,7 +618,8 @@ installpackage(char *pname, char *prefix, unsigned int y)
 	if (installouts(outs, tmpd, prefix)) return EXIT_FAILURE;
 	printf("+ Installed %s\n", pname);
 
-	strncpy(instpkgs.a[instpkgs.l], pname, NAME_MAX);
+	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);
+	strncpy(instpkgs.a[instpkgs.l].tmpd, tmpd, PATH_MAX);
 	instpkgs.l++;
 
 	return EXIT_SUCCESS;

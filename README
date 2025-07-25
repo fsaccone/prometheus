@@ -95,8 +95,8 @@ nochroot
 If the nochroot file is present and valid, the program will not chroot to the
 temporary directory before building the package.
 
-The content of the file may be a motivation for the need of a nochroot
-environment.
+The content of the file may be a note explaining the need for the nochroot
+privileges.
 
 sources
 -------

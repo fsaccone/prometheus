@@ -549,13 +549,10 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		       "building.\n",
 		       pname);
 
-		if (!l.l) {
-			printf("  The package provided no motivation for "
-			       "it.\n");
-		} else {
+		if (l.l) {
 			int i;
-			printf("  The following is the motivation provided "
-			       "by the package:\n\n");
+			printf("  The following is a note provided by the "
+			       "package:\n\n");
 			for (i = 0; i < l.l; i++) printf("\t%s\n", l.a[i]);
 			printf("\n");
 		}

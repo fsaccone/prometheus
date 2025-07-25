@@ -646,10 +646,6 @@ installpackage(char *pname, char *prefix)
 	if (installouts(outs, tmpd, prefix)) return EXIT_FAILURE;
 	printf("+ Installed %s\n", pname);
 
-	if (instpkgs.l == PACKAGES_MAX) {
-		printferr("Maximum number of packages installed");
-		return EXIT_FAILURE;
-	}
 	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);
 	strncpy(instpkgs.a[instpkgs.l].tmpd, tmpd, PATH_MAX);
 	instpkgs.l++;

@@ -74,7 +74,7 @@ int
 lua_exec(lua_State *luas)
 {
 	int argc = lua_gettop(luas), i;
-	char *argv[argc], cmd[PATH_MAX];
+	char *argv[argc], cmd[PATH_MAX], *penv = getenv("PATH");
 	pid_t pid;
 
 	if (argc < 1) luaL_error(luas, "usage: exec(cmd, [arg, ...])");
@@ -85,8 +85,26 @@ lua_exec(lua_State *luas)
 
 	if (PATH_MAX <= strlen(argv[0]))
 		luaL_error(luas, "exec %s: PATH_MAX exceeded", argv[0]);
-	if (!realpath(argv[0], cmd))
-		luaL_error(luas, "realpath %s: &s", argv[0], strerror(errno));
+	if (argv[0][0] != '.') {
+		char p[PATH_MAX], *pdir;
+		if (!penv)
+			luaL_error(luas, "exec %s: PATH has no values",
+			           argv[0]);
+		if (PATH_MAX <= strlen(penv) + strlen("/"))
+			luaL_error(luas, "exec %s: PATH_MAX exceeded",
+			           argv[0]);
+		strncpy(p, penv, PATH_MAX);
+		p[sizeof(p) - 1] = '\0';
+		for (pdir = strtok(p, ":"); pdir; pdir = strtok(NULL, ":")) {
+			snprintf(cmd, sizeof(cmd), "%s/%s", pdir, argv[0]);
+			if (!access(cmd, X_OK)) break;
+		}
+		if (access(cmd, X_OK))
+			luaL_error(luas, "exec %s: No such file or directory",
+			           argv[0]);
+	} else if (!realpath(argv[0], cmd)) {
+		luaL_error(luas, "realpath %s: %s", argv[0], strerror(errno));
+	}
 
 	if ((pid = fork()) < 0) {
 		luaL_error(luas, "fork: %s", argv[0], strerror(errno));

@@ -578,9 +578,9 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		if (!y) {
 			char yp;
 
-			yp = getchar();
-
-			if (yp != 'y' && yp != 'Y') {
+			while ((yp = getchar()) != EOF) {
+				if (yp == '\n') continue;
+				if (yp == 'y' || yp == 'Y') break;
 				printf("n\n- Quitting\n");
 				return EXIT_FAILURE;
 			}

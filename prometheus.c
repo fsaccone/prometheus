@@ -535,7 +535,7 @@ installpackage(char *pname, char *prefix)
 {
 	struct Depends deps;
 	struct Outs outs;
-	char tmpd[PATH_MAX], nochrf[PATH_MAX];
+	char tmpd[PATH_MAX];
 	int i, pii;
 	unsigned int nochr;
 
@@ -553,32 +553,12 @@ installpackage(char *pname, char *prefix)
 		return EXIT_SUCCESS;
 	}
 
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
-	              + strlen("//nochroot")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(nochrf, sizeof(nochrf), "%s/%s/nochroot",
-	         PACKAGE_REPOSITORY, pname);
-	if (fileexists(nochrf)) {
-		struct Lines l;
+	if (!strncmp(pname, "nochroot-", 9)) {
 		char yp;
-
-		if (readlines(nochrf, &l)) return EXIT_FAILURE;
 
 		printf("+ Package %s is a nochroot package: this means it "
 		       "will have full access over your machine while "
-		       "building.\n",
-		       pname);
-
-		if (l.l) {
-			int i;
-			printf("  The following is a note provided by the "
-			       "package:\n\n");
-			for (i = 0; i < l.l; i++) printf("\t%s\n", l.a[i]);
-			printf("\n");
-		}
-
+		       "building.\n", pname);
 		printf("> Continue? (y/n) ");
 
 		while ((yp = getchar()) != EOF) {

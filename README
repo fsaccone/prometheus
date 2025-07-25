@@ -37,11 +37,15 @@ mandatory files:
 Each package directory may also contain the following optional files:
 
 - depends
-- nochroot
 - sources
 
 The program chroots in a temporary directory before building a package: it is
 initialized with a /src directory, a /bin directory and a /prometheus.log file.
+
+All packages whose name starts with "nochroot-" are considered nochroot
+packages: before building these packages, the PREFIX environment variable will
+be set to the temporary directory, and the program will not chroot to it. Since
+these are potentially unsafe, the user is prompted before installing them.
 
 build
 -----
@@ -88,15 +92,6 @@ the package.
 
 Additionally, when "runtime" is present after PACKAGE, PACKAGE gets also
 installed to the system.
-
-nochroot
---------
-
-If the nochroot file is present and valid, the program will not chroot to the
-temporary directory before building the package.
-
-The content of the file may be a note explaining the need for the nochroot
-privileges.
 
 sources
 -------

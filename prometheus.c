@@ -154,7 +154,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 	snprintf(src, sizeof(src), "%s/src", reltmpd);
 
 	if ((pid = fork()) < 0) {
-		perror("+ fork");
+		perror("\n+ fork");
 		return EXIT_FAILURE;
 	}
 
@@ -163,18 +163,19 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		int logf;
 
 		if (!nochr && chroot(tmpd)) {
-			perror("+ chroot");
+			perror("\n+ chroot");
 			exit(EXIT_FAILURE);
 		}
 
-		printf("- Building %s\n", pname);
+		printf("- Building %s\r", pname);
+		fflush(stdout);
 
 		if (!(logf = open(log, O_WRONLY, 0700))) {
-			perror("+ fopen");
+			perror("\n+ fopen");
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDOUT_FILENO) == -1) {
-			perror("+ dup2");
+			perror("\n+ dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
@@ -193,8 +194,10 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		if (nochr) {
 			char *p = getenv("PATH"), np[PATH_MAX];
 			if (PATH_MAX <= strlen(p) + strlen(tmpd)
-			              + strlen("://bin"))
+			              + strlen("://bin")) {
+				fprintf(stderr, "\n");
 				printferr("PATH_MAX exceeded");
+			}
 			snprintf(np, sizeof(np), "%s:%s/bin", p, tmpd);
 			if (setenv("PATH", np, 1)) {
 				perror("+ setenv");
@@ -223,10 +226,12 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		waitpid(pid, &s, 0);
 		if (WIFEXITED(s)) {
 			if (WEXITSTATUS(s)) {
-				printf("+ Failed to build %s, see "
+				printf("\r\033[K+ Failed to build %s, see "
 				       "%s/prometheus.log\n",
 				       pname, tmpd);
 				return EXIT_FAILURE;
+			} else {
+				printf("\r\033[K+ Built %s\n", pname);
 			}
 		}
 	}

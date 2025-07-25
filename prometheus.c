@@ -322,7 +322,7 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
              curl_off_t upl)
 {
 	if (dltot > 0) {
-		printf("\r- Downloading %s: %.2f%%",
+		printf("- Downloading %s: %.2f%%\r",
 		       p, (double)dlnow / dltot * 100.0);
 		fflush(stdout);
 	}
@@ -413,7 +413,6 @@ fetchfile(const char *url, const char *f)
 		return EXIT_FAILURE;
 	}
 
-	printf("\n"); /* needed after curlprogress has been used */
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
 
 	if (r >= 400) {

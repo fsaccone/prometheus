@@ -556,9 +556,8 @@ installpackage(char *pname, char *prefix)
 	if (!strncmp(pname, "nochroot-", 9)) {
 		char yp;
 
-		printf("+ Package %s is a nochroot package: this means it "
-		       "will have full access over your machine while "
-		       "building.\n", pname);
+		printf("+ Package %s is a nochroot package: it will have full "
+		       "access over your machine while building.\n", pname);
 		printf("> Continue? (y/n) ");
 
 		while ((yp = getchar()) != EOF) {

@@ -575,6 +575,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
 		int pe;
+		struct Outs douts;
 		if ((pe = packageexists(deps.a[i].pname)) == -1)
 			return EXIT_FAILURE;
 		printf("+ Found dependency %s for %s\n",
@@ -584,15 +585,17 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			       deps.a[i].pname);
 			continue;
 		}
-		if (packageisinstalled(deps.a[i].pname, prefix)) {
-			struct Outs douts;
-			if (packageouts(deps.a[i].pname, &douts))
-				return EXIT_FAILURE;
-			installouts(douts, prefix, tmpd);
-		} else if (installpackage(deps.a[i].pname,
-		                          deps.a[i].runtime ? prefix : tmpd,
-		                          y)) {
+		if (packageouts(deps.a[i].pname, &douts))
 			return EXIT_FAILURE;
+		if (packageisinstalled(deps.a[i].pname, prefix)) {
+			installouts(douts, prefix, tmpd);
+		} else {
+			if (installpackage(deps.a[i].pname, tmpd, y))
+				return EXIT_FAILURE;
+			if (deps.a[i].runtime && installouts(douts,
+			                                     tmpd,
+			                                     prefix))
+				return EXIT_FAILURE;
 		}
 	}
 

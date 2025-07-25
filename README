@@ -25,7 +25,7 @@ Usage
 	prometheus -a
 
 Repositories
-============
+------------
 
 The repository tree must have a set of directories, each named after the
 package it represents: each of these directories must contain the following
@@ -47,8 +47,7 @@ packages: before building these packages, the PREFIX environment variable will
 be set to the temporary directory, and the program will not chroot to it. Since
 these are potentially unsafe, the user is prompted before installing them.
 
-build
------
+- build
 
 This file is an executable which is copied to the /src directory of the
 temporary directory and called from it.
@@ -56,8 +55,7 @@ temporary directory and called from it.
 Its job is to build the package and install it to the root of the temporary
 directory.
 
-outs
-----
+- outs
 
 Each line of the outs file must be the absolute path of each file to be
 installed to the system.
@@ -75,8 +73,7 @@ find to generate outs:
 	$ find $builddir -type f \
 	                 -exec echo {} \; | sed "s|^$builddir||" > outs
 
-depends
--------
+- depends
 
 Each line of the depends file must be of the following format:
 
@@ -93,8 +90,7 @@ the package.
 Additionally, when "runtime" is present after PACKAGE, PACKAGE gets also
 installed to the system.
 
-sources
--------
+- sources
 
 Each line of the sources file must be of the following format:
 

@@ -560,12 +560,12 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			printf("\n");
 		}
 
-		printf("> Continue? (y) ");
+		printf("> Continue? (y/*) ");
 
 		if (!y) {
 			yp = getchar();
 
-			if (yp && yp != '\n' && yp != 'y' && yp != 'Y') {
+			if (yp != 'y' && yp != 'Y') {
 				printf("- Quitting\n");
 				return EXIT_FAILURE;
 			}

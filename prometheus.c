@@ -598,7 +598,8 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		if ((pii = packageisinstalled(deps.a[i].pname, prefix)) == -1)
 			return EXIT_FAILURE;
 		if (pii) {
-			printf("+ Dependency %s already installed\n", deps.a[i].pname);
+			printf("+ Dependency %s already installed\n",
+			       deps.a[i].pname);
 			if (installouts(douts, prefix, tmpd))
 				return EXIT_FAILURE;
 		} else {

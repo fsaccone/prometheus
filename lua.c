@@ -35,15 +35,22 @@ lua_cp(lua_State *luas)
 {
 	const char *s = luaL_checkstring(luas, 1),
 	           *d = luaL_checkstring(luas, 2);
-	char buf[4096];
+	char buf[4096], rs[PATH_MAX], rd[PATH_MAX];
 	size_t b;
 	FILE *sf, *df;
 
-	if (!(sf = fopen(s, "rb")))
+	if (PATH_MAX <= strlen(s) || PATH_MAX <= strlen(d))
+		luaL_error(luas, "cp %s %s: PATH_MAX exceeded", s, d);
+	if (!realpath(s, rs))
+		luaL_error(luas, "realpath %s: %s", s, strerror(errno));
+	if (!realpath(d, rd))
+		luaL_error(luas, "realpath %s: %s", d, strerror(errno));
+
+	if (!(sf = fopen(rs, "rb")))
 		luaL_error(luas, "cp (%s) %s: %s",
 		           s, d, strerror(errno));
 
-	if (!(df = fopen(d, "wb"))) {
+	if (!(df = fopen(rd, "wb"))) {
 		fclose(sf);
 		luaL_error(luas, "cp %s (%s): %s",
 		           s, d, strerror(errno));

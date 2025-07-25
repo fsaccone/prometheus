@@ -518,6 +518,12 @@ installpackage(char *pname, char *prefix, unsigned int y)
 	int i, pii;
 	unsigned int nochr;
 
+	if (packageouts(pname, &outs)) return EXIT_FAILURE;
+	if (!outs.l) {
+		printferr("Package %s has no outs", pname);
+		return EXIT_FAILURE;
+	}
+
 	if ((pii = packageisinstalled(pname, prefix)) == -1)
 		return EXIT_FAILURE;
 
@@ -570,12 +576,6 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 		nochr = 1;
 		printf("\n");
-	}
-
-	if (packageouts(pname, &outs)) return EXIT_FAILURE;
-	if (!outs.l) {
-		printferr("Package %s has no outs", pname);
-		return EXIT_FAILURE;
 	}
 
 	if (createtmpdir(pname, tmpd)) return EXIT_FAILURE;

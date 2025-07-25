@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include <curl/curl.h>
@@ -559,20 +560,26 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			printf("\n");
 		}
 
-		printf("> Continue? (y/*) ");
+		printf("> Continue? (y/n) ");
 
 		if (!y) {
-			char yp = getchar();
+			char yp;
+			struct termios newt, oldt;
+
+			tcgetattr(STDIN_FILENO, &oldt);
+			newt = oldt;
+			newt.c_lflag &= ~(ICANON | ECHO);
+			tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+			yp = getchar();
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
 			if (yp != 'y' && yp != 'Y') {
-				if (yp != '\n') printf("\n");
-				printf("- Quitting\n");
+				printf("n\n- Quitting\n");
 				return EXIT_FAILURE;
 			}
-		} else {
-			printf("y\n");
 		}
 
+		printf("y\n");
 		nochr = 1;
 	}
 

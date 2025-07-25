@@ -1257,22 +1257,25 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 		}
 	}
 
-	printf("- Uninstalling %s\n", pname);
+	printf("- Uninstalling %s\r", pname);
+	fflush(stdout);
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
 
-		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i]))
+		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
+			fprintf(stderr, "\n");
 			printferr("PATH_MAX exceeded");
+		}
 		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
 
 		if (!fileexists(f)) continue;
 
 		if (remove(f)) {
-			perror("+ remove");
+			perror("\n+ remove");
 			return EXIT_FAILURE;
 		}
 	}
-	printf("+ Uninstalled %s\n", pname);
+	printf("\r\033[K+ Uninstalled %s\n", pname);
 
 	if (rec) {
 		struct Depends deps;

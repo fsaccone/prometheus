@@ -1207,6 +1207,12 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	struct Outs outs;
 	int i, pii;
 
+	if (packageouts(pname, &outs)) return EXIT_FAILURE;
+	if (!outs.l) {
+		printferr("Package %s has no outs", pname);
+		return EXIT_FAILURE;
+	}
+
 	if ((pii = packageisinstalled(pname, prefix)) == -1)
 		return EXIT_FAILURE;
 
@@ -1234,8 +1240,6 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 			}
 		}
 	}
-
-	if (packageouts(pname, &outs)) return EXIT_FAILURE;
 
 	printf("- Uninstalling %s\n", pname);
 	for (i = 0; i < outs.l; i++) {

@@ -1236,17 +1236,18 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 	}
 
 	for (i = 0; i < pkgs.l; i++) {
+		int j;
 		struct Depends pdeps;
 
 		if (packagedepends(pkgs.a[i], &pdeps)) return EXIT_FAILURE;
 
-		for (i = 0; i < pdeps.l; i++) {
+		for (j = 0; j < pdeps.l; j++) {
 			int dpii;
 			if ((dpii = packageisinstalled(pkgs.a[i],
 			                               prefix)) == -1)
 				return EXIT_FAILURE;
-			if (!strcmp(pdeps.a[i].pname, pname)
-			    && pdeps.a[i].runtime
+			if (!strcmp(pdeps.a[j].pname, pname)
+			    && pdeps.a[j].runtime
 			    && dpii) {
 				printf("+ Skipping %s since %s depends on "
 				       "it\n", pname, pkgs.a[i]);

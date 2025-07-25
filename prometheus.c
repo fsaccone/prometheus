@@ -105,6 +105,8 @@ static int uninstallpackage(char *pname, char *prefix, unsigned int rec,
 static unsigned int urlisvalid(char *url);
 static void usage(void);
 
+static struct Packages instpkgs = { .l = 0 };
+
 int
 buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 {
@@ -605,6 +607,9 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 	if (installouts(outs, tmpd, prefix)) return EXIT_FAILURE;
 	printf("+ Installed %s\n", pname);
+
+	strncpy(instpkgs.a[instpkgs.l], pname, NAME_MAX);
+	instpkgs.l++;
 
 	return EXIT_SUCCESS;
 }

@@ -587,8 +587,9 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		}
 		if (packageouts(deps.a[i].pname, &douts))
 			return EXIT_FAILURE;
-		if (packageisinstalled(deps.a[i].pname, prefix)) {
-			installouts(douts, prefix, tmpd);
+		if (packageisinstalled(deps.a[i].pname, prefix)
+		 && installouts(douts, prefix, tmpd)) {
+			return EXIT_FAILURE;
 		} else {
 			if (installpackage(deps.a[i].pname, tmpd, y))
 				return EXIT_FAILURE;

@@ -574,7 +574,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
-		int pe;
+		int pe, pii;
 		struct Outs douts;
 		if ((pe = packageexists(deps.a[i].pname)) == -1)
 			return EXIT_FAILURE;
@@ -587,8 +587,9 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		}
 		if (packageouts(deps.a[i].pname, &douts))
 			return EXIT_FAILURE;
-		if (packageisinstalled(deps.a[i].pname, prefix)
-		 && installouts(douts, prefix, tmpd)) {
+		if ((pii = packageisinstalled(deps.a[i].pname, prefix)) == -1)
+			return EXIT_FAILURE;
+		if (pii && installouts(douts, prefix, tmpd)) {
 			return EXIT_FAILURE;
 		} else {
 			if (installpackage(deps.a[i].pname, tmpd, y))

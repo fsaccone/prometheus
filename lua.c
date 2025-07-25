@@ -76,7 +76,7 @@ int
 lua_exec(lua_State *luas)
 {
 	int argc = lua_gettop(luas), i;
-	char *argv[argc];
+	char *argv[argc], cmd[PATH_MAX];
 	pid_t pid;
 
 	if (argc < 1) luaL_error(luas, "usage: exec(cmd, [arg, ...])");
@@ -85,9 +85,14 @@ lua_exec(lua_State *luas)
 		argv[i] = (char *)luaL_checkstring(luas, i + 1);
 	argv[argc] = NULL;
 
+	if (PATH_MAX <= strlen(argv[0]))
+		luaL_error(luas, "exec %s: PATH_MAX exceeded", argv[0]);
+	if (!realpath(argv[0], cmd))
+		luaL_error(luas, "realpath %s: &s", argv[0], strerror(errno));
+
 	if ((pid = fork()) < 0) {
 		luaL_error(luas, "fork: %s", argv[0], strerror(errno));
-	} else if (!pid && (execvp(argv[0], argv)) == -1) {
+	} else if (!pid && (execvp(cmd, argv)) == -1) {
 		luaL_error(luas, "exec %s: %s", argv[0], strerror(errno));
 	} else {
 		int s, es;

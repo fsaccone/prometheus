@@ -326,8 +326,18 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
 	printf("\r\033[K");
 
 	if (dltot > 0) {
-		printf("- Downloading %s: %.2f%%\r",
-		       p, (double)dlnow / dltot * 100.0);
+		const int bl = 40;
+		double per = (double)dlnow / dltot * 100.0;
+		int i, bpos = bl * dlnow / dltot;
+
+		printf("- Downloading %s: [", p);
+		for (i = 0; i < bl; i++) {
+			if (i < bpos)
+				printf("#");
+			else
+				printf("-");
+		}
+		printf("] %.2f%%\r", per);
 	} else {
 		printf("- Downloading %s: Unkown progress\r", p);
 	}

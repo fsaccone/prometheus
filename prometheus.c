@@ -111,6 +111,7 @@ static unsigned int urlisvalid(char *url);
 static void usage(void);
 
 static struct InstalledPackages instpkgs = { .l = 0 };
+static struct termios oldt;
 
 int
 buildpackage(char *pname, const char *tmpd, unsigned int nochr)
@@ -561,14 +562,8 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 		if (!y) {
 			char yp;
-			struct termios newt, oldt;
 
-			tcgetattr(STDIN_FILENO, &oldt);
-			newt = oldt;
-			newt.c_lflag &= ~(ICANON | ECHO);
-			tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 			yp = getchar();
-			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 
 			if (yp != 'y' && yp != 'Y') {
 				printf("n\n- Quitting\n");
@@ -1200,6 +1195,7 @@ void
 sigexit()
 {
 	printf("\n- Quitting\n");
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	exit(EXIT_FAILURE);
 }
 
@@ -1322,6 +1318,7 @@ main(int argc, char *argv[])
 	    prefixdef = 0;
 	char prefix[PATH_MAX] = DEFAULT_PREFIX,
 	     rprefix[PATH_MAX];
+	struct termios newt;
 
 	if (getuid()) {
 		fprintf(stderr, "%s: Superuser privileges are required\n",
@@ -1391,15 +1388,29 @@ main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
 	if (printinst) {
 		struct Packages pkgs;
-		if (getpackages(&pkgs)) return EXIT_FAILURE;
-		if (printinstalled(rprefix, pkgs)) return EXIT_FAILURE;
+		if (getpackages(&pkgs)) {
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			return EXIT_FAILURE;
+		}
+		if (printinstalled(rprefix, pkgs)) {
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			return EXIT_FAILURE;
+		}
 	}
 
 	if (printall) {
 		struct Packages pkgs;
-		if (getpackages(&pkgs)) return EXIT_FAILURE;
+		if (getpackages(&pkgs)) {
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			return EXIT_FAILURE;
+		}
 		printpackages(pkgs);
 	}
 
@@ -1407,23 +1418,34 @@ main(int argc, char *argv[])
 	for (; *argv; argc--, argv++) {
 		int pe;
 
-		if ((pe = packageexists(*argv)) == -1) return EXIT_FAILURE;
+		if ((pe = packageexists(*argv)) == -1) {
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			return EXIT_FAILURE;
+		}
 
 		if (!pe) {
 			printferr("Package %s does not exist", *argv);
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
 
 		if (uninstall) {
 			struct Packages pkgs;
-			if (getpackages(&pkgs)) return EXIT_FAILURE;
-			if (uninstallpackage(*argv, rprefix, recuninstall,
-			                     pkgs))
+			if (getpackages(&pkgs)) {
+				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
+			}
+			if (uninstallpackage(*argv, rprefix, recuninstall,
+			                     pkgs)) {
+				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+				return EXIT_FAILURE;
+			}
 		} else if (installpackage(*argv, rprefix, y)) {
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
 	}
 
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	return EXIT_SUCCESS;
 }

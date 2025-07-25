@@ -566,6 +566,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			yp = getchar();
 
 			if (yp != 'y' && yp != 'Y') {
+				if (yp != '\n') printf("\n");
 				printf("- Quitting\n");
 				return EXIT_FAILURE;
 			}

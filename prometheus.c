@@ -30,7 +30,7 @@
 #define LINES_MAX MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
 
 struct Depend {
-	char pname[PROGRAM_MAX];
+	char pname[NAME_MAX];
 	unsigned int runtime;
 };
 
@@ -728,15 +728,15 @@ packagedepends(char *pname, struct Depends *deps)
 		for (tok = strtok(l.a[i], " \t"), nfields = 0;
 		     tok && nfields < 2;
 		     tok = strtok(NULL, " \t"), nfields++) {
-			char depname[PROGRAM_MAX];
+			char depname[NAME_MAX];
 
 			switch (nfields) {
 			case 0:
-				if (PROGRAM_MAX <= strlen(tok)) {
-					printferr("PROGRAM_MAX exceeded");
+				if (NAME_MAX <= strlen(tok)) {
+					printferr("NAME_MAX exceeded");
 					return EXIT_FAILURE;
 				}
-				strncpy(deps->a[i].pname, tok, PROGRAM_MAX);
+				strncpy(deps->a[i].pname, tok, NAME_MAX);
 				deps->a[i].pname[strlen(tok)] = '\0';
 				break;
 			case 1:

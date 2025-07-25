@@ -603,16 +603,16 @@ installpackage(char *pname, char *prefix, unsigned int y)
 			if (installouts(douts, prefix, tmpd))
 				return EXIT_FAILURE;
 		} else {
-			int i;
+			int j;
 			unsigned int inst = 0;
-			for (i = 0; i < instpkgs.l; i++) {
-				if (!strncmp(instpkgs.a[i].pname,
+			for (j = 0; j < instpkgs.l; j++) {
+				if (!strncmp(instpkgs.a[j].pname,
 				             deps.a[i].pname,
 				             NAME_MAX)) { /* dep installed */
 					printf("+ Dependency %s already "
 					       "installed\n", deps.a[i].pname);
 					if (installouts(douts,
-					                instpkgs.a[i].tmpd,
+					                instpkgs.a[j].tmpd,
 					                tmpd))
 						return EXIT_FAILURE;
 					inst = 1;

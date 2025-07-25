@@ -544,14 +544,14 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 		if (readlines(nochrf, &l)) return EXIT_FAILURE;
 
-		printf("\n+ Package %s is a nochroot package: this means it "
+		printf("+ Package %s is a nochroot package: this means it "
 		       "will have full access over your machine while "
-		       "building.\n\n",
+		       "building.\n",
 		       pname);
 
 		if (!l.l) {
 			printf("  The package provided no motivation for "
-			       "it.\n\n");
+			       "it.\n");
 		} else {
 			int i;
 			printf("  The following is the motivation provided "
@@ -574,7 +574,6 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		}
 
 		nochr = 1;
-		printf("\n");
 	}
 
 	if (createtmpdir(pname, tmpd)) return EXIT_FAILURE;

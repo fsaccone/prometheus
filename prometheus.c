@@ -328,9 +328,11 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
 	if (dltot > 0) {
 		printf("- Downloading %s: %.2f%%\r",
 		       p, (double)dlnow / dltot * 100.0);
-		fflush(stdout);
+	} else {
+		printf("- Downloading %s: Unkown progress\r", p);
 	}
 
+	fflush(stdout);
 	return 0;
 }
 

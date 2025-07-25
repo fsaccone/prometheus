@@ -539,7 +539,6 @@ installpackage(char *pname, char *prefix, unsigned int y)
 	snprintf(nochrf, sizeof(nochrf), "%s/%s/nochroot",
 	         PACKAGE_REPOSITORY, pname);
 	if (fileexists(nochrf)) {
-		char yp;
 		struct Lines l;
 
 		if (readlines(nochrf, &l)) return EXIT_FAILURE;
@@ -563,7 +562,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		printf("> Continue? (y/*) ");
 
 		if (!y) {
-			yp = getchar();
+			char yp = getchar();
 
 			if (yp != 'y' && yp != 'Y') {
 				if (yp != '\n') printf("\n");

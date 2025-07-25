@@ -1424,10 +1424,11 @@ main(int argc, char *argv[])
 		if (uninstall) {
 			struct Packages pkgs;
 			if (getpackages(&pkgs)) return EXIT_FAILURE;
-			return uninstallpackage(*argv, rprefix, recuninstall,
-			                        pkgs);
-		} else {
-			return installpackage(*argv, rprefix, y);
+			if (uninstallpackage(*argv, rprefix, recuninstall,
+			                     pkgs))
+				return EXIT_FAILURE;
+		} else if (installpackage(*argv, rprefix, y)) {
+			return EXIT_FAILURE;
 		}
 	}
 

@@ -47,13 +47,11 @@ lua_cp(lua_State *luas)
 		luaL_error(luas, "realpath %s: %s", d, strerror(errno));
 
 	if (!(sf = fopen(rs, "rb")))
-		luaL_error(luas, "cp (%s) %s: %s",
-		           s, d, strerror(errno));
+		luaL_error(luas, "cp (%s) %s: %s", s, d, strerror(errno));
 
 	if (!(df = fopen(rd, "wb"))) {
 		fclose(sf);
-		luaL_error(luas, "cp %s (%s): %s",
-		           s, d, strerror(errno));
+		luaL_error(luas, "cp %s (%s): %s", s, d, strerror(errno));
 	}
 
 	while ((b = fread(buf, 1, sizeof(buf), sf)) > 0) fwrite(buf, 1, b, df);

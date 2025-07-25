@@ -228,7 +228,6 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 				       pname, tmpd);
 				return EXIT_FAILURE;
 			}
-			printf("+ Built %s\n", pname);
 		}
 	}
 

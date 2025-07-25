@@ -428,6 +428,7 @@ fetchfile(const char *url, const char *f)
 		return EXIT_FAILURE;
 	}
 
+	printf("\n");
 	fclose(ff);
 	curl_easy_cleanup(c);
 

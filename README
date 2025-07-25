@@ -9,7 +9,6 @@ Requirements
 - C99 compiler
 - libc
 - libcurl
-- Lua
 
 Installaton
 -----------
@@ -32,7 +31,7 @@ The repository tree must have a set of directories, each named after the
 package it represents: each of these directories must contain the following
 mandatory files:
 
-- build.lua
+- build
 - outs
 
 Each package directory may also contain the following optional files:
@@ -44,10 +43,10 @@ Each package directory may also contain the following optional files:
 The program chroots in a temporary directory before building a package: it is
 initialized with a /src directory, a /bin directory and a /prometheus.log file.
 
-build.lua
+build
 ---------
 
-This file is a Lua script which is copied to the /src directory of the
+This file is an executable which is copied to the /src directory of the
 temporary directory and called from it.
 
 Its job is to build the package and install it to the root of the temporary

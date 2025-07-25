@@ -16,13 +16,8 @@
 
 #include <curl/curl.h>
 
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-
 #include "arg.h"
 #include "config.h"
-#include "lua.h"
 #include "sha256.h"
 
 #define DIE_MAX   1024
@@ -100,7 +95,6 @@ static void printferr(const char *m, ...);
 static void printinstalled(char *prefix, struct Packages pkgs);
 static void printpackages(struct Packages pkgs);
 static int readlines(const char *f, struct Lines *l);
-static void registerluautils(lua_State *luas);
 static unsigned int relpathisvalid(char *relpath);
 static int retrievesources(struct Sources srcs, const char *pdir,
                            const char *tmpd);
@@ -133,17 +127,17 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 	}
 	snprintf(pdir, sizeof(pdir), "%s/%s", PACKAGE_REPOSITORY, pname);
 
-	if (PATH_MAX <= strlen(pdir) + strlen("/build.lua")) {
+	if (PATH_MAX <= strlen(pdir) + strlen("/build")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(b, sizeof(b), "%s/build.lua", pdir);
+	snprintf(b, sizeof(b), "%s/build", pdir);
 
-	if (PATH_MAX <= strlen(tmpd) + strlen("/src/build.lua")) {
+	if (PATH_MAX <= strlen(tmpd) + strlen("/src/build")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(db, sizeof(db), "%s/src/build.lua", tmpd);
+	snprintf(db, sizeof(db), "%s/src/build", tmpd);
 
 	if (copyfile(b, db)) return EXIT_FAILURE;
 
@@ -167,7 +161,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 	}
 
 	if (!pid) {
-		lua_State *luas;
+		char *cmd[] = { nochr ? db : "/src/build", NULL };
 		int logf;
 
 		if (!nochr && chroot(tmpd)) {
@@ -176,13 +170,6 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		}
 
 		printf("- Building %s\n", pname);
-
-		if (!(luas = luaL_newstate())) {
-			perror("+ luaL_newstate");
-			exit(EXIT_FAILURE);
-		}
-		luaL_openlibs(luas);
-		registerluautils(luas);
 
 		if (!(logf = open(log, O_WRONLY, 0700))) {
 			perror("+ fopen");
@@ -210,20 +197,17 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 			exit(EXIT_FAILURE);
 		}
 
-		if (nochr) {
-			lua_pushstring(luas, tmpd);
-			lua_setglobal(luas, "prefix");
-		}
-
-		if (luaL_dofile(luas, "build.lua") != LUA_OK) {
-			fprintf(stderr, "%s\n", lua_tostring(luas, -1));
-			lua_pop(luas, 1);
-			lua_close(luas);
+		if (nochr && setenv("PREFIX", tmpd, 1)) {
+			perror("+ setenv");
 			exit(EXIT_FAILURE);
 		}
 
-		lua_close(luas);
-		exit(EXIT_SUCCESS);
+		if (execvp(cmd[0], cmd) == -1) {
+			perror("+ execvp");
+			exit(EXIT_FAILURE);
+		}
+
+		exit(EXIT_FAILURE);
 	} else {
 		int s;
 		waitpid(pid, &s, 0);
@@ -787,11 +771,11 @@ packageexists(char *pname)
 	char bf[PATH_MAX], of[PATH_MAX];
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
-	              + strlen("//build.lua")) { /* the longest one */
+	              + strlen("//build")) { /* the longest one */
 		printferr("PATH_MAX exceeded");
 		return -1;
 	}
-	snprintf(bf, sizeof(bf), "%s/%s/build.lua", PACKAGE_REPOSITORY, pname);
+	snprintf(bf, sizeof(bf), "%s/%s/build", PACKAGE_REPOSITORY, pname);
 	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
 
 	if (fileexists(bf) && fileexists(of)) return 1;
@@ -1001,20 +985,6 @@ readlines(const char *f, struct Lines *l)
 
 	fclose(fp);
 	return EXIT_SUCCESS;
-}
-
-void
-registerluautils(lua_State *luas)
-{
-	lua_register(luas, "cd", lua_cd);
-	lua_register(luas, "chmod", lua_chmod);
-	lua_register(luas, "cp", lua_cp);
-	lua_register(luas, "echo", lua_echo);
-	lua_register(luas, "exec", lua_exec);
-	lua_register(luas, "getenv", lua_getenv);
-	lua_register(luas, "mkdir", lua_mkdir);
-	lua_register(luas, "setenv", lua_setenv);
-	lua_register(luas, "uname", lua_uname);
 }
 
 unsigned int

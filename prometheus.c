@@ -339,7 +339,7 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
 		}
 		printf("] %.2f%%\r", per);
 	} else {
-		printf("- Downloading %s: Unkown progress\r", p);
+		printf("- Downloading %s: ?\r", p);
 	}
 
 	fflush(stdout);

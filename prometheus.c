@@ -231,8 +231,6 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 				       "%s/prometheus.log\n",
 				       pname, tmpd);
 				return EXIT_FAILURE;
-			} else {
-				printf("\r\033[K+ Package %s built\n", pname);
 			}
 		}
 	}
@@ -622,8 +620,10 @@ installpackage(char *pname, char *prefix)
 
 	if (buildpackage(pname, tmpd, nochr)) return EXIT_FAILURE;
 
+	printf("\r\033[K+ Installing %s\r", pname);
+	fflush(stdout);
 	if (installouts(outs, tmpd, prefix)) return EXIT_FAILURE;
-	printf("+ Package %s installed\n", pname);
+	printf("\r\033[K+ Package %s installed\n", pname);
 
 	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);
 	strncpy(instpkgs.a[instpkgs.l].tmpd, tmpd, PATH_MAX);

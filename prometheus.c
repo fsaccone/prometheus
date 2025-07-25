@@ -93,7 +93,7 @@ static int packageisinstalled(char *pname, char *prefix);
 static int packageouts(char *pname, struct Outs *outs);
 static int packagesources(char *pname, struct Sources *srcs);
 static void printferr(const char *m, ...);
-static void printinstalled(char *prefix, struct Packages pkgs);
+static int printinstalled(char *prefix, struct Packages pkgs);
 static void printpackages(struct Packages pkgs);
 static int readlines(const char *f, struct Lines *l);
 static unsigned int relpathisvalid(char *relpath);
@@ -951,7 +951,7 @@ printferr(const char *m, ...)
 	va_end(va);
 }
 
-void
+int
 printinstalled(char *prefix, struct Packages pkgs)
 {
 	int i;
@@ -959,7 +959,7 @@ printinstalled(char *prefix, struct Packages pkgs)
 	for (i = 0; i < pkgs.l; i++) {
 		int pii;
 		if ((pii = packageisinstalled(pkgs.a[i], prefix)) == -1)
-			EXIT_FAILURE;
+			return EXIT_FAILURE;
 		if (pii)
 			printf("%s\n", pkgs.a[i]);
 	}
@@ -1394,7 +1394,7 @@ main(int argc, char *argv[])
 	if (printinst) {
 		struct Packages pkgs;
 		if (getpackages(&pkgs)) return EXIT_FAILURE;
-		printinstalled(rprefix, pkgs);
+		if (printinstalled(rprefix, pkgs)) return EXIT_FAILURE;
 	}
 
 	if (printall) {

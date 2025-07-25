@@ -330,14 +330,18 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
 		double per = (double)dlnow / dltot * 100.0;
 		int i, bpos = bl * dlnow / dltot;
 
-		printf("- Downloading %s: [", p);
-		for (i = 0; i < bl; i++) {
-			if (i < bpos)
-				printf("#");
-			else
-				printf("-");
+		if (dlnow == dltot) {
+			printf("+ Downloaded %s\r", p);
+		} else {
+			printf("- Downloading %s: [", p);
+			for (i = 0; i < bl; i++) {
+				if (i < bpos)
+					printf("#");
+				else
+					printf("-");
+			}
+			printf("] %.2f%%\r", per);
 		}
-		printf("] %.2f%%\r", per);
 	} else {
 		printf("- Downloading %s: ?\r", p);
 	}

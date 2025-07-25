@@ -3,7 +3,7 @@
 #define VERSION      "0.1"
 
 /* maximum limit for package resources */
-#define DEPENDS_MAX  20  /* number of depends entries for a package */
+#define DEPENDS_MAX  50  /* number of depends entries for a package */
 #define OUTS_MAX     200 /* number of outs entries for a package */
 #define PACKAGES_MAX 500 /* number of packages in a repo */
 #define SOURCES_MAX  100 /* number of sources entries for a package */

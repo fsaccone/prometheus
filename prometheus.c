@@ -84,7 +84,7 @@ static unsigned int fileexists(const char *f);
 static int followsymlink(const char *f, char ff[PATH_MAX]);
 static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
-static int installpackage(char *pname, char *prefix, unsigned int y);
+static int installpackage(char *pname, char *prefix);
 static int installouts(struct Outs outs, char sd[PATH_MAX], char dd[PATH_MAX]);
 static int mkdirrecursive(const char *d);
 static int packagedepends(char *pname, struct Depends *deps);
@@ -526,7 +526,7 @@ handlesignals(void(*hdl)(int))
 }
 
 int
-installpackage(char *pname, char *prefix, unsigned int y)
+installpackage(char *pname, char *prefix)
 {
 	struct Depends deps;
 	struct Outs outs;
@@ -557,6 +557,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 	         PACKAGE_REPOSITORY, pname);
 	if (fileexists(nochrf)) {
 		struct Lines l;
+		char yp;
 
 		if (readlines(nochrf, &l)) return EXIT_FAILURE;
 
@@ -575,15 +576,11 @@ installpackage(char *pname, char *prefix, unsigned int y)
 
 		printf("> Continue? (y/n) ");
 
-		if (!y) {
-			char yp;
-
-			while ((yp = getchar()) != EOF) {
-				if (yp == '\n') continue;
-				if (yp == 'y' || yp == 'Y') break;
-				printf("n\n- Quitting\n");
-				return EXIT_FAILURE;
-			}
+		while ((yp = getchar()) != EOF) {
+			if (yp == '\n') continue;
+			if (yp == 'y' || yp == 'Y') break;
+			printf("n\n- Quitting\n");
+			return EXIT_FAILURE;
 		}
 
 		printf("y\n");
@@ -630,7 +627,7 @@ installpackage(char *pname, char *prefix, unsigned int y)
 					inst = 1;
 				}
 			}
-			if (!inst && installpackage(deps.a[i].pname, tmpd, y))
+			if (!inst && installpackage(deps.a[i].pname, tmpd))
 				return EXIT_FAILURE;
 			if (deps.a[i].runtime && installouts(douts,
 			                                     tmpd,
@@ -1314,7 +1311,7 @@ urlisvalid(char *url)
 void
 usage(void)
 {
-	fprintf(stderr, "Usage: %s -i [-p prefix] [-y] package ...\n"
+	fprintf(stderr, "Usage: %s -i [-p prefix] package ...\n"
 	                "       %s -u [-p prefix] [-r] package ...\n"
 	                "       %s -l [-p prefix]\n"
 	                "       %s -a\n",
@@ -1326,7 +1323,6 @@ int
 main(int argc, char *argv[])
 {
 	int install = 0,
-	    y = 0,
 	    uninstall = 0,
 	    recuninstall = 0,
 	    printinst = 0,
@@ -1361,9 +1357,6 @@ main(int argc, char *argv[])
 	case 'r':
 		recuninstall = 1;
 		break;
-	case 'y':
-		y = 1;
-		break;
 	case 'u':
 		uninstall = 1;
 		break;
@@ -1378,9 +1371,6 @@ main(int argc, char *argv[])
 		usage();
 
 	if (install + printinst + uninstall + printall != 1)
-		usage();
-
-	if (y && !install)
 		usage();
 
 	if (recuninstall && !uninstall)
@@ -1456,7 +1446,7 @@ main(int argc, char *argv[])
 				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
-		} else if (installpackage(*argv, rprefix, y)) {
+		} else if (installpackage(*argv, rprefix)) {
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}

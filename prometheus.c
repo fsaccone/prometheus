@@ -604,7 +604,20 @@ installpackage(char *pname, char *prefix, unsigned int y)
 		if (pii && installouts(douts, prefix, tmpd)) {
 			return EXIT_FAILURE;
 		} else {
-			if (installpackage(deps.a[i].pname, tmpd, y))
+			int i;
+			unsigned int inst = 0;
+			for (i = 0; i < instpkgs.l; i++) {
+				if (!strncmp(instpkgs.a[i].pname,
+				             deps.a[i].pname,
+				             NAME_MAX)) { /* dep installed */
+					if (installouts(douts,
+					                instpkgs.a[i].tmpd,
+					                tmpd))
+						return EXIT_FAILURE;
+					inst = 1;
+				}
+			}
+			if (!inst && installpackage(deps.a[i].pname, tmpd, y))
 				return EXIT_FAILURE;
 			if (deps.a[i].runtime && installouts(douts,
 			                                     tmpd,

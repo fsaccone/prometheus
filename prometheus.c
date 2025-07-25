@@ -388,22 +388,22 @@ fetchfile(const char *url, const char *f)
 		return EXIT_FAILURE;
 	}
 
-	curl_easy_setopt(c, CURLOPT_URL, url);
-	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlwrite);
-	curl_easy_setopt(c, CURLOPT_WRITEDATA, ff);
+	curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 30L);
+	curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(c, CURLOPT_FTP_RESPONSE_TIMEOUT, 30L);
+	curl_easy_setopt(c, CURLOPT_FTP_USE_EPSV, 1L);
+	curl_easy_setopt(c, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
 	curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
+	curl_easy_setopt(c, CURLOPT_SSL_VERIFYHOST, 2L);
+	curl_easy_setopt(c, CURLOPT_SSL_VERIFYPEER, 1L);
+	curl_easy_setopt(c, CURLOPT_TIMEOUT, 0L);
+	curl_easy_setopt(c, CURLOPT_URL, url);
+	curl_easy_setopt(c, CURLOPT_USE_SSL, CURLUSESSL_ALL);
+	curl_easy_setopt(c, CURLOPT_USERAGENT, ua);
+	curl_easy_setopt(c, CURLOPT_WRITEDATA, ff);
+	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlwrite);
 	curl_easy_setopt(c, CURLOPT_XFERINFODATA, url);
 	curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, curlprogress);
-	curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(c, CURLOPT_USERAGENT, ua);
-	curl_easy_setopt(c, CURLOPT_TIMEOUT, 0L);
-	curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 30L);
-	curl_easy_setopt(c, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
-	curl_easy_setopt(c, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-	curl_easy_setopt(c, CURLOPT_SSL_VERIFYPEER, 1L);
-	curl_easy_setopt(c, CURLOPT_SSL_VERIFYHOST, 2L);
-	curl_easy_setopt(c, CURLOPT_FTP_USE_EPSV, 1L);
-	curl_easy_setopt(c, CURLOPT_FTP_RESPONSE_TIMEOUT, 30L);
 
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);

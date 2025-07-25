@@ -323,6 +323,8 @@ int
 curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
              curl_off_t upl)
 {
+	printf("\r\033[K");
+
 	if (dltot > 0) {
 		printf("- Downloading %s: %.2f%%\r",
 		       p, (double)dlnow / dltot * 100.0);

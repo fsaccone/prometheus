@@ -44,7 +44,7 @@ The program chroots in a temporary directory before building a package: it is
 initialized with a /src directory, a /bin directory and a /prometheus.log file.
 
 build
----------
+-----
 
 This file is an executable which is copied to the /src directory of the
 temporary directory and called from it.

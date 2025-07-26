@@ -462,6 +462,11 @@ followsymlink(const char *f, char ff[PATH_MAX])
 
 	strncpy(ff, f, PATH_MAX);
 
+	if (lstat(f, &sb)) {
+		perror("+ lstat");
+		return EXIT_FAILURE;
+	}
+
 	while (S_ISLNK(sb.st_mode)) {
 		ssize_t n;
 

@@ -242,7 +242,7 @@ int
 copyfile(const char *s, const char *d)
 {
 	int sfd, dfd;
-	char buf[1024], syms[PATH_MAX], dn[PATH_MAX];
+	char buf[1024], syms[PATH_MAX], *dn, dc[PATH_MAX];
 	ssize_t b;
 
 	if (followsymlink(s, syms)) return EXIT_FAILURE;
@@ -252,8 +252,8 @@ copyfile(const char *s, const char *d)
 		return EXIT_FAILURE;
 	}
 
-	strncpy(dn, d, PATH_MAX);
-	strncpy(dn, dirname(dn), PATH_MAX);
+	strncpy(dc, d, PATH_MAX);
+	dn = dirname(dc);
 	if (mkdirrecursive(dn)) return EXIT_FAILURE;
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
@@ -1082,10 +1082,10 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 		if (strlen(srcs.a[i].relpath)) {
 			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
-			     dn[PATH_MAX], *tok, buf[PATH_MAX];
+			     *dn, dc[PATH_MAX], *tok, buf[PATH_MAX];
 
-			strncpy(dn, srcs.a[i].relpath, PATH_MAX);
-			strncpy(dn, dirname(dn), PATH_MAX);
+			strncpy(dc, srcs.a[i].relpath, PATH_MAX);
+			dn = dirname(dc);
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
 			              + strlen(b)) {

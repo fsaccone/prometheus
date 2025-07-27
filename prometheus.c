@@ -71,51 +71,55 @@ struct Sources {
 	size_t l;
 };
 
-static int buildpackage(char *pname, const char *tmpd, unsigned int nochr);
-static int copyfile(const char *s, const char *d);
-static int createtmpdir(const char *pname, char dir[PATH_MAX]);
+static int buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
+                        unsigned int nochr);
+static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
+static int createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
                         curl_off_t utot, curl_off_t upl);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
-static unsigned int direxists(const char *f);
-static int expandtilde(const char *f, char ef[PATH_MAX]);
-static int fetchfile(const char *url, const char *f);
-static unsigned int fileexists(const char *f);
-static int followsymlink(const char *f, char ff[PATH_MAX]);
+static unsigned int direxists(const char f[PATH_MAX]);
+static int expandtilde(const char f[PATH_MAX], char ef[PATH_MAX]);
+static int fetchfile(const char url[PATH_MAX], const char f[PATH_MAX]);
+static unsigned int fileexists(const char f[PATH_MAX]);
+static int followsymlink(const char f[PATH_MAX], char ff[PATH_MAX]);
 static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
-static int installpackage(char *pname, char *prefix, int instpkgsi);
+static int installpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
+                          int instpkgsi);
 static int installouts(struct Outs outs, char sd[PATH_MAX],
                        const char dd[PATH_MAX]);
-static int mkdirrecursive(const char *d);
-static int packagedepends(char *pname, struct Depends *deps);
-static int packageexists(const char *pname);
-static int packageisinstalled(char *pname, const char *prefix);
-static int packageouts(char *pname, struct Outs *outs);
-static int packagesources(char *pname, struct Sources *srcs);
+static int mkdirrecursive(const char d[PATH_MAX]);
+static int packagedepends(char pname[NAME_MAX], struct Depends *deps);
+static int packageexists(const char pname[NAME_MAX]);
+static int packageisinstalled(char pname[NAME_MAX],
+                              const char prefix[PATH_MAX]);
+static int packageouts(char pname[NAME_MAX], struct Outs *outs);
+static int packagesources(char pname[NAME_MAX], struct Sources *srcs);
 static void printferr(const char *m, ...);
-static int printinstalled(const char *prefix, struct Packages pkgs);
+static int printinstalled(const char prefix[PATH_MAX], struct Packages pkgs);
 static void printpackages(struct Packages pkgs);
-static int readlines(const char *f, struct Lines *l);
-static unsigned int relpathisvalid(char *relpath);
-static int retrievesources(struct Sources srcs, const char *pdir,
-                           const char *tmpd);
+static int readlines(const char f[PATH_MAX], struct Lines *l);
+static unsigned int relpathisvalid(char relpath[PATH_MAX]);
+static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
+                           const char tmpd[PATH_MAX]);
 static void sha256chartouint8(const char c[2 * SHA256_DIGEST_LENGTH + 1],
                               uint8_t u[SHA256_DIGEST_LENGTH]);
-static int sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
+static int sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH]);
 static void sha256uint8tochar(const uint8_t u[SHA256_DIGEST_LENGTH],
                               char c[2 * SHA256_DIGEST_LENGTH + 1]);
 static void sigexit();
-static int uninstallpackage(char *pname, char *prefix, unsigned int rec,
-                            struct Packages pkgs);
-static unsigned int urlisvalid(const char *url);
+static int uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
+                            unsigned int rec, struct Packages pkgs);
+static unsigned int urlisvalid(const char url[PATH_MAX]);
 static void usage(void);
 
 static struct InstalledPackages instpkgs = { .l = 0 };
 static struct termios oldt;
 
 int
-buildpackage(char *pname, const char *tmpd, unsigned int nochr)
+buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
+             unsigned int nochr)
 {
 	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX], log[PATH_MAX],
 	     src[PATH_MAX];
@@ -245,7 +249,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 }
 
 int
-copyfile(const char *s, const char *d)
+copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 {
 	int sfd, dfd;
 	char buf[1024], syms[PATH_MAX], dc[PATH_MAX];
@@ -280,7 +284,7 @@ copyfile(const char *s, const char *d)
 }
 
 int
-createtmpdir(const char *pname, char dir[PATH_MAX])
+createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
 {
 	char dirtmp[PATH_MAX], log[PATH_MAX], src[PATH_MAX];
 	int logfd;
@@ -363,7 +367,7 @@ curlwrite(void *d, size_t dl, size_t n, FILE *f)
 }
 
 unsigned int
-direxists(const char *f)
+direxists(const char f[PATH_MAX])
 {
 	struct stat buf;
 	if (stat(f, &buf)) return 0;
@@ -372,7 +376,7 @@ direxists(const char *f)
 }
 
 int
-expandtilde(const char *f, char ef[PATH_MAX])
+expandtilde(const char f[PATH_MAX], char ef[PATH_MAX])
 {
 	const char *home;
 
@@ -393,7 +397,7 @@ expandtilde(const char *f, char ef[PATH_MAX])
 }
 
 int
-fetchfile(const char *url, const char *f)
+fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 {
 	CURL *c;
 	CURLcode cc;
@@ -429,7 +433,8 @@ fetchfile(const char *url, const char *f)
 	curl_easy_setopt(c, CURLOPT_WRITEDATA, ff);
 	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlwrite);
 	curl_easy_setopt(c, CURLOPT_XFERINFODATA, url);
-	curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION, curlprogress);
+	curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION,
+	                 (curl_xferinfo_callback)curlprogress);
 
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);
@@ -456,14 +461,14 @@ fetchfile(const char *url, const char *f)
 }
 
 unsigned int
-fileexists(const char *f)
+fileexists(const char f[PATH_MAX])
 {
 	struct stat buf;
 	return (!stat(f, &buf) && !S_ISDIR(buf.st_mode));
 }
 
 int
-followsymlink(const char *f, char ff[PATH_MAX])
+followsymlink(const char f[PATH_MAX], char ff[PATH_MAX])
 {
 	struct stat sb;
 
@@ -540,7 +545,7 @@ handlesignals(void(*hdl)(int))
 }
 
 int
-installpackage(char *pname, char *prefix, int instpkgsi)
+installpackage(char pname[NAME_MAX], char prefix[PATH_MAX], int instpkgsi)
 {
 	struct Depends deps;
 	struct Outs outs;
@@ -706,7 +711,7 @@ installouts(struct Outs outs, char sd[PATH_MAX], const char dd[PATH_MAX])
 }
 
 int
-mkdirrecursive(const char *d)
+mkdirrecursive(const char d[PATH_MAX])
 {
 	char buf[PATH_MAX], *p = NULL;
 
@@ -743,7 +748,7 @@ mkdirrecursive(const char *d)
 }
 
 int
-packagedepends(char *pname, struct Depends *deps)
+packagedepends(char pname[NAME_MAX], struct Depends *deps)
 {
 	size_t i;
 	char f[PATH_MAX];
@@ -799,7 +804,7 @@ packagedepends(char *pname, struct Depends *deps)
 }
 
 int
-packageexists(const char *pname)
+packageexists(const char pname[NAME_MAX])
 {
 	char bf[PATH_MAX], of[PATH_MAX];
 
@@ -817,7 +822,7 @@ packageexists(const char *pname)
 }
 
 int
-packageisinstalled(char *pname, const char *prefix)
+packageisinstalled(char pname[NAME_MAX], const char prefix[PATH_MAX])
 {
 	struct Outs outs;
 	int i;
@@ -840,7 +845,7 @@ packageisinstalled(char *pname, const char *prefix)
 }
 
 int
-packageouts(char *pname, struct Outs *outs)
+packageouts(char pname[NAME_MAX], struct Outs *outs)
 {
 	size_t i;
 	struct Lines l;
@@ -869,7 +874,7 @@ packageouts(char *pname, struct Outs *outs)
 }
 
 int
-packagesources(char *pname, struct Sources *srcs)
+packagesources(char pname[NAME_MAX], struct Sources *srcs)
 {
 	size_t i;
 	char f[PATH_MAX];
@@ -970,7 +975,7 @@ printferr(const char *m, ...)
 }
 
 int
-printinstalled(const char *prefix, struct Packages pkgs)
+printinstalled(const char prefix[PATH_MAX], struct Packages pkgs)
 {
 	int i;
 
@@ -993,7 +998,7 @@ printpackages(struct Packages pkgs)
 }
 
 int
-readlines(const char *f, struct Lines *l)
+readlines(const char f[PATH_MAX], struct Lines *l)
 {
 	size_t i;
 	FILE *fp;
@@ -1023,7 +1028,7 @@ readlines(const char *f, struct Lines *l)
 }
 
 unsigned int
-relpathisvalid(char *relpath)
+relpathisvalid(char relpath[PATH_MAX])
 {
 	return (!strstr(relpath, "..") && !strstr(relpath, ":")
 	     && relpath[0] != '/' && relpath[0] != '.' && relpath[0] != '\0'
@@ -1031,7 +1036,8 @@ relpathisvalid(char *relpath)
 }
 
 int
-retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
+retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
+                const char tmpd[PATH_MAX])
 {
 	int i;
 
@@ -1178,7 +1184,7 @@ sha256chartouint8(const char c[2 * SHA256_DIGEST_LENGTH + 1],
 }
 
 int
-sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH])
+sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH])
 {
 	unsigned char buf[4096];
 	size_t br;
@@ -1226,7 +1232,7 @@ sigexit()
 }
 
 int
-uninstallpackage(char *pname, char *prefix, unsigned int rec,
+uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX], unsigned int rec,
                  struct Packages pkgs)
 {
 	struct Outs outs;
@@ -1318,7 +1324,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 }
 
 unsigned int
-urlisvalid(const char *url)
+urlisvalid(const char url[PATH_MAX])
 {
 	return (!strncmp(url, "http://", 7)
 	     || !strncmp(url, "https://", 8)

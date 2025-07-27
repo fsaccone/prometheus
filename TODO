@@ -1,0 +1,7 @@
+TODO
+====
+
+Bugs
+----
+
+- Stack overflow due to dependency recursion

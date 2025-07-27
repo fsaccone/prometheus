@@ -962,6 +962,8 @@ printinstalled(char *prefix, struct Packages pkgs)
 		if (pii)
 			printf("%s\n", pkgs.a[i]);
 	}
+
+	return EXIT_SUCCESS;
 }
 
 void

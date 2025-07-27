@@ -72,8 +72,7 @@ struct Sources {
 };
 
 static int buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
-                        const char prefix[PATH_MAX], struct Outs outs,
-                        unsigned int nochr);
+                        const char prefix[PATH_MAX], unsigned int nochr);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
@@ -120,12 +119,13 @@ static struct termios oldt;
 
 int
 buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
-             const char prefix[PATH_MAX], struct Outs outs, unsigned int nochr)
+             const char prefix[PATH_MAX], unsigned int nochr)
 {
 	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX], log[PATH_MAX],
 	     src[PATH_MAX];
 	const char *reltmpd = nochr ? tmpd : "";
 	struct Sources srcs;
+	struct Outs outs;
 	pid_t pid;
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen("/")
@@ -245,6 +245,8 @@ buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
 			}
 		}
 	}
+
+	if (packageouts(pname, &outs)) return EXIT_FAILURE;
 
 	printf("\r\033[K+ Installing %s\r", pname);
 	fflush(stdout);
@@ -658,7 +660,7 @@ installpackage(char pname[NAME_MAX], char prefix[PATH_MAX], int instpkgsi)
 		nochr = 1;
 	}
 
-	if (buildpackage(pname, tmpd, prefix, outs, nochr))
+	if (buildpackage(pname, tmpd, prefix, nochr))
 		return EXIT_FAILURE;
 
 	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);

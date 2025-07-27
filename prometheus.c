@@ -73,7 +73,7 @@ struct Sources {
 
 static int buildpackage(char *pname, const char *tmpd, unsigned int nochr);
 static int copyfile(const char *s, const char *d);
-static int createtmpdir(char *pname, char dir[PATH_MAX]);
+static int createtmpdir(const char *pname, char dir[PATH_MAX]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
                         curl_off_t utot, curl_off_t upl);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
@@ -85,29 +85,30 @@ static int followsymlink(const char *f, char ff[PATH_MAX]);
 static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
 static int installpackage(char *pname, char *prefix);
-static int installouts(struct Outs outs, char sd[PATH_MAX], char dd[PATH_MAX]);
+static int installouts(struct Outs outs, char sd[PATH_MAX],
+                       const char dd[PATH_MAX]);
 static int mkdirrecursive(const char *d);
 static int packagedepends(char *pname, struct Depends *deps);
-static int packageexists(char *pname);
-static int packageisinstalled(char *pname, char *prefix);
+static int packageexists(const char *pname);
+static int packageisinstalled(char *pname, const char *prefix);
 static int packageouts(char *pname, struct Outs *outs);
 static int packagesources(char *pname, struct Sources *srcs);
 static void printferr(const char *m, ...);
-static int printinstalled(char *prefix, struct Packages pkgs);
+static int printinstalled(const char *prefix, struct Packages pkgs);
 static void printpackages(struct Packages pkgs);
 static int readlines(const char *f, struct Lines *l);
 static unsigned int relpathisvalid(char *relpath);
 static int retrievesources(struct Sources srcs, const char *pdir,
                            const char *tmpd);
-static void sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
+static void sha256chartouint8(const char c[2 * SHA256_DIGEST_LENGTH + 1],
                               uint8_t u[SHA256_DIGEST_LENGTH]);
 static int sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH]);
-static void sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH],
+static void sha256uint8tochar(const uint8_t u[SHA256_DIGEST_LENGTH],
                               char c[2 * SHA256_DIGEST_LENGTH + 1]);
 static void sigexit();
 static int uninstallpackage(char *pname, char *prefix, unsigned int rec,
                             struct Packages pkgs);
-static unsigned int urlisvalid(char *url);
+static unsigned int urlisvalid(const char *url);
 static void usage(void);
 
 static struct InstalledPackages instpkgs = { .l = 0 };
@@ -192,7 +193,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		}
 
 		if (nochr) {
-			char *p = getenv("PATH");
+			const char *p = getenv("PATH");
 			if (!p) {
 				printferr("PATH is not defined");
 			} else {
@@ -247,7 +248,8 @@ int
 copyfile(const char *s, const char *d)
 {
 	int sfd, dfd;
-	char buf[1024], syms[PATH_MAX], *dn, dc[PATH_MAX];
+	char buf[1024], syms[PATH_MAX], dc[PATH_MAX];
+	const char *dn;
 	ssize_t b;
 
 	if (followsymlink(s, syms)) return EXIT_FAILURE;
@@ -278,7 +280,7 @@ copyfile(const char *s, const char *d)
 }
 
 int
-createtmpdir(char *pname, char dir[PATH_MAX])
+createtmpdir(const char *pname, char dir[PATH_MAX])
 {
 	char dirtmp[PATH_MAX], log[PATH_MAX], src[PATH_MAX];
 	int logfd;
@@ -372,7 +374,7 @@ direxists(const char *f)
 int
 expandtilde(const char *f, char ef[PATH_MAX])
 {
-	char *home;
+	const char *home;
 
 	if (f[0] != '~') {
 		strncpy(ef, f, PATH_MAX);
@@ -496,7 +498,7 @@ getpackages(struct Packages *pkgs)
 {
 	size_t i;
 	DIR *d;
-	struct dirent *e;
+	const struct dirent *e;
 
 	if (!(d = opendir(PACKAGE_REPOSITORY))) {
 		pkgs->l = 0;
@@ -643,7 +645,7 @@ installpackage(char *pname, char *prefix)
 }
 
 int
-installouts(struct Outs outs, char sd[PATH_MAX], char dd[PATH_MAX])
+installouts(struct Outs outs, char sd[PATH_MAX], const char dd[PATH_MAX])
 {
 	int i;
 
@@ -737,7 +739,7 @@ packagedepends(char *pname, struct Depends *deps)
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
-		char *tok;
+		const char *tok;
 		int nfields;
 
 		for (tok = strtok(l.a[i], " \t"), nfields = 0;
@@ -780,7 +782,7 @@ packagedepends(char *pname, struct Depends *deps)
 }
 
 int
-packageexists(char *pname)
+packageexists(const char *pname)
 {
 	char bf[PATH_MAX], of[PATH_MAX];
 
@@ -798,7 +800,7 @@ packageexists(char *pname)
 }
 
 int
-packageisinstalled(char *pname, char *prefix)
+packageisinstalled(char *pname, const char *prefix)
 {
 	struct Outs outs;
 	int i;
@@ -951,7 +953,7 @@ printferr(const char *m, ...)
 }
 
 int
-printinstalled(char *prefix, struct Packages pkgs)
+printinstalled(const char *prefix, struct Packages pkgs)
 {
 	int i;
 
@@ -1017,7 +1019,7 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 	int i;
 
 	for (i = 0; i < srcs.l; i++) {
-		char *b = basename(srcs.a[i].url);
+		const char *b = basename(srcs.a[i].url);
 
 		if (urlisvalid(srcs.a[i].url)) {
 			char df[PATH_MAX];
@@ -1094,7 +1096,8 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 
 		if (strlen(srcs.a[i].relpath)) {
 			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
-			     *dn, dc[PATH_MAX], *tok, buf[PATH_MAX];
+			     dc[PATH_MAX], *tok, buf[PATH_MAX];
+			const char *dn;
 
 			strncpy(dc, srcs.a[i].relpath, PATH_MAX);
 			dn = dirname(dc);
@@ -1149,7 +1152,7 @@ retrievesources(struct Sources srcs, const char *pdir, const char *tmpd)
 }
 
 void
-sha256chartouint8(char c[2 * SHA256_DIGEST_LENGTH + 1],
+sha256chartouint8(const char c[2 * SHA256_DIGEST_LENGTH + 1],
                   uint8_t u[SHA256_DIGEST_LENGTH])
 {
 	int i;
@@ -1188,7 +1191,7 @@ sha256hash(const char *f, uint8_t h[SHA256_DIGEST_LENGTH])
 }
 
 void
-sha256uint8tochar(uint8_t u[SHA256_DIGEST_LENGTH],
+sha256uint8tochar(const uint8_t u[SHA256_DIGEST_LENGTH],
                   char c[2 * SHA256_DIGEST_LENGTH + 1])
 {
 	int i;
@@ -1298,7 +1301,7 @@ uninstallpackage(char *pname, char *prefix, unsigned int rec,
 }
 
 unsigned int
-urlisvalid(char *url)
+urlisvalid(const char *url)
 {
 	return (!strncmp(url, "http://", 7)
 	     || !strncmp(url, "https://", 8)
@@ -1346,7 +1349,7 @@ main(int argc, char *argv[])
 		printinst = 1;
 		break;
 	case 'p':
-		char *arg = EARGF(usage());
+		const char *arg = EARGF(usage());
 		if (expandtilde(arg, prefix)) return EXIT_FAILURE;
 		realpath(prefix, rprefix);
 		prefixdef = 1;

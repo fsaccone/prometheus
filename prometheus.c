@@ -50,7 +50,7 @@ struct Lines {
 	size_t l;
 };
 
-struct Packages {
+struct PackageNames {
 	char a[PACKAGES_MAX][NAME_MAX];
 	size_t l;
 };
@@ -83,7 +83,7 @@ static int expandtilde(const char f[PATH_MAX], char ef[PATH_MAX]);
 static int fetchfile(const char url[PATH_MAX], const char f[PATH_MAX]);
 static unsigned int fileexists(const char f[PATH_MAX]);
 static int followsymlink(const char f[PATH_MAX], char ff[PATH_MAX]);
-static int getpackages(struct Packages *pkgs);
+static int getpackages(struct PackageNames *pkgs);
 static void handlesignals(void(*hdl)(int));
 static int installpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
                           int instpkgsi);
@@ -97,8 +97,9 @@ static int packageisinstalled(char pname[NAME_MAX],
 static int packageouts(char pname[NAME_MAX], struct Outs *outs);
 static int packagesources(char pname[NAME_MAX], struct Sources *srcs);
 static void printferr(const char *m, ...);
-static int printinstalled(const char prefix[PATH_MAX], struct Packages pkgs);
-static void printpackages(struct Packages pkgs);
+static int printinstalled(const char prefix[PATH_MAX],
+                          struct PackageNames pkgs);
+static void printpackages(struct PackageNames pkgs);
 static int readlines(const char f[PATH_MAX], struct Lines *l);
 static unsigned int relpathisvalid(char relpath[PATH_MAX]);
 static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
@@ -110,7 +111,7 @@ static void sha256uint8tochar(const uint8_t u[SHA256_DIGEST_LENGTH],
                               char c[2 * SHA256_DIGEST_LENGTH + 1]);
 static void sigexit();
 static int uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
-                            unsigned int rec, struct Packages pkgs);
+                            unsigned int rec, struct PackageNames pkgs);
 static unsigned int urlisvalid(const char url[PATH_MAX]);
 static void usage(void);
 
@@ -507,7 +508,7 @@ followsymlink(const char f[PATH_MAX], char ff[PATH_MAX])
 }
 
 int
-getpackages(struct Packages *pkgs)
+getpackages(struct PackageNames *pkgs)
 {
 	size_t i;
 	DIR *d;
@@ -979,7 +980,7 @@ printferr(const char *m, ...)
 }
 
 int
-printinstalled(const char prefix[PATH_MAX], struct Packages pkgs)
+printinstalled(const char prefix[PATH_MAX], struct PackageNames pkgs)
 {
 	int i;
 
@@ -995,7 +996,7 @@ printinstalled(const char prefix[PATH_MAX], struct Packages pkgs)
 }
 
 void
-printpackages(struct Packages pkgs)
+printpackages(struct PackageNames pkgs)
 {
 	int i;
 	for (i = 0; i < pkgs.l; i++) printf("%s\n", pkgs.a[i]);
@@ -1237,7 +1238,7 @@ sigexit()
 
 int
 uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX], unsigned int rec,
-                 struct Packages pkgs)
+                 struct PackageNames pkgs)
 {
 	struct Outs outs;
 	int i, pii;
@@ -1427,7 +1428,7 @@ main(int argc, char *argv[])
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
 	if (printinst) {
-		struct Packages pkgs;
+		struct PackageNames pkgs;
 		if (getpackages(&pkgs)) {
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
@@ -1439,7 +1440,7 @@ main(int argc, char *argv[])
 	}
 
 	if (printall) {
-		struct Packages pkgs;
+		struct PackageNames pkgs;
 		if (getpackages(&pkgs)) {
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
@@ -1463,7 +1464,7 @@ main(int argc, char *argv[])
 		}
 
 		if (uninstall) {
-			struct Packages pkgs;
+			struct PackageNames pkgs;
 			if (getpackages(&pkgs)) {
 				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;

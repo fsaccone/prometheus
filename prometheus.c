@@ -951,10 +951,16 @@ registerpackage(struct Package p)
 	struct Depends deps;
 	struct Outs outs;
 	char tmpd[PATH_MAX];
-	int i, pii;
+	int i, pe, pii;
 	unsigned int nochr;
 	struct PackageNode *newpn, *tailpn;
 	struct Package *newp;
+
+	if ((pe = packageexists(p.pname)) == -1) return EXIT_FAILURE;
+	if (!pe) {
+		printferr("Package %s does not exist", p.pname);
+		return EXIT_FAILURE;
+	}
 
 	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
 	if (!outs.l) {

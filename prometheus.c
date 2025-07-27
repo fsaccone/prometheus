@@ -170,7 +170,7 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		printf("- Building %s\r", pname);
 		fflush(stdout);
 
-		if (!(logf = open(log, O_WRONLY, 0700))) {
+		if ((logf = open(log, O_WRONLY, 0700)) == -1) {
 			perror("\n+ fopen");
 			exit(EXIT_FAILURE);
 		}

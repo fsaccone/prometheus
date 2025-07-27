@@ -583,22 +583,22 @@ installpackage(char *pname, char *prefix)
 
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
-		int pe, pii;
+		int dpe, dpii;
 		struct Outs douts;
-		if ((pe = packageexists(deps.a[i].pname)) == -1)
+		if ((dpe = packageexists(deps.a[i].pname)) == -1)
 			return EXIT_FAILURE;
 		printf("+ Found dependency %s for %s\n",
 		       deps.a[i].pname, pname);
-		if (!pe) {
+		if (!dpe) {
 			printf("+ Dependency %s does not exist\n",
 			       deps.a[i].pname);
 			continue;
 		}
 		if (packageouts(deps.a[i].pname, &douts))
 			return EXIT_FAILURE;
-		if ((pii = packageisinstalled(deps.a[i].pname, prefix)) == -1)
+		if ((dpii = packageisinstalled(deps.a[i].pname, prefix)) == -1)
 			return EXIT_FAILURE;
-		if (pii) {
+		if (dpii) {
 			printf("+ Dependency %s already installed\n",
 			       deps.a[i].pname);
 			if (installouts(douts, prefix, tmpd))

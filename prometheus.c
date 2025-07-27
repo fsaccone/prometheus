@@ -52,8 +52,8 @@ struct Lines {
 
 struct Package {
 	char pname[NAME_MAX];
-	char tmpd[PATH_MAX];
-	char prefix[PATH_MAX];
+	char srcd[PATH_MAX];
+	char destd[PATH_MAX];
 	unsigned int build;
 };
 

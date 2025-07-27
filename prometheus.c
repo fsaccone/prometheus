@@ -72,7 +72,7 @@ struct Sources {
 };
 
 static int buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
-                        const char prefix[PATH_MAX], unsigned int nochr);
+                        const char prefix[PATH_MAX]);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
@@ -120,14 +120,35 @@ static struct termios oldt;
 
 int
 buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
-             const char prefix[PATH_MAX], unsigned int nochr)
+             const char prefix[PATH_MAX])
 {
 	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX], log[PATH_MAX],
 	     src[PATH_MAX];
-	const char *reltmpd = nochr ? tmpd : "";
+	const char *reltmpd;
 	struct Sources srcs;
 	struct Outs outs;
 	pid_t pid;
+	unsigned int nochr = 0;
+
+	if (!strncmp(pname, "nochroot-", 9)) {
+		char yp;
+
+		printf("+ Package %s is a nochroot package: it will have full "
+		       "access over your machine while building.\n", pname);
+		printf("> Continue? (y/n) ");
+
+		while ((yp = getchar()) != EOF) {
+			if (yp == '\n') continue;
+			if (yp == 'y' || yp == 'Y') break;
+			printf("n\n- Quitting\n");
+			return EXIT_FAILURE;
+		}
+
+		printf("y\n");
+		nochr = 1;
+	}
+
+	reltmpd = nochr ? tmpd : "";
 
 	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen("/")
 	              + strlen(pname)) {
@@ -661,7 +682,7 @@ installpackage(char pname[NAME_MAX], char prefix[PATH_MAX], int instpkgsi)
 		nochr = 1;
 	}
 
-	if (buildpackage(pname, tmpd, prefix, nochr))
+	if (buildpackage(pname, tmpd, prefix))
 		return EXIT_FAILURE;
 
 	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);

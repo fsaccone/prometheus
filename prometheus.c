@@ -88,7 +88,7 @@ static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
 static int installpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
                           int instpkgsi);
-static int installouts(struct Outs outs, char sd[PATH_MAX],
+static int installouts(struct Outs outs, const char sd[PATH_MAX],
                        const char dd[PATH_MAX]);
 static int mkdirrecursive(const char d[PATH_MAX]);
 static int packagedepends(char pname[NAME_MAX], struct Depends *deps);
@@ -671,7 +671,7 @@ installpackage(char pname[NAME_MAX], char prefix[PATH_MAX], int instpkgsi)
 }
 
 int
-installouts(struct Outs outs, char sd[PATH_MAX], const char dd[PATH_MAX])
+installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 {
 	int i;
 

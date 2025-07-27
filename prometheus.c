@@ -981,8 +981,6 @@ registerpackage(struct Package p)
 		return EXIT_SUCCESS;
 	}
 
-	if (createtmpdir(p.pname, p.srcd)) return EXIT_FAILURE;
-
 	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
 		int dpe, dpii;

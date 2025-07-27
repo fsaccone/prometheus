@@ -330,13 +330,13 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
 	printf("\r\033[K");
 
 	if (dltot > 0) {
-		const int bl = 40;
-		double per = (double)dlnow / dltot * 100.0;
-		int i, bpos = bl * dlnow / dltot;
-
 		if (dlnow == dltot) {
 			printf("+ Downloaded %s\r", p);
 		} else {
+			const int bl = 40;
+			double per = (double)dlnow / dltot * 100.0;
+			int i, bpos = bl * dlnow / dltot;
+
 			printf("- Downloading %s: [", p);
 			for (i = 0; i < bl; i++) {
 				if (i < bpos)

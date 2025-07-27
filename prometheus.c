@@ -574,24 +574,6 @@ installpackage(char *pname, char *prefix, int instpkgsi)
 		return EXIT_SUCCESS;
 	}
 
-	if (!strncmp(pname, "nochroot-", 9)) {
-		char yp;
-
-		printf("+ Package %s is a nochroot package: it will have full "
-		       "access over your machine while building.\n", pname);
-		printf("> Continue? (y/n) ");
-
-		while ((yp = getchar()) != EOF) {
-			if (yp == '\n') continue;
-			if (yp == 'y' || yp == 'Y') break;
-			printf("n\n- Quitting\n");
-			return EXIT_FAILURE;
-		}
-
-		printf("y\n");
-		nochr = 1;
-	}
-
 	if (createtmpdir(pname, tmpd)) return EXIT_FAILURE;
 
 	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
@@ -645,6 +627,24 @@ installpackage(char *pname, char *prefix, int instpkgsi)
 			                                     prefix))
 				return EXIT_FAILURE;
 		}
+	}
+
+	if (!strncmp(pname, "nochroot-", 9)) {
+		char yp;
+
+		printf("+ Package %s is a nochroot package: it will have full "
+		       "access over your machine while building.\n", pname);
+		printf("> Continue? (y/n) ");
+
+		while ((yp = getchar()) != EOF) {
+			if (yp == '\n') continue;
+			if (yp == 'y' || yp == 'Y') break;
+			printf("n\n- Quitting\n");
+			return EXIT_FAILURE;
+		}
+
+		printf("y\n");
+		nochr = 1;
 	}
 
 	if (buildpackage(pname, tmpd, nochr)) return EXIT_FAILURE;

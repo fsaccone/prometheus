@@ -83,8 +83,6 @@ struct Sources {
 	size_t l;
 };
 
-static int buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
-                        const char prefix[PATH_MAX]);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
@@ -99,6 +97,7 @@ static int getpackages(struct PackageNames *pkgs);
 static void handlesignals(void(*hdl)(int));
 static int installouts(struct Outs outs, const char sd[PATH_MAX],
                        const char dd[PATH_MAX]);
+static int installpackage(struct Package p);
 static int mkdirrecursive(const char d[PATH_MAX]);
 static int packagedepends(char pname[NAME_MAX], struct Depends *deps);
 static int packageexists(const char pname[NAME_MAX]);
@@ -129,166 +128,6 @@ static void usage(void);
 static struct InstalledPackages instpkgs = { .l = 0 };
 static struct termios oldt;
 static struct PackageNode *pkgshead = NULL;
-
-int
-buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],
-             const char prefix[PATH_MAX])
-{
-	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX], log[PATH_MAX],
-	     src[PATH_MAX];
-	const char *reltmpd;
-	struct Sources srcs;
-	struct Outs outs;
-	pid_t pid;
-	unsigned int nochr = 0;
-
-	if (!strncmp(pname, "nochroot-", 9)) {
-		char yp;
-
-		printf("+ Package %s is a nochroot package: it will have full "
-		       "access over your machine while building.\n", pname);
-		printf("> Continue? (y/n) ");
-
-		while ((yp = getchar()) != EOF) {
-			if (yp == '\n') continue;
-			if (yp == 'y' || yp == 'Y') break;
-			printf("n\n- Quitting\n");
-			return EXIT_FAILURE;
-		}
-
-		printf("y\n");
-		nochr = 1;
-	}
-
-	reltmpd = nochr ? tmpd : "";
-
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen("/")
-	              + strlen(pname)) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(pdir, sizeof(pdir), "%s/%s", PACKAGE_REPOSITORY, pname);
-
-	if (PATH_MAX <= strlen(pdir) + strlen("/build")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(b, sizeof(b), "%s/build", pdir);
-
-	if (PATH_MAX <= strlen(tmpd) + strlen("/src/build")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(db, sizeof(db), "%s/src/build", tmpd);
-
-	if (copyfile(b, db)) return EXIT_FAILURE;
-
-	if (packagesources(pname, &srcs)) return EXIT_FAILURE;
-	if (srcs.l && retrievesources(srcs, pdir, tmpd)) return EXIT_FAILURE;
-
-	if (nochr && PATH_MAX <= strlen(tmpd) + strlen("/prometheus.log")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(log, sizeof(log), "%s/prometheus.log", reltmpd);
-	snprintf(src, sizeof(src), "%s/src", reltmpd);
-
-	if ((pid = fork()) < 0) {
-		perror("\n+ fork");
-		return EXIT_FAILURE;
-	}
-
-	if (!pid) {
-		char *cmd[] = { nochr ? db : "/src/build", NULL };
-		int logf;
-
-		if (!nochr && chroot(tmpd)) {
-			perror("\n+ chroot");
-			exit(EXIT_FAILURE);
-		}
-
-		printf("- Building %s\r", pname);
-		fflush(stdout);
-
-		if ((logf = open(log, O_WRONLY, 0700)) == -1) {
-			perror("\n+ fopen");
-			exit(EXIT_FAILURE);
-		}
-		if (dup2(logf, STDOUT_FILENO) == -1) {
-			perror("\n+ dup2");
-			close(logf);
-			exit(EXIT_FAILURE);
-		}
-		if (dup2(logf, STDERR_FILENO) == -1) {
-			perror("+ dup2");
-			close(logf);
-			exit(EXIT_FAILURE);
-		}
-		close(logf);
-
-		if (chdir(src)) {
-			perror("+ chdir");
-			exit(EXIT_FAILURE);
-		}
-
-		if (nochr) {
-			const char *p = getenv("PATH");
-			if (!p) {
-				printferr("PATH is not defined");
-			} else {
-				char np[PATH_MAX];
-				if (PATH_MAX <= strlen(p) + strlen(tmpd)
-				              + strlen("://bin")) {
-					fprintf(stderr, "\n");
-					printferr("PATH_MAX exceeded");
-					exit(EXIT_FAILURE);
-				}
-				snprintf(np, sizeof(np), "%s:%s/bin", p, tmpd);
-				if (setenv("PATH", np, 1)) {
-					perror("+ setenv");
-					exit(EXIT_FAILURE);
-				}
-			}
-		}
-
-		if (!nochr && setenv("PATH", "/bin", 1)) {
-			perror("+ setenv");
-			exit(EXIT_FAILURE);
-		}
-
-		if (nochr && setenv("PREFIX", tmpd, 1)) {
-			perror("+ setenv");
-			exit(EXIT_FAILURE);
-		}
-
-		if (execvp(cmd[0], cmd) == -1) {
-			perror("+ execvp");
-			exit(EXIT_FAILURE);
-		}
-
-		exit(EXIT_FAILURE);
-	} else {
-		int s;
-		waitpid(pid, &s, 0);
-		if (WIFEXITED(s)) {
-			if (WEXITSTATUS(s)) {
-				printf("\r\033[K+ Failed to build %s: see "
-				       "%s/prometheus.log\n",
-				       pname, tmpd);
-				return EXIT_FAILURE;
-			}
-		}
-	}
-
-	if (packageouts(pname, &outs)) return EXIT_FAILURE;
-
-	printf("\r\033[K+ Installing %s\r", pname);
-	fflush(stdout);
-	if (installouts(outs, tmpd, prefix)) return EXIT_FAILURE;
-	printf("\r\033[K+ Package %s installed\n", pname);
-
-	return EXIT_SUCCESS;
-}
 
 int
 copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
@@ -627,6 +466,172 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 
 	return EXIT_SUCCESS;
 }
+
+int
+installpackage(struct Package p)
+{
+	char pdir[PATH_MAX], b[PATH_MAX], db[PATH_MAX], log[PATH_MAX],
+	     src[PATH_MAX];
+	const char *reltmpd;
+	struct Sources srcs;
+	struct Outs outs;
+	pid_t pid;
+	unsigned int nochr = 0;
+
+	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
+
+	if (!p.build) {
+		if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
+		return EXIT_SUCCESS;
+	}
+
+	if (!strncmp(p.pname, "nochroot-", 9)) {
+		char yp;
+
+		printf("+ Package %s is a nochroot package: it will have full "
+		       "access over your machine while building.\n", p.pname);
+		printf("> Continue? (y/n) ");
+
+		while ((yp = getchar()) != EOF) {
+			if (yp == '\n') continue;
+			if (yp == 'y' || yp == 'Y') break;
+			printf("n\n- Quitting\n");
+			return EXIT_FAILURE;
+		}
+
+		printf("y\n");
+		nochr = 1;
+	}
+
+	reltmpd = nochr ? p.srcd : "";
+
+	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen("/")
+	              + strlen(p.pname)) {
+		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(pdir, sizeof(pdir), "%s/%s", PACKAGE_REPOSITORY, p.pname);
+
+	if (PATH_MAX <= strlen(pdir) + strlen("/build")) {
+		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(b, sizeof(b), "%s/build", pdir);
+
+	if (PATH_MAX <= strlen(p.srcd) + strlen("/src/build")) {
+		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(db, sizeof(db), "%s/src/build", p.srcd);
+
+	if (copyfile(b, db)) return EXIT_FAILURE;
+
+	if (packagesources(p.pname, &srcs)) return EXIT_FAILURE;
+	if (srcs.l && retrievesources(srcs, pdir, p.srcd)) return EXIT_FAILURE;
+
+	if (nochr && PATH_MAX <= strlen(p.srcd) + strlen("/prometheus.log")) {
+		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(log, sizeof(log), "%s/prometheus.log", reltmpd);
+	snprintf(src, sizeof(src), "%s/src", reltmpd);
+
+	if ((pid = fork()) < 0) {
+		perror("\n+ fork");
+		return EXIT_FAILURE;
+	}
+
+	if (!pid) {
+		char *cmd[] = { nochr ? db : "/src/build", NULL };
+		int logf;
+
+		if (!nochr && chroot(p.srcd)) {
+			perror("\n+ chroot");
+			exit(EXIT_FAILURE);
+		}
+
+		printf("- Building %s\r", p.pname);
+		fflush(stdout);
+
+		if ((logf = open(log, O_WRONLY, 0700)) == -1) {
+			perror("\n+ fopen");
+			exit(EXIT_FAILURE);
+		}
+		if (dup2(logf, STDOUT_FILENO) == -1) {
+			perror("\n+ dup2");
+			close(logf);
+			exit(EXIT_FAILURE);
+		}
+		if (dup2(logf, STDERR_FILENO) == -1) {
+			perror("+ dup2");
+			close(logf);
+			exit(EXIT_FAILURE);
+		}
+		close(logf);
+
+		if (chdir(src)) {
+			perror("+ chdir");
+			exit(EXIT_FAILURE);
+		}
+
+		if (nochr) {
+			const char *path = getenv("PATH");
+			if (!path) {
+				printferr("PATH is not defined");
+			} else {
+				char np[PATH_MAX];
+				if (PATH_MAX <= strlen(path) + strlen(p.srcd)
+				              + strlen("://bin")) {
+					fprintf(stderr, "\n");
+					printferr("PATH_MAX exceeded");
+					exit(EXIT_FAILURE);
+				}
+				snprintf(np, sizeof(np), "%s:%s/bin",
+				         path, p.srcd);
+				if (setenv("PATH", np, 1)) {
+					perror("+ setenv");
+					exit(EXIT_FAILURE);
+				}
+			}
+		}
+
+		if (!nochr && setenv("PATH", "/bin", 1)) {
+			perror("+ setenv");
+			exit(EXIT_FAILURE);
+		}
+
+		if (nochr && setenv("PREFIX", p.srcd, 1)) {
+			perror("+ setenv");
+			exit(EXIT_FAILURE);
+		}
+
+		if (execvp(cmd[0], cmd) == -1) {
+			perror("+ execvp");
+			exit(EXIT_FAILURE);
+		}
+
+		exit(EXIT_FAILURE);
+	} else {
+		int s;
+		waitpid(pid, &s, 0);
+		if (WIFEXITED(s)) {
+			if (WEXITSTATUS(s)) {
+				printf("\r\033[K+ Failed to build %s: see "
+				       "%s/prometheus.log\n",
+				       p.pname, p.srcd);
+				return EXIT_FAILURE;
+			}
+		}
+	}
+
+	printf("\r\033[K+ Installing %s\r", p.pname);
+	fflush(stdout);
+	if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
+	printf("\r\033[K+ Package %s installed\n", p.pname);
+
+	return EXIT_SUCCESS;
+}
+
 
 int
 mkdirrecursive(const char d[PATH_MAX])

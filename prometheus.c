@@ -1020,35 +1020,47 @@ registerpackage(struct Package p)
 		} else {
 			struct PackageNode *pn;
 			unsigned int inst = 0;
-			struct Package newp;
-			char dtmpd[PATH_MAX];
 
 			for (pn = pkgshead; pn; pn = pn->n) {
 				if (!strncmp(deps.a[i].pname, pn->p->pname,
 				    NAME_MAX)) {
+					struct Package newp;
+					strncpy(newp.pname, pn->p->pname,
+					        NAME_MAX);
+					strncpy(newp.srcd, pn->p->srcd,
+					        PATH_MAX);
+					strncpy(newp.destd, p.srcd, PATH_MAX);
+					newp.build = 0;
+
 					inst = 1;
 					break;
 				}
 			}
 
-			if (inst) continue;
+			if (!inst) {
+				struct Package newp;
+				char dtmpd[PATH_MAX];
 
-			if (createtmpdir(deps.a[i].pname, dtmpd))
-				return EXIT_FAILURE;
-			strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
-			strncpy(newp.srcd, dtmpd, PATH_MAX);
-			strncpy(newp.destd, p.srcd, PATH_MAX);
-			newp.build = 1;
-			if (registerpackage(newp))
-				return EXIT_FAILURE;
+				if (createtmpdir(deps.a[i].pname, dtmpd))
+					return EXIT_FAILURE;
+
+				strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
+				strncpy(newp.srcd, dtmpd, PATH_MAX);
+				strncpy(newp.destd, p.srcd, PATH_MAX);
+				newp.build = 1;
+
+				if (registerpackage(newp))
+					return EXIT_FAILURE;
+			}
 
 			if (deps.a[i].runtime) {
-				struct Package rnewp;
-				strncpy(rnewp.pname, newp.pname, NAME_MAX);
-				strncpy(rnewp.srcd, newp.srcd, PATH_MAX);
-				strncpy(rnewp.destd, newp.destd, PATH_MAX);
-				rnewp.build = 0;
-				if (registerpackage(rnewp))
+				struct Package newp;
+				strncpy(newp.pname, newp.pname, NAME_MAX);
+				strncpy(newp.srcd, p.srcd, PATH_MAX);
+				strncpy(newp.destd, p.destd, PATH_MAX);
+				newp.build = 0;
+
+				if (registerpackage(newp))
 					return EXIT_FAILURE;
 			}
 		}

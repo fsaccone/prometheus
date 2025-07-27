@@ -2,6 +2,6 @@ PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
 
 CC = cc
-CFLAGS = -Wall -Wextra -Wpedantic
+CFLAGS = -std=c99 -Wall -Wextra -Wpedantic
 LDFLAGS = -s
 LIBS = -lcurl

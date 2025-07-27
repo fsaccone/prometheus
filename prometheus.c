@@ -507,7 +507,6 @@ getpackages(struct Packages *pkgs)
 
 	i = 0;
 	while ((e = readdir(d))) {
-		char path[PATH_MAX];
 		int pe;
 
 		if ((pe = packageexists(e->d_name)) == -1) return EXIT_FAILURE;
@@ -745,8 +744,6 @@ packagedepends(char *pname, struct Depends *deps)
 		for (tok = strtok(l.a[i], " \t"), nfields = 0;
 		     tok && nfields < 2;
 		     tok = strtok(NULL, " \t"), nfields++) {
-			char depname[NAME_MAX];
-
 			switch (nfields) {
 			case 0:
 				if (NAME_MAX <= strlen(tok)) {

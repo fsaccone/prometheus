@@ -192,17 +192,22 @@ buildpackage(char *pname, const char *tmpd, unsigned int nochr)
 		}
 
 		if (nochr) {
-			char *p = getenv("PATH"), np[PATH_MAX];
-			if (PATH_MAX <= strlen(p) + strlen(tmpd)
-			              + strlen("://bin")) {
-				fprintf(stderr, "\n");
-				printferr("PATH_MAX exceeded");
-				exit(EXIT_FAILURE);
-			}
-			snprintf(np, sizeof(np), "%s:%s/bin", p, tmpd);
-			if (setenv("PATH", np, 1)) {
-				perror("+ setenv");
-				exit(EXIT_FAILURE);
+			char *p = getenv("PATH");
+			if (!p) {
+				printferr("PATH is not defined");
+			} else {
+				char np[PATH_MAX];
+				if (PATH_MAX <= strlen(p) + strlen(tmpd)
+				              + strlen("://bin")) {
+					fprintf(stderr, "\n");
+					printferr("PATH_MAX exceeded");
+					exit(EXIT_FAILURE);
+				}
+				snprintf(np, sizeof(np), "%s:%s/bin", p, tmpd);
+				if (setenv("PATH", np, 1)) {
+					perror("+ setenv");
+					exit(EXIT_FAILURE);
+				}
 			}
 		}
 

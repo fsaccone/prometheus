@@ -591,9 +591,9 @@ installpackage(char *pname, char *prefix)
 		printf("+ Found dependency %s for %s\n",
 		       deps.a[i].pname, pname);
 		if (!dpe) {
-			printf("+ Dependency %s does not exist\n",
-			       deps.a[i].pname);
-			continue;
+			printferr("Dependency %s does not exist\n",
+			          deps.a[i].pname);
+			return EXIT_FAILURE;
 		}
 		if (packageouts(deps.a[i].pname, &douts))
 			return EXIT_FAILURE;

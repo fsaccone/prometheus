@@ -1496,19 +1496,6 @@ main(int argc, char *argv[])
 
 	/* will not be evaluated when either printinst or prinstall is 1 */
 	for (; *argv; argc--, argv++) {
-		int pe;
-
-		if ((pe = packageexists(*argv)) == -1) {
-			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-			return EXIT_FAILURE;
-		}
-
-		if (!pe) {
-			printferr("Package %s does not exist", *argv);
-			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-			return EXIT_FAILURE;
-		}
-
 		if (uninstall) {
 			struct PackageNames pkgs;
 			if (getpackages(&pkgs)) {
@@ -1520,9 +1507,27 @@ main(int argc, char *argv[])
 				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
-		} else if (installpackage(*argv, rprefix, 0)) {
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-			return EXIT_FAILURE;
+			return EXIT_SUCCESS;
+		} else { /* must be install */
+			struct Package p;
+			char tmpd[PATH_MAX];
+
+			if (createtmpdir(*argv, tmpd)) return EXIT_FAILURE;
+
+			strncpy(p.pname, *argv, NAME_MAX);
+			strncpy(p.srcd, tmpd, PATH_MAX);
+			strncpy(p.destd, rprefix, PATH_MAX);
+			p.build = 1;
+
+			if (registerpackage(p)) return EXIT_FAILURE;
+		}
+	}
+
+	if (install) {
+		struct PackageNode *pn;
+		for (pn = pkgshead; pn; pn = pn->n) {
+			if (installpackage(*pn->p)) return EXIT_FAILURE;
 		}
 	}
 

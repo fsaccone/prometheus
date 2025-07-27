@@ -97,8 +97,6 @@ static unsigned int fileexists(const char f[PATH_MAX]);
 static int followsymlink(const char f[PATH_MAX], char ff[PATH_MAX]);
 static int getpackages(struct PackageNames *pkgs);
 static void handlesignals(void(*hdl)(int));
-static int installpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
-                          int instpkgsi);
 static int installouts(struct Outs outs, const char sd[PATH_MAX],
                        const char dd[PATH_MAX]);
 static int mkdirrecursive(const char d[PATH_MAX]);
@@ -113,6 +111,7 @@ static int printinstalled(const char prefix[PATH_MAX],
                           struct PackageNames pkgs);
 static void printpackages(struct PackageNames pkgs);
 static int readlines(const char f[PATH_MAX], struct Lines *l);
+static int registerpackage(struct Package p);
 static unsigned int relpathisvalid(char relpath[PATH_MAX]);
 static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
                            const char tmpd[PATH_MAX]);
@@ -588,126 +587,6 @@ handlesignals(void(*hdl)(int))
 }
 
 int
-installpackage(char pname[NAME_MAX], char prefix[PATH_MAX], int instpkgsi)
-{
-	struct Depends deps;
-	struct Outs outs;
-	char tmpd[PATH_MAX];
-	int i, pii;
-	unsigned int nochr;
-
-	for (i = 0; i < instpkgsi; i++) {
-		if (!strncmp(instpkgs.a[i].pname, pname, NAME_MAX)) {
-			printferr("Found circular dependency for package %s",
-			          pname);
-			return EXIT_FAILURE;
-		}
-	}
-
-	strncpy(instpkgs.a[instpkgsi].pname, pname, NAME_MAX);
-	instpkgsi++;
-
-	if (packageouts(pname, &outs)) return EXIT_FAILURE;
-	if (!outs.l) {
-		printferr("Package %s has no outs", pname);
-		return EXIT_FAILURE;
-	}
-
-	if ((pii = packageisinstalled(pname, prefix)) == -1)
-		return EXIT_FAILURE;
-
-	if (pii) {
-		printf("+ Skipping %s since it is already installed\n", pname);
-		instpkgsi--;
-		return EXIT_SUCCESS;
-	}
-
-	if (createtmpdir(pname, tmpd)) return EXIT_FAILURE;
-
-	if (packagedepends(pname, &deps)) return EXIT_FAILURE;
-	for (i = 0; i < deps.l; i++) {
-		int dpe, dpii;
-		struct Outs douts;
-		if ((dpe = packageexists(deps.a[i].pname)) == -1)
-			return EXIT_FAILURE;
-		printf("+ Found dependency %s for %s\n",
-		       deps.a[i].pname, pname);
-		if (!dpe) {
-			printferr("Dependency %s does not exist\n",
-			          deps.a[i].pname);
-			return EXIT_FAILURE;
-		}
-		if (packageouts(deps.a[i].pname, &douts))
-			return EXIT_FAILURE;
-		if (!douts.l) {
-			printferr("Dependency %s has no outs\n",
-			          deps.a[i].pname);
-			return EXIT_FAILURE;
-		}
-		if ((dpii = packageisinstalled(deps.a[i].pname, prefix)) == -1)
-			return EXIT_FAILURE;
-		if (dpii) {
-			printf("+ Dependency %s already installed\n",
-			       deps.a[i].pname);
-			if (installouts(douts, prefix, tmpd))
-				return EXIT_FAILURE;
-		} else {
-			int j;
-			unsigned int inst = 0;
-			for (j = 0; j < instpkgs.l; j++) {
-				if (!strncmp(instpkgs.a[j].pname,
-				             deps.a[i].pname,
-				             NAME_MAX)) { /* dep installed */
-					printf("+ Dependency %s already "
-					       "installed\n", deps.a[i].pname);
-					if (installouts(douts,
-					                instpkgs.a[j].tmpd,
-					                tmpd))
-						return EXIT_FAILURE;
-					inst = 1;
-				}
-			}
-			if (!inst && installpackage(deps.a[i].pname, tmpd,
-			                            instpkgsi))
-				return EXIT_FAILURE;
-			if (deps.a[i].runtime && installouts(douts,
-			                                     tmpd,
-			                                     prefix))
-				return EXIT_FAILURE;
-		}
-	}
-
-	if (!strncmp(pname, "nochroot-", 9)) {
-		char yp;
-
-		printf("+ Package %s is a nochroot package: it will have full "
-		       "access over your machine while building.\n", pname);
-		printf("> Continue? (y/n) ");
-
-		while ((yp = getchar()) != EOF) {
-			if (yp == '\n') continue;
-			if (yp == 'y' || yp == 'Y') break;
-			printf("n\n- Quitting\n");
-			return EXIT_FAILURE;
-		}
-
-		printf("y\n");
-		nochr = 1;
-	}
-
-	if (buildpackage(pname, tmpd, prefix))
-		return EXIT_FAILURE;
-
-	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);
-	strncpy(instpkgs.a[instpkgs.l].tmpd, tmpd, PATH_MAX);
-	instpkgs.l++;
-
-	instpkgsi;
-
-	return EXIT_SUCCESS;
-}
-
-int
 installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 {
 	int i;
@@ -1063,6 +942,127 @@ readlines(const char f[PATH_MAX], struct Lines *l)
 	l->l = i;
 
 	fclose(fp);
+	return EXIT_SUCCESS;
+}
+
+int
+registerpackage(struct Package p)
+{
+	struct Depends deps;
+	struct Outs outs;
+	char tmpd[PATH_MAX];
+	int i, pii;
+	unsigned int nochr;
+	struct PackageNode *newpn, *tailpn;
+	struct Package *newp;
+
+	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
+	if (!outs.l) {
+		printferr("Package %s has no outs", p.pname);
+		return EXIT_FAILURE;
+	}
+
+	if ((pii = packageisinstalled(p.pname, p.destd)) == -1)
+		return EXIT_FAILURE;
+	if (pii) {
+		printf("+ Skipping %s since it is already installed\n",
+		       p.pname);
+		return EXIT_SUCCESS;
+	}
+
+	if (createtmpdir(p.pname, p.srcd)) return EXIT_FAILURE;
+
+	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;
+	for (i = 0; i < deps.l; i++) {
+		int dpe, dpii;
+		struct Outs douts;
+		struct PackageNode *pn;
+
+		printf("+ Found dependency %s for %s\n",
+		       deps.a[i].pname, p.pname);
+
+		if ((dpe = packageexists(deps.a[i].pname)) == -1)
+			return EXIT_FAILURE;
+		if (!dpe) {
+			printferr("Dependency %s does not exist\n",
+			          deps.a[i].pname);
+			return EXIT_FAILURE;
+		}
+
+		if (packageouts(deps.a[i].pname, &douts))
+			return EXIT_FAILURE;
+		if (!douts.l) {
+			printferr("Dependency %s has no outs\n",
+			          deps.a[i].pname);
+			return EXIT_FAILURE;
+		}
+
+		if ((dpii = packageisinstalled(deps.a[i].pname,
+		                               p.destd)) == -1)
+			return EXIT_FAILURE;
+		if (dpii) {
+			struct Package newp;
+			strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
+			strncpy(newp.srcd, p.destd, PATH_MAX);
+			strncpy(newp.destd, p.srcd, PATH_MAX);
+			newp.build = 0;
+			if (registerpackage(newp))
+				return EXIT_FAILURE;
+		} else {
+			struct PackageNode *pn;
+			unsigned int inst = 0;
+			struct Package newp;
+			char dtmpd[PATH_MAX];
+
+			for (pn = pkgshead; pn; pn = pn->n) {
+				if (!strncmp(deps.a[i].pname, pn->p->pname,
+				    NAME_MAX)) inst = 1;
+			}
+
+			if (inst) continue;
+
+			if (createtmpdir(deps.a[i].pname, dtmpd))
+				return EXIT_FAILURE;
+			strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
+			strncpy(newp.srcd, dtmpd, PATH_MAX);
+			strncpy(newp.destd, p.srcd, PATH_MAX);
+			newp.build = 1;
+			if (registerpackage(newp))
+				return EXIT_FAILURE;
+
+			if (deps.a[i].runtime) {
+				struct Package rnewp;
+				strncpy(rnewp.pname, newp.pname, NAME_MAX);
+				strncpy(rnewp.srcd, newp.srcd, PATH_MAX);
+				strncpy(rnewp.destd, newp.destd, PATH_MAX);
+				rnewp.build = 0;
+				if (registerpackage(rnewp))
+					return EXIT_FAILURE;
+			}
+		}
+	}
+
+	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
+		perror("+ malloc");
+		return EXIT_FAILURE;
+	}
+	if (!(newp = malloc(sizeof(struct Package)))) {
+		perror("+ malloc");
+		return EXIT_FAILURE;
+	}
+	memcpy(newp, &p, sizeof(struct Package));
+
+	newpn->p = newp;
+	newpn->n = NULL;
+	if (!pkgshead) {
+		pkgshead = newpn;
+		return EXIT_SUCCESS;
+	}
+
+	tailpn = pkgshead;
+	while (tailpn->n) tailpn = tailpn->n;
+	tailpn->n = newpn;
+
 	return EXIT_SUCCESS;
 }
 

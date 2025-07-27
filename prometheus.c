@@ -1379,7 +1379,7 @@ main(int argc, char *argv[])
 	if (rprefix[strlen(rprefix) - 1] == '/')
 		rprefix[strlen(rprefix) - 1] = '\0';
 
-	if (!rprefix) {
+	if (!strlen(rprefix)) {
 		printferr("Prefix %s could not be read", rprefix);
 		return EXIT_FAILURE;
 	}

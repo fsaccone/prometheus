@@ -84,7 +84,7 @@ static unsigned int fileexists(const char *f);
 static int followsymlink(const char *f, char ff[PATH_MAX]);
 static int getpackages(struct Packages *pkgs);
 static void handlesignals(void(*hdl)(int));
-static int installpackage(char *pname, char *prefix);
+static int installpackage(char *pname, char *prefix, int instpkgsi);
 static int installouts(struct Outs outs, char sd[PATH_MAX],
                        const char dd[PATH_MAX]);
 static int mkdirrecursive(const char *d);
@@ -540,13 +540,24 @@ handlesignals(void(*hdl)(int))
 }
 
 int
-installpackage(char *pname, char *prefix)
+installpackage(char *pname, char *prefix, int instpkgsi)
 {
 	struct Depends deps;
 	struct Outs outs;
 	char tmpd[PATH_MAX];
 	int i, pii;
 	unsigned int nochr;
+
+	for (i = 0; i < instpkgsi; i++) {
+		if (!strncmp(instpkgs.a[i].pname, pname, NAME_MAX)) {
+			printferr("Found circular dependency for package %s",
+			          pname);
+			return EXIT_FAILURE;
+		}
+	}
+
+	strncpy(instpkgs.a[instpkgsi].pname, pname, NAME_MAX);
+	instpkgsi++;
 
 	if (packageouts(pname, &outs)) return EXIT_FAILURE;
 	if (!outs.l) {
@@ -559,6 +570,7 @@ installpackage(char *pname, char *prefix)
 
 	if (pii) {
 		printf("+ Skipping %s since it is already installed\n", pname);
+		instpkgsi--;
 		return EXIT_SUCCESS;
 	}
 
@@ -625,7 +637,8 @@ installpackage(char *pname, char *prefix)
 					inst = 1;
 				}
 			}
-			if (!inst && installpackage(deps.a[i].pname, tmpd))
+			if (!inst && installpackage(deps.a[i].pname, tmpd,
+			                            instpkgsi))
 				return EXIT_FAILURE;
 			if (deps.a[i].runtime && installouts(douts,
 			                                     tmpd,
@@ -644,6 +657,8 @@ installpackage(char *pname, char *prefix)
 	strncpy(instpkgs.a[instpkgs.l].pname, pname, NAME_MAX);
 	strncpy(instpkgs.a[instpkgs.l].tmpd, tmpd, PATH_MAX);
 	instpkgs.l++;
+
+	instpkgsi;
 
 	return EXIT_SUCCESS;
 }
@@ -1448,7 +1463,7 @@ main(int argc, char *argv[])
 				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
-		} else if (installpackage(*argv, rprefix)) {
+		} else if (installpackage(*argv, rprefix, 0)) {
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}

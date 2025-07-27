@@ -597,6 +597,11 @@ installpackage(char *pname, char *prefix)
 		}
 		if (packageouts(deps.a[i].pname, &douts))
 			return EXIT_FAILURE;
+		if (!douts.l) {
+			printferr("Dependency %s has no outs\n",
+			          deps.a[i].pname);
+			return EXIT_FAILURE;
+		}
 		if ((dpii = packageisinstalled(deps.a[i].pname, prefix)) == -1)
 			return EXIT_FAILURE;
 		if (dpii) {

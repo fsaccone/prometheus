@@ -50,9 +50,21 @@ struct Lines {
 	size_t l;
 };
 
+struct Package {
+	char pname[NAME_MAX];
+	char tmpd[PATH_MAX];
+	char prefix[PATH_MAX];
+	unsigned int build;
+};
+
 struct PackageNames {
 	char a[PACKAGES_MAX][NAME_MAX];
 	size_t l;
+};
+
+struct PackageNode {
+	struct Package *p;
+	struct PackageNode *n;
 };
 
 struct Outs {
@@ -117,6 +129,7 @@ static void usage(void);
 
 static struct InstalledPackages instpkgs = { .l = 0 };
 static struct termios oldt;
+static struct PackageNode *pkgshead = NULL;
 
 int
 buildpackage(char pname[NAME_MAX], const char tmpd[PATH_MAX],

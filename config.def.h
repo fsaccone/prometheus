@@ -1,6 +1,6 @@
 /* See LICENSE file for copyright and license details. */
 #define PROJECT_NAME "Prometheus"
-#define VERSION      "0.1"
+#define VERSION      "0.2"
 
 /* maximum limit for package resources */
 #define DEPENDS_MAX  50   /* number of depends entries for a package */

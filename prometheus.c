@@ -1053,6 +1053,7 @@ registerpackage(struct Package p)
 		return EXIT_FAILURE;
 	}
 	if (!(newp = malloc(sizeof(struct Package)))) {
+		free(newpn);
 		perror("+ malloc");
 		return EXIT_FAILURE;
 	}

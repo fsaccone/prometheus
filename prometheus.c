@@ -1027,7 +1027,10 @@ registerpackage(struct Package p)
 
 			for (pn = pkgshead; pn; pn = pn->n) {
 				if (!strncmp(deps.a[i].pname, pn->p->pname,
-				    NAME_MAX)) inst = 1;
+				    NAME_MAX)) {
+					inst = 1;
+					break;
+				}
 			}
 
 			if (inst) continue;

@@ -994,7 +994,7 @@ registerpackageinstall(struct Package p)
 	for (i = 0; i < deps.l; i++) {
 		int dpe, dpii;
 		struct Outs douts;
-		struct Package dp;
+		struct Package dp, *dpp;
 
 		/* if p.build == 0, only register runtime deps */
 		if (!p.build && !deps.a[i].runtime) continue;
@@ -1061,18 +1061,35 @@ registerpackageinstall(struct Package p)
 			}
 		}
 
-		if (registerpackageinstall(dp)) return EXIT_FAILURE;
+		if (!(dpp = malloc(sizeof(struct Package)))) {
+			perror("+ malloc");
+			return EXIT_FAILURE;
+		}
+		memcpy(dpp, &dp, sizeof(struct Package));
+		if (registerpackageinstall(*dpp)) {
+			free(dpp);
+			return EXIT_FAILURE;
+		}
+		free(dpp);
 
 		/* addionally, if runtime, copy from p.srcd to p.destd */
 		if (deps.a[i].runtime) {
-			struct Package runp;
+			struct Package runp, *runpp;
 			strncpy(runp.pname, deps.a[i].pname, NAME_MAX);
 			strncpy(runp.srcd, p.srcd, PATH_MAX);
 			strncpy(runp.destd, p.destd, PATH_MAX);
 			runp.build = 0;
 
-			if (registerpackageinstall(runp))
+			if (!(runpp = malloc(sizeof(struct Package)))) {
+				perror("+ malloc");
 				return EXIT_FAILURE;
+			}
+			memcpy(runpp, &runp, sizeof(struct Package));
+			if (registerpackageinstall(*runpp)) {
+				free(runpp);
+				return EXIT_FAILURE;
+			}
+			free(runpp);
 		}
 	}
 
@@ -1191,7 +1208,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 
 	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;
 	for (i = 0; i < deps.l; i++) {
-		struct Package newp;
+		struct Package newp, *newpp;
 
 		if (!deps.a[i].runtime) continue;
 
@@ -1201,7 +1218,16 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
 		strncpy(newp.destd, p.destd, NAME_MAX);
 
-		if (registerpackageuninstall(newp, rec)) return EXIT_FAILURE;
+		if (!(newpp = malloc(sizeof(struct Package)))) {
+			perror("+ malloc");
+			return EXIT_FAILURE;
+		}
+		memcpy(newpp, &newp, sizeof(struct Package));
+		if (registerpackageuninstall(*newpp, rec)) {
+			free(newpp);
+			return EXIT_FAILURE;
+		}
+		free(newpp);
 	}
 
 	return EXIT_SUCCESS;

@@ -1130,13 +1130,15 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		}
 
 		for (j = 0; j < pdeps.l; j++) {
-			if (!strncmp(pdeps.a[j].pname, p.pname, NAME_MAX)
-			 && pdeps.a[j].runtime) {
-				printf("+ Skipping %s since %s depends on "
-				       "it\n", p.pname, pkgs->a[i]);
-				free(pkgs);
-				return EXIT_SUCCESS;
-			}
+			if (strncmp(pdeps.a[j].pname, p.pname, NAME_MAX))
+				continue;
+			if (!pdeps.a[j].runtime) continue;
+
+			printf("+ Skipping %s since %s depends on it\n",
+			       p.pname, pkgs->a[i]);
+
+			free(pkgs);
+			return EXIT_SUCCESS;
 		}
 	}
 	free(pkgs);

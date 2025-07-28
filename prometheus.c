@@ -35,16 +35,6 @@ struct Depends {
 	size_t l;
 };
 
-struct InstalledPackage {
-	char pname[NAME_MAX];
-	char tmpd[PATH_MAX];
-};
-
-struct InstalledPackages {
-	struct InstalledPackage a[PACKAGES_MAX];
-	size_t l;
-};
-
 struct Lines {
 	char a[LINES_MAX][LINE_MAX];
 	size_t l;
@@ -125,7 +115,6 @@ static int uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
 static unsigned int urlisvalid(const char url[PATH_MAX]);
 static void usage(void);
 
-static struct InstalledPackages instpkgs = { .l = 0 };
 static struct termios oldt;
 static struct PackageNode *pkgshead = NULL;
 

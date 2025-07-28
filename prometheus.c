@@ -1012,6 +1012,8 @@ registerpackageinstall(struct Package p)
 		if ((dpii = packageisinstalled(deps.a[i].pname,
 		                               prefix)) == -1)
 			return EXIT_FAILURE;
+		/* if already installed to prefix, copy from prefix to
+		   p.srcd */
 		if (dpii) {
 			struct Package newp;
 			strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
@@ -1024,6 +1026,8 @@ registerpackageinstall(struct Package p)
 			struct PackageNode *pn;
 			unsigned int inst = 0;
 
+			/* if already registered, register again to just copy
+			   from its srcd to p.srcd */
 			for (pn = pkgshead; pn; pn = pn->n) {
 				if (!strncmp(deps.a[i].pname, pn->p->pname,
 				    NAME_MAX)) {
@@ -1043,6 +1047,7 @@ registerpackageinstall(struct Package p)
 				}
 			}
 
+			/* if not installed, just install it to p.srcd */
 			if (!inst) {
 				struct Package newp;
 				char dtmpd[PATH_MAX];
@@ -1059,6 +1064,8 @@ registerpackageinstall(struct Package p)
 					return EXIT_FAILURE;
 			}
 
+			/* addionally to last two, if runtime then copy from
+			   p.srcd to p.destd */
 			if (deps.a[i].runtime) {
 				struct Package newp;
 				strncpy(newp.pname, deps.a[i].pname, NAME_MAX);

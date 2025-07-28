@@ -1010,12 +1010,12 @@ registerpackageinstall(struct Package p)
 		}
 
 		if ((dpii = packageisinstalled(deps.a[i].pname,
-		                               p.destd)) == -1)
+		                               prefix)) == -1)
 			return EXIT_FAILURE;
 		if (dpii) {
 			struct Package newp;
 			strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
-			strncpy(newp.srcd, p.destd, PATH_MAX);
+			strncpy(newp.srcd, prefix, PATH_MAX);
 			strncpy(newp.destd, p.srcd, PATH_MAX);
 			newp.build = 0;
 			if (registerpackageinstall(newp))

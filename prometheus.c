@@ -1449,6 +1449,7 @@ usage(void)
 	                "       %s -l [-p prefix]\n"
 	                "       %s -a\n",
 	                argv0, argv0, argv0, argv0);
+	cleanup();
 	exit(EXIT_FAILURE);
 }
 
@@ -1469,6 +1470,7 @@ main(int argc, char *argv[])
 	if (getuid()) {
 		fprintf(stderr, "%s: Superuser privileges are required\n",
 		        argv[0]);
+		cleanup();
 		return EXIT_FAILURE;
 	}
 
@@ -1484,7 +1486,10 @@ main(int argc, char *argv[])
 		break;
 	case 'p':
 		const char *arg = EARGF(usage());
-		if (expandtilde(arg, prefix)) return EXIT_FAILURE;
+		if (expandtilde(arg, prefix)) {
+			cleanup();
+			return EXIT_FAILURE;
+		}
 		realpath(prefix, rprefix);
 		prefixdef = 1;
 		break;
@@ -1519,11 +1524,13 @@ main(int argc, char *argv[])
 		rprefix[strlen(rprefix) - 1] = '\0';
 
 	if (!strlen(rprefix)) {
+		cleanup();
 		printferr("Prefix %s could not be read", rprefix);
 		return EXIT_FAILURE;
 	}
 
 	if (strlen(rprefix) && !direxists(rprefix)) {
+		cleanup();
 		printferr("Prefix %s does not exist", rprefix);
 		return EXIT_FAILURE;
 	}
@@ -1536,10 +1543,12 @@ main(int argc, char *argv[])
 	if (printinst) {
 		struct PackageNames pkgs;
 		if (getpackages(&pkgs)) {
+			cleanup();
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
 		if (printinstalled(rprefix, pkgs)) {
+			cleanup();
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
@@ -1548,6 +1557,7 @@ main(int argc, char *argv[])
 	if (printall) {
 		struct PackageNames pkgs;
 		if (getpackages(&pkgs)) {
+			cleanup();
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
@@ -1570,7 +1580,10 @@ main(int argc, char *argv[])
 			struct Package p;
 			char tmpd[PATH_MAX];
 
-			if (createtmpdir(*argv, tmpd)) return EXIT_FAILURE;
+			if (createtmpdir(*argv, tmpd)) {
+				cleanup();
+				return EXIT_FAILURE;
+			}
 
 			strncpy(p.pname, *argv, NAME_MAX);
 			strncpy(p.srcd, tmpd, PATH_MAX);

@@ -299,9 +299,9 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 		return EXIT_FAILURE;
 	}
 
-	curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 30L);
+	curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 60L);
 	curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(c, CURLOPT_FTP_RESPONSE_TIMEOUT, 30L);
+	curl_easy_setopt(c, CURLOPT_FTP_RESPONSE_TIMEOUT, 60L);
 	curl_easy_setopt(c, CURLOPT_FTP_USE_EPSV, 1L);
 	curl_easy_setopt(c, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
 	curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);

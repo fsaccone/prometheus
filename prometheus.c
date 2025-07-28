@@ -1101,7 +1101,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	struct Depends deps;
 	struct Outs outs;
 	int i, pe, pii;
-	struct PackageNode *newpn, *tailpn;
+	struct PackageNode *newpn;
 	struct Package *newp;
 
 	if (!(pkgs = malloc(sizeof(struct PackageNames)))) {
@@ -1169,12 +1169,12 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	newpn->n = NULL;
 	if (!pkgshead) {
 		pkgshead = newpn;
-		return EXIT_SUCCESS;
+	} else {
+		struct PackageNode *tailpn;
+		tailpn = pkgshead;
+		while (tailpn->n) tailpn = tailpn->n;
+		tailpn->n = newpn;
 	}
-
-	tailpn = pkgshead;
-	while (tailpn->n) tailpn = tailpn->n;
-	tailpn->n = newpn;
 
 	if (!rec) return EXIT_SUCCESS;
 

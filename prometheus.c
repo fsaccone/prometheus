@@ -973,6 +973,8 @@ registerpackage(struct Package p)
 		return EXIT_FAILURE;
 	}
 
+	/* cannot be reached by dependency since their installation is
+	   checked before registration */
 	if ((pii = packageisinstalled(p.pname, p.destd)) == -1)
 		return EXIT_FAILURE;
 	if (pii) {

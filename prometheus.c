@@ -1673,7 +1673,7 @@ main(int argc, char *argv[])
 				cleanup();
 				return EXIT_FAILURE;
 			}
-		} else { /* must be install */
+		} else if (install) {
 			struct Package p;
 			char tmpd[PATH_MAX];
 

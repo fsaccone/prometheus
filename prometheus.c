@@ -535,7 +535,8 @@ installpackage(struct Package p)
 			exit(EXIT_FAILURE);
 		}
 
-		printf("- Building %s\r", p.pname);
+		printf("- Building %s: logs can be viewed in "
+		       "%s/prometheus.log\r", p.pname, p.srcd);
 		fflush(stdout);
 
 		if ((logf = open(log, O_WRONLY, 0700)) == -1) {

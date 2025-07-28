@@ -1262,7 +1262,7 @@ rmdirrecursive(const char d[PATH_MAX])
 			printferr("PATH_MAX exceeded");
 			return EXIT_FAILURE;
 		}
-		if ((f = malloc(fs))) {
+		if (!(f = malloc(fs))) {
 			closedir(dp);
 			perror("+ malloc");
 			return EXIT_FAILURE;

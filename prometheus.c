@@ -614,6 +614,8 @@ installpackage(struct Package p)
 	if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
 	printf("\r\033[K+ Package %s installed\n", p.pname);
 
+	if (rmdirrecursive(p.srcd)) return EXIT_FAILURE;
+
 	return EXIT_SUCCESS;
 }
 

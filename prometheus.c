@@ -73,6 +73,7 @@ struct Sources {
 	size_t l;
 };
 
+static void cleanup(void);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
@@ -117,6 +118,17 @@ static void usage(void);
 
 static struct termios oldt;
 static struct PackageNode *pkgshead = NULL;
+
+void
+cleanup(void)
+{
+	struct PackageNode *pn, *n;
+	for (pn = pkgshead; pn; pn = n) {
+		n = pn->n;
+		free(pn->p);
+		free(pn);
+	}
+}
 
 int
 copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
@@ -1283,6 +1295,7 @@ void
 sigexit()
 {
 	printf("\n- Quitting\n");
+	cleanup();
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	exit(EXIT_FAILURE);
 }
@@ -1525,17 +1538,24 @@ main(int argc, char *argv[])
 			strncpy(p.destd, rprefix, PATH_MAX);
 			p.build = 1;
 
-			if (registerpackageinstall(p)) return EXIT_FAILURE;
+			if (registerpackageinstall(p)) {
+				cleanup();
+				return EXIT_FAILURE;
+			}
 		}
 	}
 
 	if (install) {
 		struct PackageNode *pn;
 		for (pn = pkgshead; pn; pn = pn->n) {
-			if (installpackage(*pn->p)) return EXIT_FAILURE;
+			if (installpackage(*pn->p)) {
+				cleanup();
+				return EXIT_FAILURE;
+			}
 		}
 	}
 
+	cleanup();
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	return EXIT_SUCCESS;
 }

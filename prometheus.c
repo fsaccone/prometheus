@@ -992,6 +992,9 @@ registerpackageinstall(struct Package p)
 		struct Outs douts;
 		struct Package dp;
 
+		/* if p.build == 0, only register runtime deps */
+		if (!p.build && !deps.a[i].runtime) continue;
+
 		printf("+ Found dependency %s for %s\n",
 		       deps.a[i].pname, p.pname);
 

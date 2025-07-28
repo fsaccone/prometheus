@@ -1140,6 +1140,13 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		return EXIT_FAILURE;
 	}
 
+	if ((pii = packageisinstalled(p.pname, p.destd)) == -1)
+		return EXIT_FAILURE;
+	if (!pii) {
+		printf("+ Skipping %s since it is not installed\n", p.pname);
+		return EXIT_SUCCESS;
+	}
+
 	if (!(pkgs = malloc(sizeof(struct PackageNames)))) {
 		perror("+ malloc");
 		return EXIT_FAILURE;

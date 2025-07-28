@@ -485,23 +485,7 @@ installpackage(struct Package p)
 		return EXIT_SUCCESS;
 	}
 
-	if (!strncmp(p.pname, "nochroot-", 9)) {
-		char yp;
-
-		printf("+ Package %s is a nochroot package: it will have full "
-		       "access over your machine while building.\n", p.pname);
-		printf("> Continue? (y/n) ");
-
-		while ((yp = getchar()) != EOF) {
-			if (yp == '\n') continue;
-			if (yp == 'y' || yp == 'Y') break;
-			printf("n\n- Quitting\n");
-			return EXIT_FAILURE;
-		}
-
-		printf("y\n");
-		nochr = 1;
-	}
+	if (!strncmp(p.pname, "nochroot-", 9)) nochr = 1;
 
 	reltmpd = nochr ? p.srcd : "";
 
@@ -981,6 +965,23 @@ registerpackageinstall(struct Package p)
 		printf("+ Skipping %s since it is already installed\n",
 		       p.pname);
 		return EXIT_SUCCESS;
+	}
+
+	if (p.build && !strncmp(p.pname, "nochroot-", 9)) {
+		char yp;
+
+		printf("+ Package %s is a nochroot package: it will have full "
+		       "access over your machine while building.\n", p.pname);
+		printf("> Continue? (y/n) ");
+
+		while ((yp = getchar()) != EOF) {
+			if (yp == '\n') continue;
+			if (yp == 'y' || yp == 'Y') break;
+			printf("n\n- Quitting\n");
+			return EXIT_FAILURE;
+		}
+
+		printf("y\n");
 	}
 
 	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;

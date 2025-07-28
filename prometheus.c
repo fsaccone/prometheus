@@ -699,6 +699,8 @@ packagedepends(char pname[NAME_MAX], struct Depends *deps)
 			}
 		}
 
+		if (nfields < 2) deps->a[i].runtime = 0;
+
 		if (nfields < 1) {
 			printferr("PROGRAM not present in one of %s's depends",
 			          pname);

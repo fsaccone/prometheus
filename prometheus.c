@@ -102,6 +102,7 @@ static void printpackages(struct PackageNames pkgs);
 static int readlines(const char f[PATH_MAX], struct Lines *l);
 static int registerpackageinstall(struct Package p);
 static unsigned int relpathisvalid(char relpath[PATH_MAX]);
+static int rmdirrecursive(const char d[PATH_MAX]);
 static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
                            const char tmpd[PATH_MAX]);
 static void sha256chartouint8(const char c[2 * SHA256_DIGEST_LENGTH + 1],
@@ -1209,6 +1210,60 @@ relpathisvalid(char relpath[PATH_MAX])
 	return (!strstr(relpath, "..") && !strstr(relpath, ":")
 	     && relpath[0] != '/' && relpath[0] != '.' && relpath[0] != '\0'
 	     && relpath[strlen(relpath) - 1] != '/');
+}
+
+int
+rmdirrecursive(const char d[PATH_MAX])
+{
+	struct dirent *e;
+	DIR *dp;
+
+	if (!(dp = opendir(d))) return EXIT_SUCCESS;
+
+	while ((e = readdir(dp))) {
+		char *f;
+		size_t fs;
+
+		if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
+			continue;
+
+		fs = strlen(d) + strlen("/") + strlen(e->d_name) + 1;
+		if (PATH_MAX < fs) {
+			closedir(dp);
+			printferr("PATH_MAX exceeded");
+			return EXIT_FAILURE;
+		}
+		if ((f = malloc(fs))) {
+			closedir(dp);
+			perror("+ malloc");
+			return EXIT_FAILURE;
+		}
+		snprintf(f, fs, "%s/%s", d, e->d_name);
+
+		if (direxists(f)) {
+			if (rmdirrecursive(f)) {
+				free(f);
+				closedir(dp);
+				return EXIT_FAILURE;
+			}
+		} else if (remove(f)) {
+			free(f);
+			closedir(dp);
+			perror("+ remove");
+			return EXIT_FAILURE;
+		}
+
+		free(f);
+	}
+
+	closedir(dp);
+
+	if (rmdir(d)) {
+		perror("+ rmdir");
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }
 
 int

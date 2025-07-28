@@ -990,7 +990,7 @@ registerpackageinstall(struct Package p)
 	for (i = 0; i < deps.l; i++) {
 		int dpe, dpii;
 		struct Outs douts;
-		struct PackageNode *pn;
+		struct Package dp;
 
 		printf("+ Found dependency %s for %s\n",
 		       deps.a[i].pname, p.pname);
@@ -1014,70 +1014,58 @@ registerpackageinstall(struct Package p)
 		if ((dpii = packageisinstalled(deps.a[i].pname,
 		                               prefix)) == -1)
 			return EXIT_FAILURE;
-		/* if already installed to prefix, copy from prefix to
-		   p.srcd */
+
+		/* always install dependency to p.srcd, regardless of it
+		   being build or runtime */
+		strncpy(dp.pname, deps.a[i].pname, NAME_MAX);
+		strncpy(dp.destd, p.srcd, PATH_MAX);
+
 		if (dpii) {
-			struct Package newp;
-			strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
-			strncpy(newp.srcd, prefix, PATH_MAX);
-			strncpy(newp.destd, p.srcd, PATH_MAX);
-			newp.build = 0;
-			if (registerpackageinstall(newp))
-				return EXIT_FAILURE;
+			/* if already installed to prefix, copy from prefix */
+			strncpy(dp.srcd, prefix, PATH_MAX);
+			dp.build = 0;
 		} else {
 			struct PackageNode *pn;
-			unsigned int inst = 0;
+			unsigned int reg = 0;
 
 			/* if already registered, register again to just copy
-			   from its srcd to p.srcd */
+			   from its srcd */
 			for (pn = pkgshead; pn; pn = pn->n) {
-				if (!strncmp(deps.a[i].pname, pn->p->pname,
-				    NAME_MAX)) {
-					struct Package newp;
-					strncpy(newp.pname, pn->p->pname,
-					        NAME_MAX);
-					strncpy(newp.srcd, pn->p->srcd,
-					        PATH_MAX);
-					strncpy(newp.destd, p.srcd, PATH_MAX);
-					newp.build = 0;
+				if (strncmp(deps.a[i].pname, pn->p->pname,
+				    NAME_MAX)) continue;
 
-					if (registerpackageinstall(newp))
-						return EXIT_FAILURE;
+				strncpy(dp.srcd, pn->p->srcd, PATH_MAX);
+				dp.build = 0;
 
-					inst = 1;
-					break;
-				}
+				reg = 1;
+				break;
 			}
 
-			/* if not installed, just install it to p.srcd */
-			if (!inst) {
-				struct Package newp;
+			/* if not installed or registered, build and install
+			   it */
+			if (!reg) {
 				char dtmpd[PATH_MAX];
 
 				if (createtmpdir(deps.a[i].pname, dtmpd))
 					return EXIT_FAILURE;
 
-				strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
-				strncpy(newp.srcd, dtmpd, PATH_MAX);
-				strncpy(newp.destd, p.srcd, PATH_MAX);
-				newp.build = 1;
-
-				if (registerpackageinstall(newp))
-					return EXIT_FAILURE;
+				strncpy(dp.srcd, dtmpd, PATH_MAX);
+				dp.build = 1;
 			}
+		}
 
-			/* addionally to last two, if runtime then copy from
-			   p.srcd to p.destd */
-			if (deps.a[i].runtime) {
-				struct Package newp;
-				strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
-				strncpy(newp.srcd, p.srcd, PATH_MAX);
-				strncpy(newp.destd, p.destd, PATH_MAX);
-				newp.build = 0;
+		if (registerpackageinstall(dp)) return EXIT_FAILURE;
 
-				if (registerpackageinstall(newp))
-					return EXIT_FAILURE;
-			}
+		/* addionally, if runtime, copy from p.srcd to p.destd */
+		if (deps.a[i].runtime) {
+			struct Package runp;
+			strncpy(runp.pname, deps.a[i].pname, NAME_MAX);
+			strncpy(runp.srcd, p.srcd, PATH_MAX);
+			strncpy(runp.destd, p.destd, PATH_MAX);
+			runp.build = 0;
+
+			if (registerpackageinstall(runp))
+				return EXIT_FAILURE;
 		}
 	}
 

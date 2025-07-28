@@ -1128,6 +1128,18 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	struct PackageNode *newpn;
 	struct Package *newp;
 
+	if ((pe = packageexists(p.pname)) == -1) return EXIT_FAILURE;
+	if (!pe) {
+		printferr("Package %s does not exist", p.pname);
+		return EXIT_FAILURE;
+	}
+
+	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
+	if (!outs.l) {
+		printferr("Package %s has no outs", p.pname);
+		return EXIT_FAILURE;
+	}
+
 	if (!(pkgs = malloc(sizeof(struct PackageNames)))) {
 		perror("+ malloc");
 		return EXIT_FAILURE;
@@ -1168,18 +1180,6 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		}
 	}
 	free(pkgs);
-
-	if ((pe = packageexists(p.pname)) == -1) return EXIT_FAILURE;
-	if (!pe) {
-		printferr("Package %s does not exist", p.pname);
-		return EXIT_FAILURE;
-	}
-
-	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
-	if (!outs.l) {
-		printferr("Package %s has no outs", p.pname);
-		return EXIT_FAILURE;
-	}
 
 	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
 		perror("+ malloc");

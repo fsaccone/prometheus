@@ -1117,6 +1117,8 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		int pkgsii, j;
 		struct Depends pdeps;
 
+		if (!strncmp(pkgs->a[i], p.pname, NAME_MAX)) continue;
+
 		if ((pkgsii = packageisinstalled(pkgs->a[i],
 		                                 p.destd)) == -1) {
 			free(pkgs);

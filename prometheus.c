@@ -1058,7 +1058,7 @@ registerpackageinstall(struct Package p)
 
 			if (deps.a[i].runtime) {
 				struct Package newp;
-				strncpy(newp.pname, newp.pname, NAME_MAX);
+				strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
 				strncpy(newp.srcd, p.srcd, PATH_MAX);
 				strncpy(newp.destd, p.destd, PATH_MAX);
 				newp.build = 0;

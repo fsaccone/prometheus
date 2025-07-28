@@ -93,12 +93,11 @@ static int mkdirrecursive(const char d[PATH_MAX]);
 static int packagedepends(char pname[NAME_MAX], struct Depends *deps);
 static int packageexists(const char pname[NAME_MAX]);
 static int packageisinstalled(char pname[NAME_MAX],
-                              const char prefix[PATH_MAX]);
+                              const char destd[PATH_MAX]);
 static int packageouts(char pname[NAME_MAX], struct Outs *outs);
 static int packagesources(char pname[NAME_MAX], struct Sources *srcs);
 static void printferr(const char *m, ...);
-static int printinstalled(const char prefix[PATH_MAX],
-                          struct PackageNames pkgs);
+static int printinstalled(struct PackageNames pkgs);
 static void printpackages(struct PackageNames pkgs);
 static int readlines(const char f[PATH_MAX], struct Lines *l);
 static int registerpackageinstall(struct Package p);
@@ -117,6 +116,7 @@ static void usage(void);
 
 static struct termios oldt;
 static struct PackageNode *pkgshead = NULL;
+static char prefix[PATH_MAX];
 
 void
 cleanup(void)
@@ -729,7 +729,7 @@ packageexists(const char pname[NAME_MAX])
 }
 
 int
-packageisinstalled(char pname[NAME_MAX], const char prefix[PATH_MAX])
+packageisinstalled(char pname[NAME_MAX], const char destd[PATH_MAX])
 {
 	struct Outs outs;
 	int i;
@@ -738,11 +738,11 @@ packageisinstalled(char pname[NAME_MAX], const char prefix[PATH_MAX])
 
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
-		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
+		if (PATH_MAX <= strlen(destd) + strlen(outs.a[i])) {
 			printferr("PATH_MAX exceeded");
 			return -1;
 		}
-		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
+		snprintf(f, sizeof(f), "%s%s", destd, outs.a[i]);
 		if (!fileexists(f)) {
 			return 0;
 		}
@@ -882,7 +882,7 @@ printferr(const char *m, ...)
 }
 
 int
-printinstalled(const char prefix[PATH_MAX], struct PackageNames pkgs)
+printinstalled(struct PackageNames pkgs)
 {
 	int i;
 
@@ -1469,8 +1469,7 @@ main(int argc, char *argv[])
 	    printinst = 0,
 	    printall = 0,
 	    prefixdef = 0;
-	char prefix[PATH_MAX] = DEFAULT_PREFIX,
-	     rprefix[PATH_MAX];
+	char gprefix[PATH_MAX] = DEFAULT_PREFIX;
 	struct termios newt;
 	struct PackageNode *pn;
 
@@ -1493,11 +1492,11 @@ main(int argc, char *argv[])
 		break;
 	case 'p':
 		const char *arg = EARGF(usage());
-		if (expandtilde(arg, prefix)) {
+		if (expandtilde(arg, gprefix)) {
 			cleanup();
 			return EXIT_FAILURE;
 		}
-		realpath(prefix, rprefix);
+		realpath(gprefix, prefix);
 		prefixdef = 1;
 		break;
 	case 'r':
@@ -1527,18 +1526,18 @@ main(int argc, char *argv[])
 
 	handlesignals(sigexit);
 
-	if (rprefix[strlen(rprefix) - 1] == '/')
-		rprefix[strlen(rprefix) - 1] = '\0';
+	if (prefix[strlen(prefix) - 1] == '/')
+		prefix[strlen(prefix) - 1] = '\0';
 
-	if (!strlen(rprefix)) {
+	if (!strlen(prefix)) {
 		cleanup();
-		printferr("Prefix %s could not be read", rprefix);
+		printferr("Prefix %s could not be read", prefix);
 		return EXIT_FAILURE;
 	}
 
-	if (strlen(rprefix) && !direxists(rprefix)) {
+	if (strlen(prefix) && !direxists(prefix)) {
 		cleanup();
-		printferr("Prefix %s does not exist", rprefix);
+		printferr("Prefix %s does not exist", prefix);
 		return EXIT_FAILURE;
 	}
 
@@ -1554,7 +1553,7 @@ main(int argc, char *argv[])
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
-		if (printinstalled(rprefix, pkgs)) {
+		if (printinstalled(pkgs)) {
 			cleanup();
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
@@ -1594,7 +1593,7 @@ main(int argc, char *argv[])
 
 			strncpy(p.pname, *argv, NAME_MAX);
 			strncpy(p.srcd, tmpd, PATH_MAX);
-			strncpy(p.destd, rprefix, PATH_MAX);
+			strncpy(p.destd, prefix, PATH_MAX);
 			p.build = 1;
 
 			if (registerpackageinstall(p)) {

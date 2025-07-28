@@ -111,8 +111,7 @@ static int sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH]);
 static void sha256uint8tochar(const uint8_t u[SHA256_DIGEST_LENGTH],
                               char c[2 * SHA256_DIGEST_LENGTH + 1]);
 static void sigexit();
-static int uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX],
-                            unsigned int rec, struct PackageNames pkgs);
+static int uninstallpackage(struct Package p);
 static unsigned int urlisvalid(const char url[PATH_MAX]);
 static void usage(void);
 
@@ -1095,6 +1094,108 @@ registerpackageinstall(struct Package p)
 	return EXIT_SUCCESS;
 }
 
+int
+registerpackageuninstall(struct Package p, unsigned int rec)
+{
+	struct PackageNames *pkgs;
+	struct Depends deps;
+	struct Outs outs;
+	int i, pe, pii;
+	struct PackageNode *newpn, *tailpn;
+	struct Package *newp;
+
+	if (!(pkgs = malloc(sizeof(struct PackageNames)))) {
+		perror("+ malloc");
+		return EXIT_FAILURE;
+	}
+	if (getpackages(pkgs)) {
+		free(pkgs);
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+		return EXIT_FAILURE;
+	}
+	for (i = 0; i < pkgs->l; i++) {
+		int pkgsii, j;
+		struct Depends pdeps;
+
+		if ((pkgsii = packageisinstalled(pkgs->a[i],
+		                                 p.destd)) == -1) {
+			free(pkgs);
+			return EXIT_FAILURE;
+		}
+		if (!pkgsii) continue;
+
+		if (packagedepends(pkgs->a[i], &pdeps)) {
+			free(pkgs);
+			return EXIT_FAILURE;
+		}
+
+		for (j = 0; j < pdeps.l; j++) {
+			if (!strncmp(pdeps.a[j].pname, p.pname, NAME_MAX)
+			 && pdeps.a[j].runtime) {
+				printf("+ Skipping %s since %s depends on "
+				       "it\n", p.pname, pkgs->a[i]);
+				free(pkgs);
+				return EXIT_SUCCESS;
+			}
+		}
+	}
+	free(pkgs);
+
+	if ((pe = packageexists(p.pname)) == -1) return EXIT_FAILURE;
+	if (!pe) {
+		printferr("Package %s does not exist", p.pname);
+		return EXIT_FAILURE;
+	}
+
+	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
+	if (!outs.l) {
+		printferr("Package %s has no outs", p.pname);
+		return EXIT_FAILURE;
+	}
+
+	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
+		perror("+ malloc");
+		return EXIT_FAILURE;
+	}
+	if (!(newp = malloc(sizeof(struct Package)))) {
+		free(newpn);
+		perror("+ malloc");
+		return EXIT_FAILURE;
+	}
+	strncpy(newp->pname, p.pname, NAME_MAX);
+	strncpy(newp->destd, p.destd, PATH_MAX);
+
+	newpn->p = newp;
+	newpn->n = NULL;
+	if (!pkgshead) {
+		pkgshead = newpn;
+		return EXIT_SUCCESS;
+	}
+
+	tailpn = pkgshead;
+	while (tailpn->n) tailpn = tailpn->n;
+	tailpn->n = newpn;
+
+	if (!rec) return EXIT_SUCCESS;
+
+	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;
+	for (i = 0; i < deps.l; i++) {
+		struct Package newp;
+
+		if (!deps.a[i].runtime) continue;
+
+		printf("+ Found dependency %s for %s\n",
+		       deps.a[i].pname, p.pname);
+
+		strncpy(newp.pname, p.pname, NAME_MAX);
+		strncpy(newp.destd, p.destd, NAME_MAX);
+
+		if (registerpackageuninstall(newp, rec)) return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
 unsigned int
 relpathisvalid(char relpath[PATH_MAX])
 {
@@ -1301,57 +1402,24 @@ sigexit()
 }
 
 int
-uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX], unsigned int rec,
-                 struct PackageNames pkgs)
+uninstallpackage(struct Package p)
 {
 	struct Outs outs;
-	int i, pii;
+	int i;
 
-	if (packageouts(pname, &outs)) return EXIT_FAILURE;
-	if (!outs.l) {
-		printferr("Package %s has no outs", pname);
-		return EXIT_FAILURE;
-	}
+	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
 
-	if ((pii = packageisinstalled(pname, prefix)) == -1)
-		return EXIT_FAILURE;
-
-	if (!pii) {
-		printf("+ Skipping %s since it is not installed\n", pname);
-		return EXIT_SUCCESS;
-	}
-
-	for (i = 0; i < pkgs.l; i++) {
-		int j;
-		struct Depends pdeps;
-
-		if (packagedepends(pkgs.a[i], &pdeps)) return EXIT_FAILURE;
-
-		for (j = 0; j < pdeps.l; j++) {
-			int dpii;
-			if ((dpii = packageisinstalled(pkgs.a[i],
-			                               prefix)) == -1)
-				return EXIT_FAILURE;
-			if (!strcmp(pdeps.a[j].pname, pname)
-			    && pdeps.a[j].runtime
-			    && dpii) {
-				printf("+ Skipping %s since %s depends on "
-				       "it\n", pname, pkgs.a[i]);
-				return EXIT_SUCCESS;
-			}
-		}
-	}
-
-	printf("- Uninstalling %s\r", pname);
+	printf("- Uninstalling %s\r", p.pname);
 	fflush(stdout);
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
 
-		if (PATH_MAX <= strlen(prefix) + strlen(outs.a[i])) {
+		if (PATH_MAX <= strlen(p.destd) + strlen(outs.a[i])) {
 			fprintf(stderr, "\n");
 			printferr("PATH_MAX exceeded");
+			return EXIT_FAILURE;
 		}
-		snprintf(f, sizeof(f), "%s%s", prefix, outs.a[i]);
+		snprintf(f, sizeof(f), "%s%s", p.destd, outs.a[i]);
 
 		if (!fileexists(f)) continue;
 
@@ -1360,34 +1428,7 @@ uninstallpackage(char pname[NAME_MAX], char prefix[PATH_MAX], unsigned int rec,
 			return EXIT_FAILURE;
 		}
 	}
-	printf("\r\033[K+ Package %s uninstalled\n", pname);
-
-	if (rec) {
-		struct Depends deps;
-		
-		if (packagedepends(pname, &deps)) return EXIT_FAILURE;
-
-		for (i = 0; i < deps.l; i++) {
-			int pe;
-
-			if ((pe = packageexists(deps.a[i].pname)) == -1)
-				return EXIT_FAILURE;
-
-			if (!deps.a[i].runtime) continue;
-
-			printf("+ Found dependency %s for %s\n",
-			       deps.a[i].pname, pname);
-
-			if (!pe) {
-				printf("+ Dependency %s does not exist\n",
-				       deps.a[i].pname);
-				continue;
-			}
-
-			if (uninstallpackage(deps.a[i].pname, prefix, rec,
-			                     pkgs)) return EXIT_FAILURE;
-		}
-	}
+	printf("\r\033[K+ Package %s uninstalled\n", p.pname);
 
 	return EXIT_SUCCESS;
 }
@@ -1423,6 +1464,7 @@ main(int argc, char *argv[])
 	char prefix[PATH_MAX] = DEFAULT_PREFIX,
 	     rprefix[PATH_MAX];
 	struct termios newt;
+	struct PackageNode *pn;
 
 	if (getuid()) {
 		fprintf(stderr, "%s: Superuser privileges are required\n",
@@ -1515,18 +1557,15 @@ main(int argc, char *argv[])
 	/* will not be evaluated when either printinst or prinstall is 1 */
 	for (; *argv; argc--, argv++) {
 		if (uninstall) {
-			struct PackageNames pkgs;
-			if (getpackages(&pkgs)) {
-				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			struct Package p;
+
+			strncpy(p.pname, *argv, NAME_MAX);
+			strncpy(p.destd, prefix, PATH_MAX);
+
+			if (registerpackageuninstall(p, recuninstall)) {
+				cleanup();
 				return EXIT_FAILURE;
 			}
-			if (uninstallpackage(*argv, rprefix, recuninstall,
-			                     pkgs)) {
-				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-				return EXIT_FAILURE;
-			}
-			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-			return EXIT_SUCCESS;
 		} else { /* must be install */
 			struct Package p;
 			char tmpd[PATH_MAX];
@@ -1545,13 +1584,14 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (install) {
-		struct PackageNode *pn;
-		for (pn = pkgshead; pn; pn = pn->n) {
-			if (installpackage(*pn->p)) {
-				cleanup();
-				return EXIT_FAILURE;
-			}
+	for (pn = pkgshead; pn; pn = pn->n) {
+		if (install && installpackage(*pn->p)) {
+			cleanup();
+			return EXIT_FAILURE;
+		}
+		if (uninstall && uninstallpackage(*pn->p)) {
+			cleanup();
+			return EXIT_FAILURE;
 		}
 	}
 

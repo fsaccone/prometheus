@@ -1187,7 +1187,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		printf("+ Found dependency %s for %s\n",
 		       deps.a[i].pname, p.pname);
 
-		strncpy(newp.pname, p.pname, NAME_MAX);
+		strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
 		strncpy(newp.destd, p.destd, NAME_MAX);
 
 		if (registerpackageuninstall(newp, rec)) return EXIT_FAILURE;

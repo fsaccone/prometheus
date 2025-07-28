@@ -1035,6 +1035,9 @@ registerpackageinstall(struct Package p)
 					strncpy(newp.destd, p.srcd, PATH_MAX);
 					newp.build = 0;
 
+					if (registerpackageinstall(newp))
+						return EXIT_FAILURE;
+
 					inst = 1;
 					break;
 				}

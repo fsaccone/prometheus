@@ -110,7 +110,7 @@ static int printinstalled(const char prefix[PATH_MAX],
                           struct PackageNames pkgs);
 static void printpackages(struct PackageNames pkgs);
 static int readlines(const char f[PATH_MAX], struct Lines *l);
-static int registerpackage(struct Package p);
+static int registerpackageinstall(struct Package p);
 static unsigned int relpathisvalid(char relpath[PATH_MAX]);
 static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
                            const char tmpd[PATH_MAX]);
@@ -951,7 +951,7 @@ readlines(const char f[PATH_MAX], struct Lines *l)
 }
 
 int
-registerpackage(struct Package p)
+registerpackageinstall(struct Package p)
 {
 	struct Depends deps;
 	struct Outs outs;
@@ -1017,7 +1017,7 @@ registerpackage(struct Package p)
 			strncpy(newp.srcd, p.destd, PATH_MAX);
 			strncpy(newp.destd, p.srcd, PATH_MAX);
 			newp.build = 0;
-			if (registerpackage(newp))
+			if (registerpackageinstall(newp))
 				return EXIT_FAILURE;
 		} else {
 			struct PackageNode *pn;
@@ -1051,7 +1051,7 @@ registerpackage(struct Package p)
 				strncpy(newp.destd, p.srcd, PATH_MAX);
 				newp.build = 1;
 
-				if (registerpackage(newp))
+				if (registerpackageinstall(newp))
 					return EXIT_FAILURE;
 			}
 
@@ -1062,7 +1062,7 @@ registerpackage(struct Package p)
 				strncpy(newp.destd, p.destd, PATH_MAX);
 				newp.build = 0;
 
-				if (registerpackage(newp))
+				if (registerpackageinstall(newp))
 					return EXIT_FAILURE;
 			}
 		}
@@ -1535,7 +1535,7 @@ main(int argc, char *argv[])
 			strncpy(p.destd, rprefix, PATH_MAX);
 			p.build = 1;
 
-			if (registerpackage(p)) return EXIT_FAILURE;
+			if (registerpackageinstall(p)) return EXIT_FAILURE;
 		}
 	}
 

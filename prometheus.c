@@ -1015,16 +1015,19 @@ registerpackageinstall(struct Package p)
 
 		printf("+ Package %s is a nochroot package: it will have full "
 		       "access over your machine while building\n", p.pname);
-		printf("> Continue? (y/n) ");
+		printf("> Continue? (y/n)\r");
+		fflush(stdout);
 
 		while ((yp = getchar()) != EOF) {
 			if (yp == '\n') continue;
 			if (yp == 'y' || yp == 'Y') break;
-			printf("n\n");
+			printf("\r\033[K\r");
+			fflush(stdout);
 			return EXIT_FAILURE;
 		}
 
-		printf("y\n");
+		printf("\r\033[K\r");
+		fflush(stdout);
 	}
 
 	if (!strlen(p.srcd)) {

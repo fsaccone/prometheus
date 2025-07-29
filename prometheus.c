@@ -140,6 +140,9 @@ cleanup(void)
 		free(pn);
 	}
 
+	printf("\r\033[K\r");
+	fflush(stdout);
+
 	if (!tmpdirhead) return;
 
 	printf("- Cleaning up\r");

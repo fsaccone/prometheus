@@ -663,14 +663,7 @@ mkdirrecursive(const char d[PATH_MAX])
 		if (*p == '/') {
 			*p = '\0';
 			if (mkdir(buf, 0700) && errno != EEXIST) {
-				char e[PATH_MAX];
-				if (PATH_MAX <= strlen("! mkdir ")
-				              + strlen(buf)) {
-					printferr("PATH_MAX exceeded");
-					return EXIT_FAILURE;
-				}
-				snprintf(e, sizeof(e), "! mkdir %s", buf);
-				perror(e);
+				perror("! mkdir");
 				return EXIT_FAILURE;
 			}
 			*p = '/';

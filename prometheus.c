@@ -647,6 +647,7 @@ installpackage(struct Package p)
 
 				if (copyfile(log, logd)) return EXIT_FAILURE;
 
+				printf("\r\033[K");
 				printferr("Failed to build %s: see %s",
 				          p.pname, logd);
 				return EXIT_FAILURE;

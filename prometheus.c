@@ -40,6 +40,11 @@ struct Lines {
 	size_t l;
 };
 
+struct Outs {
+	char a[OUTS_MAX][PATH_MAX];
+	size_t l;
+};
+
 struct Package {
 	char pname[NAME_MAX];
 	char srcd[PATH_MAX];
@@ -60,11 +65,6 @@ struct PackageNode {
 struct PathNode {
 	char p[PATH_MAX];
 	struct PathNode *n;
-};
-
-struct Outs {
-	char a[OUTS_MAX][PATH_MAX];
-	size_t l;
 };
 
 struct Source {

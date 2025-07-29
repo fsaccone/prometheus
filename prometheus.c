@@ -127,7 +127,6 @@ static struct PackageNode *pkgshead = NULL;
 static char prefix[PATH_MAX];
 static struct PathNode *tmpdirhead = NULL;
 
-
 void
 cleanup(void)
 {
@@ -667,7 +666,6 @@ installpackage(struct Package p)
 
 	return EXIT_SUCCESS;
 }
-
 
 int
 mkdirrecursive(const char d[PATH_MAX])

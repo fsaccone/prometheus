@@ -977,7 +977,7 @@ registerpackageinstall(struct Package p)
 		char yp;
 
 		printf("+ Package %s is a nochroot package: it will have full "
-		       "access over your machine while building.\n", p.pname);
+		       "access over your machine while building\n", p.pname);
 		printf("> Continue? (y/n) ");
 
 		while ((yp = getchar()) != EOF) {

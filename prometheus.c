@@ -631,9 +631,21 @@ installpackage(struct Package p)
 		waitpid(pid, &s, 0);
 		if (WIFEXITED(s)) {
 			if (WEXITSTATUS(s)) {
+				char logd[PATH_MAX];
+
+				if (PATH_MAX <= strlen(prefix)
+				              + strlen("/prometheus.log")) {
+					printferr("PATH_MAX exceeded");
+					return EXIT_FAILURE;
+				}
+				snprintf(logd, sizeof(logd),
+				         "%s/prometheus.log", prefix);
+
+				if (copyfile(log, logd)) return EXIT_FAILURE;
+
 				fprintf(stderr, "\r\033[K! Failed to build "
-				                "%s: see %s/prometheus.log\n",
-				        p.pname, p.srcd);
+				                "%s: see %s\n",
+				        p.pname, logd);
 				return EXIT_FAILURE;
 			}
 		}

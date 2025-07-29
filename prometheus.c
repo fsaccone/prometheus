@@ -1020,6 +1020,7 @@ registerpackageinstall(struct Package p)
 		while ((yp = getchar()) != EOF) {
 			if (yp == '\n') continue;
 			if (yp == 'y' || yp == 'Y') break;
+			printf("n\n");
 			return EXIT_FAILURE;
 		}
 

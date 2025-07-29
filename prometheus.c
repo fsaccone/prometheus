@@ -971,7 +971,6 @@ registerpackageinstall(struct Package p)
 {
 	struct Depends deps;
 	struct Outs outs;
-	char tmpd[PATH_MAX];
 	int i, pe, pii;
 	unsigned int nochr;
 	struct PackageNode *newpn, *tailpn;
@@ -1013,6 +1012,12 @@ registerpackageinstall(struct Package p)
 		}
 
 		printf("y\n");
+	}
+
+	if (!strlen(p.srcd)) {
+		char tmpd[TMPDIR_SIZE];
+		if (createtmpdir(p.pname, tmpd)) return EXIT_FAILURE;
+		strncpy(p.srcd, tmpd, PATH_MAX);
 	}
 
 	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;
@@ -1703,16 +1708,9 @@ main(int argc, char *argv[])
 			}
 		} else if (install) {
 			struct Package p;
-			char tmpd[TMPDIR_SIZE];
-
-			if (createtmpdir(*argv, tmpd)) {
-				cleanup();
-				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-				return EXIT_FAILURE;
-			}
 
 			strncpy(p.pname, *argv, NAME_MAX);
-			strncpy(p.srcd, tmpd, PATH_MAX);
+			strncpy(p.srcd, "", 1);
 			strncpy(p.destd, prefix, PATH_MAX);
 			p.build = 1;
 

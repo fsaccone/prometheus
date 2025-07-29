@@ -630,9 +630,9 @@ installpackage(struct Package p)
 		waitpid(pid, &s, 0);
 		if (WIFEXITED(s)) {
 			if (WEXITSTATUS(s)) {
-				printf("\r\033[K! Failed to build %s: see "
-				       "%s/prometheus.log\n",
-				       p.pname, p.srcd);
+				fprintf(stderr, "\r\033[K! Failed to build "
+				                "%s: see %s/prometheus.log\n",
+				        p.pname, p.srcd);
 				return EXIT_FAILURE;
 			}
 		}

@@ -251,22 +251,18 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
 	printf("\r\033[K");
 
 	if (dltot > 0) {
-		if (dlnow == dltot) {
-			printf("+ Downloaded %s\r", (char *)p);
-		} else {
-			const int bl = 20;
-			double per = (double)dlnow / dltot * 100.0;
-			int i, bpos = bl * dlnow / dltot;
+		const int bl = 20;
+		double per = (double)dlnow / dltot * 100.0;
+		int i, bpos = bl * dlnow / dltot;
 
-			printf("- Downloading %s: [", (char *)p);
-			for (i = 0; i < bl; i++) {
-				if (i < bpos)
-					printf("#");
-				else
-					printf("-");
-			}
-			printf("] %.2f%%\r", per);
+		printf("- Downloading %s: [", (char *)p);
+		for (i = 0; i < bl; i++) {
+			if (i < bpos)
+				printf("#");
+			else
+				printf("-");
 		}
+		printf("] %.2f%%\r", per);
 	} else {
 		printf("- Downloading %s: ?\r", (char *)p);
 	}
@@ -367,7 +363,7 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 		return EXIT_FAILURE;
 	}
 
-	printf("\n");
+	printf("\r\033[K+ Downloaded %s\n", url);
 	fclose(ff);
 	curl_easy_cleanup(c);
 

@@ -190,6 +190,7 @@ createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
 {
 	char dirtmp[PATH_MAX], log[PATH_MAX], src[PATH_MAX];
 	int logfd;
+	struct PathNode *newtmpd;
 
 	if (mkdir("/tmp", 0700) == -1 && errno != EEXIST) {
 		perror("+ mkdir");
@@ -227,6 +228,14 @@ createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
 		perror("+ mkdir");
 		return EXIT_FAILURE;
 	}
+
+	if (!(newtmpd = malloc(sizeof(struct PathNode)))) {
+		perror("+ malloc");
+		return EXIT_FAILURE;
+	}
+	strncpy(newtmpd->p, dir, PATH_MAX);
+	newtmpd->n = tmpdirhead;
+	tmpdirhead = newtmpd;
 
 	return EXIT_SUCCESS;
 }
@@ -498,7 +507,6 @@ installpackage(struct Package p)
 	struct Outs outs;
 	pid_t pid;
 	unsigned int nochr = 0;
-	struct PathNode *newtmpd;
 
 	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
 
@@ -635,14 +643,6 @@ installpackage(struct Package p)
 	fflush(stdout);
 	if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
 	printf("\r\033[K+ Package %s installed\n", p.pname);
-
-	if (!(newtmpd = malloc(sizeof(struct PathNode)))) {
-		perror("+ malloc");
-		return EXIT_FAILURE;
-	}
-	strncpy(newtmpd->p, p.srcd, PATH_MAX);
-	newtmpd->n = tmpdirhead;
-	tmpdirhead = newtmpd;
 
 	return EXIT_SUCCESS;
 }

@@ -103,6 +103,7 @@ static int packageisinstalled(char pname[NAME_MAX],
                               const char destd[PATH_MAX]);
 static int packageouts(char pname[NAME_MAX], struct Outs *outs);
 static int packagesources(char pname[NAME_MAX], struct Sources *srcs);
+static void printerrno(const char *s);
 static void printferr(const char *m, ...);
 static int printinstalled(struct PackageNames pkgs);
 static void printpackages(struct PackageNames pkgs);
@@ -165,7 +166,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 	if (followsymlink(s, syms)) return EXIT_FAILURE;
 
 	if ((sfd = open(syms, O_RDONLY)) == -1) {
-		perror("! open");
+		printerrno("open");
 		return EXIT_FAILURE;
 	}
 
@@ -175,7 +176,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		close(sfd);
-		perror("! open");
+		printerrno("open");
 		return EXIT_FAILURE;
 	}
 
@@ -197,13 +198,13 @@ createtmpdir(char dir[TMPDIR_SIZE])
 	struct PathNode *newtmpd;
 
 	if (mkdir("/tmp", 0700) == -1 && errno != EEXIST) {
-		perror("! mkdir");
+		printerrno("mkdir");
 		return EXIT_FAILURE;
 	}
 
 	strncpy(dir, TMPDIR, TMPDIR_SIZE);
 	if (!mkdtemp(dir)) {
-		perror("! mkdtemp");
+		printerrno("mkdtemp");
 		return EXIT_FAILURE;
 	}
 
@@ -213,7 +214,7 @@ createtmpdir(char dir[TMPDIR_SIZE])
 	}
 	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
-		perror("! open");
+		printerrno("open");
 		return EXIT_FAILURE;
 	}
 	close(logfd);
@@ -224,12 +225,12 @@ createtmpdir(char dir[TMPDIR_SIZE])
 	}
 	snprintf(src, sizeof(src), "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
-		perror("! mkdir");
+		printerrno("mkdir");
 		return EXIT_FAILURE;
 	}
 
 	if (!(newtmpd = malloc(sizeof(struct PathNode)))) {
-		perror("! malloc");
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
 	strncpy(newtmpd->p, dir, PATH_MAX);
@@ -324,7 +325,7 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 
 	if (!(ff = fopen(f, "wb"))) {
 		curl_easy_cleanup(c);
-		perror("! fopen");
+		printerrno("fopen");
 		return EXIT_FAILURE;
 	}
 
@@ -385,7 +386,7 @@ followsymlink(const char f[PATH_MAX], char ff[PATH_MAX])
 	strncpy(ff, f, PATH_MAX);
 
 	if (lstat(f, &sb)) {
-		perror("! lstat");
+		printerrno("lstat");
 		return EXIT_FAILURE;
 	}
 
@@ -393,13 +394,13 @@ followsymlink(const char f[PATH_MAX], char ff[PATH_MAX])
 		ssize_t n;
 
 		if (lstat(f, &sb)) {
-			perror("! lstat");
+			printerrno("lstat");
 			return EXIT_FAILURE;
 		}
 
 		if ((n = readlink(f, ff, PATH_MAX - 1)) == -1) {
 			if (errno == EINVAL || errno == ENOENT) break;
-			perror("! readlink");
+			printerrno("readlink");
 			return EXIT_FAILURE;
 		}
 		ff[n] = '\0';
@@ -550,7 +551,8 @@ installpackage(struct Package p)
 	snprintf(src, sizeof(src), "%s/src", reltmpd);
 
 	if ((pid = fork()) < 0) {
-		perror("\n! fork");
+		fprintf(stderr, "\n");
+		printerrno("fork");
 		return EXIT_FAILURE;
 	}
 
@@ -559,7 +561,8 @@ installpackage(struct Package p)
 		int logf;
 
 		if (!nochr && chroot(p.srcd)) {
-			perror("\n! chroot");
+			fprintf(stderr, "\n");
+			printerrno("chroot");
 			exit(EXIT_FAILURE);
 		}
 
@@ -568,16 +571,19 @@ installpackage(struct Package p)
 		fflush(stdout);
 
 		if ((logf = open(log, O_WRONLY, 0700)) == -1) {
-			perror("\n! fopen");
+			fprintf(stderr, "\n");
+			printerrno("fopen");
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDOUT_FILENO) == -1) {
-			perror("\n! dup2");
+			fprintf(stderr, "\n");
+			printerrno("dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDERR_FILENO) == -1) {
-			perror("! dup2");
+			fprintf(stderr, "\n");
+			printerrno("dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
@@ -676,14 +682,14 @@ mkdirrecursive(const char d[PATH_MAX])
 		if (*p == '/') {
 			*p = '\0';
 			if (mkdir(buf, 0700) && errno != EEXIST) {
-				perror("! mkdir");
+				printerrno("mkdir");
 				return EXIT_FAILURE;
 			}
 			*p = '/';
 		}
 	}
 	if (mkdir(d, 0700) && errno != EEXIST) {
-		perror("! mkdir");
+		printerrno("mkdir");
 		return EXIT_FAILURE;
 	}
 
@@ -900,6 +906,12 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 }
 
 void
+printerrno(const char *s)
+{
+	printferr("%s: %s", s, strerror(errno));
+}
+
+void
 printferr(const char *m, ...)
 {
 	char pm[PRINTFERR_MAX];
@@ -1097,7 +1109,7 @@ registerpackageinstall(struct Package p)
 		}
 
 		if (!(dpp = malloc(sizeof(struct Package)))) {
-			perror("! malloc");
+			printerrno("malloc");
 			return EXIT_FAILURE;
 		}
 		memcpy(dpp, &dp, sizeof(struct Package));
@@ -1116,7 +1128,7 @@ registerpackageinstall(struct Package p)
 			runp.build = 0;
 
 			if (!(runpp = malloc(sizeof(struct Package)))) {
-				perror("! malloc");
+				printerrno("malloc");
 				return EXIT_FAILURE;
 			}
 			memcpy(runpp, &runp, sizeof(struct Package));
@@ -1129,12 +1141,12 @@ registerpackageinstall(struct Package p)
 	}
 
 	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
-		perror("! malloc");
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
 	if (!(newp = malloc(sizeof(struct Package)))) {
 		free(newpn);
-		perror("! malloc");
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
 	memcpy(newp, &p, sizeof(struct Package));
@@ -1183,7 +1195,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	}
 
 	if (!(pkgs = malloc(sizeof(struct PackageNames)))) {
-		perror("! malloc");
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
 	if (getpackages(pkgs)) {
@@ -1224,12 +1236,12 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	free(pkgs);
 
 	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
-		perror("! malloc");
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
 	if (!(newp = malloc(sizeof(struct Package)))) {
 		free(newpn);
-		perror("! malloc");
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
 	strncpy(newp->pname, p.pname, NAME_MAX);
@@ -1261,7 +1273,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		strncpy(newp.destd, p.destd, PATH_MAX);
 
 		if (!(newpp = malloc(sizeof(struct Package)))) {
-			perror("! malloc");
+			printerrno("malloc");
 			return EXIT_FAILURE;
 		}
 		memcpy(newpp, &newp, sizeof(struct Package));
@@ -1306,7 +1318,7 @@ rmdirrecursive(const char d[PATH_MAX])
 		}
 		if (!(f = malloc(fs))) {
 			closedir(dp);
-			perror("! malloc");
+			printerrno("malloc");
 			return EXIT_FAILURE;
 		}
 		snprintf(f, fs, "%s/%s", d, e->d_name);
@@ -1320,7 +1332,7 @@ rmdirrecursive(const char d[PATH_MAX])
 		} else if (remove(f)) {
 			free(f);
 			closedir(dp);
-			perror("! remove");
+			printerrno("remove");
 			return EXIT_FAILURE;
 		}
 
@@ -1330,7 +1342,7 @@ rmdirrecursive(const char d[PATH_MAX])
 	closedir(dp);
 
 	if (rmdir(d)) {
-		perror("! rmdir");
+		printerrno("rmdir");
 		return EXIT_FAILURE;
 	}
 
@@ -1467,7 +1479,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			if (mkdirrecursive(mvd)) return EXIT_FAILURE;
 
 			if (rename(sf, df)) {
-				perror("! rename");
+				printerrno("rename");
 				return EXIT_FAILURE;
 			}
 		}
@@ -1496,7 +1508,7 @@ sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH])
 	sha256_init(&ctx);
 
 	if (!(ff = fopen(f, "rb"))) {
-		perror("! fopen");
+		printerrno("fopen");
 		return EXIT_FAILURE;
 	}
 
@@ -1505,7 +1517,7 @@ sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH])
 
 	if (ferror(ff)) {
 		fclose(ff);
-		perror("! ferror");
+		printerrno("ferror");
 		return EXIT_FAILURE;
 	}
 
@@ -1556,7 +1568,8 @@ uninstallpackage(struct Package p)
 		if (!fileexists(f)) continue;
 
 		if (remove(f)) {
-			perror("\n! remove");
+			fprintf(stderr, "\n");
+			printerrno("remove");
 			return EXIT_FAILURE;
 		}
 	}

@@ -22,8 +22,8 @@
 #include "sha256.h"
 
 #define DIE_MAX   1024
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define LINES_MAX MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 struct Depend {
 	char pname[NAME_MAX];

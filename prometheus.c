@@ -1608,7 +1608,7 @@ main(int argc, char *argv[])
 	    printinst = 0,
 	    printall = 0,
 	    prefixdef = 0;
-	char gprefix[PATH_MAX] = DEFAULT_PREFIX;
+	char gprefix[PATH_MAX] = DEFAULT_PREFIX, log[PATH_MAX];
 	struct termios newt;
 	struct PackageNode *pn;
 	struct PathNode *tmpd;
@@ -1687,6 +1687,22 @@ main(int argc, char *argv[])
 		printferr("Prefix %s does not exist", prefix);
 		return EXIT_FAILURE;
 	}
+
+	if (PATH_MAX <= strlen(prefix) + strlen("/prometheus.log")) {
+		cleanup();
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(log, sizeof(log), "%s/prometheus.log", prefix);
+	printf("- Cleaning up\r");
+	if (fileexists(log) && remove(log)) {
+		cleanup();
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+		printerrno("remove");
+		return EXIT_FAILURE;
+	}
+	printf("\r\033[K\r");
 
 	if (printinst) {
 		struct PackageNames pkgs;

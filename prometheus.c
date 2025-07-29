@@ -188,7 +188,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 int
 createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
 {
-	char dirtmp[PATH_MAX], log[PATH_MAX], src[PATH_MAX];
+	char log[PATH_MAX], src[PATH_MAX];
 	int logfd;
 	struct PathNode *newtmpd;
 
@@ -197,12 +197,7 @@ createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
 		return EXIT_FAILURE;
 	}
 
-	if (PATH_MAX <= strlen("/tmp/prometheus--XXXXXX") + strlen(pname)) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(dirtmp, sizeof(dirtmp), "/tmp/prometheus-%s-XXXXXX", pname);
-	strncpy(dir, dirtmp, PATH_MAX);
+	strncpy(dir, "/tmp/prometheus-XXXXXX", PATH_MAX);
 	if (!mkdtemp(dir)) {
 		perror("+ mkdtemp");
 		return EXIT_FAILURE;

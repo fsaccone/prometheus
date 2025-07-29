@@ -319,7 +319,7 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
 	if (!(c = curl_easy_init())) {
-		fprintf(stderr, "! curl: Failed to initialize\n");
+		printferr("curl: Failed to initialize");
 		return EXIT_FAILURE;
 	}
 
@@ -350,15 +350,14 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);
 		curl_easy_cleanup(c);
-		fprintf(stderr, "! curl %s: %s\n",
-		        url, curl_easy_strerror(cc));
+		printferr("curl %s: %s", url, curl_easy_strerror(cc));
 		return EXIT_FAILURE;
 	}
 
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
 
 	if (r >= 400) {
-		fprintf(stderr, "! curl %s: Response code %ld\n", url, r);
+		printferr("curl %s: Response code %ld", url, r);
 		fclose(ff);
 		curl_easy_cleanup(c);
 		return EXIT_FAILURE;
@@ -649,9 +648,8 @@ installpackage(struct Package p)
 
 				if (copyfile(log, logd)) return EXIT_FAILURE;
 
-				fprintf(stderr, "\r\033[K! Failed to build "
-				                "%s: see %s\n",
-				        p.pname, logd);
+				printferr("Failed to build %s: see %s",
+				          p.pname, logd);
 				return EXIT_FAILURE;
 			}
 		}
@@ -1381,10 +1379,10 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				fprintf(stderr, "! Hash of %s does not "
-				                "match:\n", srcs.a[i].url);
-				fprintf(stderr, "  Expected: %s\n", eh);
-				fprintf(stderr, "  Got:      %s\n", gh);
+				printferr("Hash of %s does not match:",
+				          srcs.a[i].url);
+				printferr("  Expected: %s", eh);
+				printferr("  Got:      %s", gh);
 
 				return EXIT_FAILURE;
 			}
@@ -1421,10 +1419,10 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				fprintf(stderr, "! Hash of %s does not "
-				                "match:\n", srcs.a[i].url);
-				fprintf(stderr, "  Expected: %s\n", eh);
-				fprintf(stderr, "  Got:      %s\n", gh);
+				printferr("Hash of %s does not match:",
+				          srcs.a[i].url);
+				printferr("  Expected: %s", eh);
+				printferr("  Got:      %s", gh);
 
 				return EXIT_FAILURE;
 			}

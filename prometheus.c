@@ -357,7 +357,7 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
 
 	if (r >= 400) {
-		printf("! curl %s: Response code %ld\n", url, r);
+		fprintf(stderr, "! curl %s: Response code %ld\n", url, r);
 		fclose(ff);
 		curl_easy_cleanup(c);
 		return EXIT_FAILURE;

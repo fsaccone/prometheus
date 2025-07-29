@@ -7,7 +7,7 @@ Requirements
 ------------
 
 - C99 compiler
-- libc
+- C POSIX library
 - libcurl
 
 Installaton

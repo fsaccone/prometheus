@@ -82,7 +82,7 @@ struct Sources {
 
 static void cleanup(void);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
-static int createtmpdir(const char pname[NAME_MAX], char dir[TMPDIR_SIZE]);
+static int createtmpdir(char dir[TMPDIR_SIZE]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
                         curl_off_t utot, curl_off_t upl);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
@@ -190,7 +190,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 }
 
 int
-createtmpdir(const char pname[NAME_MAX], char dir[TMPDIR_SIZE])
+createtmpdir(char dir[TMPDIR_SIZE])
 {
 	char log[PATH_MAX], src[PATH_MAX];
 	int logfd;
@@ -1016,7 +1016,7 @@ registerpackageinstall(struct Package p)
 
 	if (!strlen(p.srcd)) {
 		char tmpd[TMPDIR_SIZE];
-		if (createtmpdir(p.pname, tmpd)) return EXIT_FAILURE;
+		if (createtmpdir(tmpd)) return EXIT_FAILURE;
 		strncpy(p.srcd, tmpd, PATH_MAX);
 	}
 
@@ -1083,8 +1083,7 @@ registerpackageinstall(struct Package p)
 			if (!reg) {
 				char dtmpd[TMPDIR_SIZE];
 
-				if (createtmpdir(deps.a[i].pname, dtmpd))
-					return EXIT_FAILURE;
+				if (createtmpdir(dtmpd)) return EXIT_FAILURE;
 
 				strncpy(dp.srcd, dtmpd, PATH_MAX);
 				dp.build = 1;

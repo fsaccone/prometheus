@@ -1010,7 +1010,6 @@ registerpackageinstall(struct Package p)
 		while ((yp = getchar()) != EOF) {
 			if (yp == '\n') continue;
 			if (yp == 'y' || yp == 'Y') break;
-			printf("n\n- Quitting\n");
 			return EXIT_FAILURE;
 		}
 
@@ -1520,7 +1519,6 @@ sha256uint8tochar(const uint8_t u[SHA256_DIGEST_LENGTH],
 void
 sigexit()
 {
-	printf("\n- Quitting\n");
 	cleanup();
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	exit(EXIT_FAILURE);

@@ -592,6 +592,7 @@ installpackage(struct Package p)
 			const char *path = getenv("PATH");
 			if (!path) {
 				printferr("PATH is not defined");
+				exit(EXIT_FAILURE);
 			} else {
 				char np[PATH_MAX];
 				if (PATH_MAX <= strlen(path) + strlen(p.srcd)

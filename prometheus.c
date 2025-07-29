@@ -1671,6 +1671,7 @@ main(int argc, char *argv[])
 
 			if (registerpackageuninstall(p, recuninstall)) {
 				cleanup();
+				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
 		} else if (install) {
@@ -1679,6 +1680,7 @@ main(int argc, char *argv[])
 
 			if (createtmpdir(*argv, tmpd)) {
 				cleanup();
+				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
 
@@ -1689,6 +1691,7 @@ main(int argc, char *argv[])
 
 			if (registerpackageinstall(p)) {
 				cleanup();
+				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
 		}
@@ -1697,10 +1700,12 @@ main(int argc, char *argv[])
 	for (pn = pkgshead; pn; pn = pn->n) {
 		if (install && installpackage(*pn->p)) {
 			cleanup();
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
 		if (uninstall && uninstallpackage(*pn->p)) {
 			cleanup();
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
 	}

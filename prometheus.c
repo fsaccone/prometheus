@@ -469,8 +469,8 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 		snprintf(s, sizeof(s), "%s%s", sd, outs.a[i]);
 
 		if (!fileexists(s)) {
-			printferr("Out file %s has not been installed to %s",
-			          outs.a[i], sd);
+			printferr("Out file %s has not been installed",
+			          outs.a[i]);
 			return EXIT_FAILURE;
 		}
 	}

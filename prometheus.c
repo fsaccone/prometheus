@@ -151,7 +151,8 @@ cleanup(void)
 		free(tmpd);
 	}
 
-	printf("\r\033[K");
+	printf("\r\033[K\r");
+	fflush(stdout);
 }
 
 int
@@ -647,7 +648,8 @@ installpackage(struct Package p)
 
 				if (copyfile(log, logd)) return EXIT_FAILURE;
 
-				printf("\r\033[K");
+				printf("\r\033[K\r");
+				fflush(stdout);
 				printferr("Failed to build %s: see %s",
 				          p.pname, logd);
 				return EXIT_FAILURE;

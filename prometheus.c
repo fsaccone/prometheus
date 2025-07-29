@@ -23,7 +23,6 @@
 
 #define LINES_MAX     MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
 #define MAX(a, b)     ((a) > (b) ? (a) : (b))
-#define PRINTFERR_MAX 1024
 #define TMPDIR        "/tmp/prXXXXXX"
 #define TMPDIR_SIZE   sizeof(TMPDIR)
 
@@ -912,18 +911,12 @@ printerrno(const char *s)
 void
 printferr(const char *m, ...)
 {
-	char pm[PRINTFERR_MAX];
 	va_list va;
-
-	if (PRINTFERR_MAX <= strlen("! ") + strlen(m)) {
-		fprintf(stderr, "! printferr: PRINTFERR_MAX exceeded\n");
-		return;
-	}
-	snprintf(pm, sizeof(pm), "! %s", m);
 
 	va_start(va, m);
 
-	vfprintf(stderr, pm, va);
+	fprintf(stderr, "! ");
+	vfprintf(stderr, m, va);
 	putc('\n', stderr);
 
 	va_end(va);

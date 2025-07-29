@@ -132,6 +132,9 @@ cleanup(void)
 	struct PackageNode *pn, *pnn;
 	struct PathNode *tmpd, *tmpdn;
 
+	printf("- Cleaning up\r");
+	fflush(stdout);
+
 	for (pn = pkgshead; pn; pn = pnn) {
 		pnn = pn->n;
 		free(pn->p);
@@ -143,6 +146,8 @@ cleanup(void)
 		(void)rmdirrecursive(tmpd->p);
 		free(tmpd);
 	}
+
+	printf("\r\033[K+ Cleaned up\n");
 }
 
 int

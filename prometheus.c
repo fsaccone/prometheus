@@ -250,7 +250,7 @@ curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
 		if (dlnow == dltot) {
 			printf("+ Downloaded %s\r", (char *)p);
 		} else {
-			const int bl = 40;
+			const int bl = 20;
 			double per = (double)dlnow / dltot * 100.0;
 			int i, bpos = bl * dlnow / dltot;
 

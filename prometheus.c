@@ -905,11 +905,11 @@ printferr(const char *m, ...)
 	char pm[PRINTFERR_MAX];
 	va_list va;
 
-	if (PRINTFERR_MAX <= strlen(argv0) + strlen(": ") + strlen(m)) {
+	if (PRINTFERR_MAX <= strlen("! ") + strlen(m)) {
 		fprintf(stderr, "! printferr: PRINTFERR_MAX exceeded\n");
 		return;
 	}
-	snprintf(pm, sizeof(pm), "! %s: %s", argv0, m);
+	snprintf(pm, sizeof(pm), "! %s", m);
 
 	va_start(va, m);
 

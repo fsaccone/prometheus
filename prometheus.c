@@ -610,7 +610,7 @@ installpackage(struct Package p)
 		}
 	}
 
-	printf("\r\033[K+ Installing %s\r", p.pname);
+	printf("\r\033[K- Installing %s\r", p.pname);
 	fflush(stdout);
 	if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
 	printf("\r\033[K+ Package %s installed\n", p.pname);

@@ -21,11 +21,11 @@
 #include "config.h"
 #include "sha256.h"
 
-#define DIE_MAX     1024
-#define LINES_MAX   MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
-#define MAX(a, b)   ((a) > (b) ? (a) : (b))
-#define TMPDIR      "/tmp/prXXXXXX"
-#define TMPDIR_SIZE sizeof(TMPDIR)
+#define LINES_MAX     MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
+#define MAX(a, b)     ((a) > (b) ? (a) : (b))
+#define PRINTFERR_MAX 1024
+#define TMPDIR        "/tmp/prXXXXXX"
+#define TMPDIR_SIZE   sizeof(TMPDIR)
 
 struct Depend {
 	char pname[NAME_MAX];
@@ -890,11 +890,11 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 void
 printferr(const char *m, ...)
 {
-	char pm[DIE_MAX];
+	char pm[PRINTFERR_MAX];
 	va_list va;
 
-	if (DIE_MAX <= strlen(argv0) + strlen(": ") + strlen(m)) {
-		fprintf(stderr, "! printferr: DIE_MAX exceeded\n");
+	if (PRINTFERR_MAX <= strlen(argv0) + strlen(": ") + strlen(m)) {
+		fprintf(stderr, "! printferr: PRINTFERR_MAX exceeded\n");
 		return;
 	}
 	snprintf(pm, sizeof(pm), "! %s: %s", argv0, m);

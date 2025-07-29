@@ -197,7 +197,7 @@ createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
 		return EXIT_FAILURE;
 	}
 
-	strncpy(dir, "/tmp/prometheus-XXXXXX", PATH_MAX);
+	strncpy(dir, "/tmp/prXXXXXX", PATH_MAX);
 	if (!mkdtemp(dir)) {
 		perror("+ mkdtemp");
 		return EXIT_FAILURE;

@@ -140,6 +140,7 @@ cleanup(void)
 
 	for (tmpd = tmpdirhead; tmpd; tmpd = tmpdn) {
 		tmpdn = tmpd->n;
+		(void)rmdirrecursive(tmpd->p);
 		free(tmpd);
 	}
 }
@@ -1732,14 +1733,6 @@ main(int argc, char *argv[])
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
-	}
-
-	for (tmpd = tmpdirhead; tmpd; tmpd = tmpd->n) {
-		if (rmdirrecursive(tmpd->p)) {
-			cleanup();
-			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-			return EXIT_FAILURE;
-		};
 	}
 
 	cleanup();

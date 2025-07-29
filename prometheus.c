@@ -151,7 +151,7 @@ cleanup(void)
 		free(tmpd);
 	}
 
-	printf("\r\033[K+ Cleaned up\n");
+	printf("\r\033[K");
 }
 
 int

@@ -57,6 +57,11 @@ struct PackageNode {
 	struct PackageNode *n;
 };
 
+struct PathNode {
+	char p[PATH_MAX];
+	struct PathNode *n;
+};
+
 struct Outs {
 	char a[OUTS_MAX][PATH_MAX];
 	size_t l;
@@ -118,15 +123,24 @@ static void usage(void);
 static struct termios oldt;
 static struct PackageNode *pkgshead = NULL;
 static char prefix[PATH_MAX];
+static struct PathNode *tmpdirhead = NULL;
+
 
 void
 cleanup(void)
 {
-	struct PackageNode *pn, *n;
-	for (pn = pkgshead; pn; pn = n) {
-		n = pn->n;
+	struct PackageNode *pn, *pnn;
+	struct PathNode *tmpd, *tmpdn;
+
+	for (pn = pkgshead; pn; pn = pnn) {
+		pnn = pn->n;
 		free(pn->p);
 		free(pn);
+	}
+
+	for (tmpd = tmpdirhead; tmpd; tmpd = tmpdn) {
+		tmpdn = tmpd->n;
+		free(tmpd);
 	}
 }
 
@@ -478,6 +492,7 @@ installpackage(struct Package p)
 	struct Outs outs;
 	pid_t pid;
 	unsigned int nochr = 0;
+	struct PathNode *newtmpd;
 
 	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
 
@@ -615,7 +630,13 @@ installpackage(struct Package p)
 	if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
 	printf("\r\033[K+ Package %s installed\n", p.pname);
 
-	if (rmdirrecursive(p.srcd)) return EXIT_FAILURE;
+	if (!(newtmpd = malloc(sizeof(struct PathNode)))) {
+		perror("+ malloc");
+		return EXIT_FAILURE;
+	}
+	strncpy(newtmpd->p, p.srcd, PATH_MAX);
+	newtmpd->n = tmpdirhead;
+	tmpdirhead = newtmpd;
 
 	return EXIT_SUCCESS;
 }
@@ -1563,6 +1584,7 @@ main(int argc, char *argv[])
 	char gprefix[PATH_MAX] = DEFAULT_PREFIX;
 	struct termios newt;
 	struct PackageNode *pn;
+	struct PathNode *tmpd;
 
 	if (getuid()) {
 		fprintf(stderr, "%s: Superuser privileges are required\n",
@@ -1710,6 +1732,14 @@ main(int argc, char *argv[])
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
+	}
+
+	for (tmpd = tmpdirhead; tmpd; tmpd = tmpd->n) {
+		if (rmdirrecursive(tmpd->p)) {
+			cleanup();
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			return EXIT_FAILURE;
+		};
 	}
 
 	cleanup();

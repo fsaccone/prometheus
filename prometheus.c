@@ -1615,6 +1615,11 @@ main(int argc, char *argv[])
 	if (printall && prefixdef)
 		usage();
 
+	tcgetattr(STDIN_FILENO, &oldt);
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON | ECHO);
+	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
 	handlesignals(sigexit);
 
 	if (prefix[strlen(prefix) - 1] == '/')
@@ -1622,20 +1627,17 @@ main(int argc, char *argv[])
 
 	if (!strlen(prefix)) {
 		cleanup();
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		printferr("Prefix %s could not be read", prefix);
 		return EXIT_FAILURE;
 	}
 
 	if (strlen(prefix) && !direxists(prefix)) {
 		cleanup();
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		printferr("Prefix %s does not exist", prefix);
 		return EXIT_FAILURE;
 	}
-
-	tcgetattr(STDIN_FILENO, &oldt);
-	newt = oldt;
-	newt.c_lflag &= ~(ICANON | ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
 	if (printinst) {
 		struct PackageNames pkgs;

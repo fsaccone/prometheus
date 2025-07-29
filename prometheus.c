@@ -1363,10 +1363,10 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				printf("! Hash of %s does not match:\n",
-				       srcs.a[i].url);
-				printf("  Expected: %s\n", eh);
-				printf("  Got:      %s\n", gh);
+				fprintf(stderr, "! Hash of %s does not "
+				                "match:\n", srcs.a[i].url);
+				fprintf(stderr, "  Expected: %s\n", eh);
+				fprintf(stderr, "  Got:      %s\n", gh);
 
 				return EXIT_FAILURE;
 			}
@@ -1403,10 +1403,10 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				printf("! Hash of %s does not match:\n",
-				       srcs.a[i].url);
-				printf("  Expected: %s\n", eh);
-				printf("  Got:      %s\n", gh);
+				fprintf(stderr, "! Hash of %s does not "
+				                "match:\n", srcs.a[i].url);
+				fprintf(stderr, "  Expected: %s\n", eh);
+				fprintf(stderr, "  Got:      %s\n", gh);
 
 				return EXIT_FAILURE;
 			}

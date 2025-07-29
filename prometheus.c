@@ -1253,7 +1253,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		       deps.a[i].pname, p.pname);
 
 		strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
-		strncpy(newp.destd, p.destd, NAME_MAX);
+		strncpy(newp.destd, p.destd, PATH_MAX);
 
 		if (!(newpp = malloc(sizeof(struct Package)))) {
 			perror("+ malloc");

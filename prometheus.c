@@ -21,9 +21,11 @@
 #include "config.h"
 #include "sha256.h"
 
-#define DIE_MAX   1024
-#define LINES_MAX MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define DIE_MAX     1024
+#define LINES_MAX   MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
+#define MAX(a, b)   ((a) > (b) ? (a) : (b))
+#define TMPDIR      "/tmp/prXXXXXX"
+#define TMPDIR_SIZE sizeof(TMPDIR)
 
 struct Depend {
 	char pname[NAME_MAX];
@@ -80,7 +82,7 @@ struct Sources {
 
 static void cleanup(void);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
-static int createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX]);
+static int createtmpdir(const char pname[NAME_MAX], char dir[TMPDIR_SIZE]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
                         curl_off_t utot, curl_off_t upl);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
@@ -186,7 +188,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 }
 
 int
-createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
+createtmpdir(const char pname[NAME_MAX], char dir[TMPDIR_SIZE])
 {
 	char log[PATH_MAX], src[PATH_MAX];
 	int logfd;
@@ -197,7 +199,7 @@ createtmpdir(const char pname[NAME_MAX], char dir[PATH_MAX])
 		return EXIT_FAILURE;
 	}
 
-	strncpy(dir, "/tmp/prXXXXXX", PATH_MAX);
+	strncpy(dir, TMPDIR, TMPDIR_SIZE);
 	if (!mkdtemp(dir)) {
 		perror("+ mkdtemp");
 		return EXIT_FAILURE;
@@ -1072,7 +1074,7 @@ registerpackageinstall(struct Package p)
 			/* if not installed or registered, build and install
 			   it */
 			if (!reg) {
-				char dtmpd[PATH_MAX];
+				char dtmpd[TMPDIR_SIZE];
 
 				if (createtmpdir(deps.a[i].pname, dtmpd))
 					return EXIT_FAILURE;
@@ -1699,7 +1701,7 @@ main(int argc, char *argv[])
 			}
 		} else if (install) {
 			struct Package p;
-			char tmpd[PATH_MAX];
+			char tmpd[TMPDIR_SIZE];
 
 			if (createtmpdir(*argv, tmpd)) {
 				cleanup();

@@ -89,7 +89,6 @@ static unsigned int direxists(const char f[PATH_MAX]);
 static int expandtilde(const char f[PATH_MAX], char ef[PATH_MAX]);
 static int fetchfile(const char url[PATH_MAX], const char f[PATH_MAX]);
 static unsigned int fileexists(const char f[PATH_MAX]);
-static int followsymlink(const char f[PATH_MAX], char ff[PATH_MAX]);
 static int getpackages(struct PackageNames *pkgs);
 static void handlesignals(void(*hdl)(int));
 static int installouts(struct Outs outs, const char sd[PATH_MAX],
@@ -161,13 +160,16 @@ int
 copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 {
 	int sfd, dfd;
-	char buf[1024], syms[PATH_MAX], dc[PATH_MAX];
+	char buf[1024], rs[PATH_MAX], dc[PATH_MAX];
 	const char *dn;
 	ssize_t b;
 
-	if (followsymlink(s, syms)) return EXIT_FAILURE;
+	if (!realpath(s, rs)) {
+		printerrno("realpath");
+		return EXIT_FAILURE;
+	}
 
-	if ((sfd = open(syms, O_RDONLY)) == -1) {
+	if ((sfd = open(rs, O_RDONLY)) == -1) {
 		printerrno("open");
 		return EXIT_FAILURE;
 	}
@@ -377,37 +379,6 @@ fileexists(const char f[PATH_MAX])
 {
 	struct stat buf;
 	return (!stat(f, &buf) && !S_ISDIR(buf.st_mode));
-}
-
-int
-followsymlink(const char f[PATH_MAX], char ff[PATH_MAX])
-{
-	struct stat sb;
-
-	strncpy(ff, f, PATH_MAX);
-
-	if (lstat(f, &sb)) {
-		printerrno("lstat");
-		return EXIT_FAILURE;
-	}
-
-	while (S_ISLNK(sb.st_mode)) {
-		ssize_t n;
-
-		if (lstat(f, &sb)) {
-			printerrno("lstat");
-			return EXIT_FAILURE;
-		}
-
-		if ((n = readlink(f, ff, PATH_MAX - 1)) == -1) {
-			if (errno == EINVAL || errno == ENOENT) break;
-			printerrno("readlink");
-			return EXIT_FAILURE;
-		}
-		ff[n] = '\0';
-	}
-
-	return EXIT_SUCCESS;
 }
 
 int

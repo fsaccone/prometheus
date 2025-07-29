@@ -134,14 +134,16 @@ cleanup(void)
 	struct PackageNode *pn, *pnn;
 	struct PathNode *tmpd, *tmpdn;
 
-	printf("- Cleaning up\r");
-	fflush(stdout);
-
 	for (pn = pkgshead; pn; pn = pnn) {
 		pnn = pn->n;
 		free(pn->p);
 		free(pn);
 	}
+
+	if (!tmpdirhead) return;
+
+	printf("- Cleaning up\r");
+	fflush(stdout);
 
 	for (tmpd = tmpdirhead; tmpd; tmpd = tmpdn) {
 		tmpdn = tmpd->n;

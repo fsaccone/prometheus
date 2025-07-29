@@ -584,7 +584,7 @@ installpackage(struct Package p)
 		close(logf);
 
 		if (chdir(src)) {
-			perror("+ chdir");
+			perror("chdir");
 			exit(EXIT_FAILURE);
 		}
 
@@ -603,24 +603,24 @@ installpackage(struct Package p)
 				snprintf(np, sizeof(np), "%s:%s/bin",
 				         path, p.srcd);
 				if (setenv("PATH", np, 1)) {
-					perror("+ setenv");
+					perror("setenv");
 					exit(EXIT_FAILURE);
 				}
 			}
 		}
 
 		if (!nochr && setenv("PATH", "/bin", 1)) {
-			perror("+ setenv");
+			perror("setenv");
 			exit(EXIT_FAILURE);
 		}
 
 		if (nochr && setenv("PREFIX", p.srcd, 1)) {
-			perror("+ setenv");
+			perror("setenv");
 			exit(EXIT_FAILURE);
 		}
 
 		if (execvp(cmd[0], cmd) == -1) {
-			perror("+ execvp");
+			perror("execvp");
 			exit(EXIT_FAILURE);
 		}
 

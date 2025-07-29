@@ -165,7 +165,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 	if (followsymlink(s, syms)) return EXIT_FAILURE;
 
 	if ((sfd = open(syms, O_RDONLY)) == -1) {
-		perror("+ open");
+		perror("! open");
 		return EXIT_FAILURE;
 	}
 
@@ -175,7 +175,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		close(sfd);
-		perror("+ open");
+		perror("! open");
 		return EXIT_FAILURE;
 	}
 
@@ -197,13 +197,13 @@ createtmpdir(char dir[TMPDIR_SIZE])
 	struct PathNode *newtmpd;
 
 	if (mkdir("/tmp", 0700) == -1 && errno != EEXIST) {
-		perror("+ mkdir");
+		perror("! mkdir");
 		return EXIT_FAILURE;
 	}
 
 	strncpy(dir, TMPDIR, TMPDIR_SIZE);
 	if (!mkdtemp(dir)) {
-		perror("+ mkdtemp");
+		perror("! mkdtemp");
 		return EXIT_FAILURE;
 	}
 
@@ -213,7 +213,7 @@ createtmpdir(char dir[TMPDIR_SIZE])
 	}
 	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
-		perror("+ open");
+		perror("! open");
 		return EXIT_FAILURE;
 	}
 	close(logfd);
@@ -224,12 +224,12 @@ createtmpdir(char dir[TMPDIR_SIZE])
 	}
 	snprintf(src, sizeof(src), "%s/src", dir);
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
-		perror("+ mkdir");
+		perror("! mkdir");
 		return EXIT_FAILURE;
 	}
 
 	if (!(newtmpd = malloc(sizeof(struct PathNode)))) {
-		perror("+ malloc");
+		perror("! malloc");
 		return EXIT_FAILURE;
 	}
 	strncpy(newtmpd->p, dir, PATH_MAX);
@@ -318,13 +318,13 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
 	if (!(c = curl_easy_init())) {
-		fprintf(stderr, "+ curl: Failed to initialize\n");
+		fprintf(stderr, "! curl: Failed to initialize\n");
 		return EXIT_FAILURE;
 	}
 
 	if (!(ff = fopen(f, "wb"))) {
 		curl_easy_cleanup(c);
-		perror("+ fopen");
+		perror("! fopen");
 		return EXIT_FAILURE;
 	}
 
@@ -349,7 +349,7 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
 		fclose(ff);
 		curl_easy_cleanup(c);
-		fprintf(stderr, "+ curl %s: %s\n",
+		fprintf(stderr, "! curl %s: %s\n",
 		        url, curl_easy_strerror(cc));
 		return EXIT_FAILURE;
 	}
@@ -357,7 +357,7 @@ fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
 
 	if (r >= 400) {
-		printf("+ curl %s: Response code %ld\n", url, r);
+		printf("! curl %s: Response code %ld\n", url, r);
 		fclose(ff);
 		curl_easy_cleanup(c);
 		return EXIT_FAILURE;
@@ -385,7 +385,7 @@ followsymlink(const char f[PATH_MAX], char ff[PATH_MAX])
 	strncpy(ff, f, PATH_MAX);
 
 	if (lstat(f, &sb)) {
-		perror("+ lstat");
+		perror("! lstat");
 		return EXIT_FAILURE;
 	}
 
@@ -393,13 +393,13 @@ followsymlink(const char f[PATH_MAX], char ff[PATH_MAX])
 		ssize_t n;
 
 		if (lstat(f, &sb)) {
-			perror("+ lstat");
+			perror("! lstat");
 			return EXIT_FAILURE;
 		}
 
 		if ((n = readlink(f, ff, PATH_MAX - 1)) == -1) {
 			if (errno == EINVAL || errno == ENOENT) break;
-			perror("+ readlink");
+			perror("! readlink");
 			return EXIT_FAILURE;
 		}
 		ff[n] = '\0';
@@ -550,7 +550,7 @@ installpackage(struct Package p)
 	snprintf(src, sizeof(src), "%s/src", reltmpd);
 
 	if ((pid = fork()) < 0) {
-		perror("\n+ fork");
+		perror("\n! fork");
 		return EXIT_FAILURE;
 	}
 
@@ -559,7 +559,7 @@ installpackage(struct Package p)
 		int logf;
 
 		if (!nochr && chroot(p.srcd)) {
-			perror("\n+ chroot");
+			perror("\n! chroot");
 			exit(EXIT_FAILURE);
 		}
 
@@ -568,16 +568,16 @@ installpackage(struct Package p)
 		fflush(stdout);
 
 		if ((logf = open(log, O_WRONLY, 0700)) == -1) {
-			perror("\n+ fopen");
+			perror("\n! fopen");
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDOUT_FILENO) == -1) {
-			perror("\n+ dup2");
+			perror("\n! dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDERR_FILENO) == -1) {
-			perror("+ dup2");
+			perror("! dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
@@ -630,7 +630,7 @@ installpackage(struct Package p)
 		waitpid(pid, &s, 0);
 		if (WIFEXITED(s)) {
 			if (WEXITSTATUS(s)) {
-				printf("\r\033[K+ Failed to build %s: see "
+				printf("\r\033[K! Failed to build %s: see "
 				       "%s/prometheus.log\n",
 				       p.pname, p.srcd);
 				return EXIT_FAILURE;
@@ -664,12 +664,12 @@ mkdirrecursive(const char d[PATH_MAX])
 			*p = '\0';
 			if (mkdir(buf, 0700) && errno != EEXIST) {
 				char e[PATH_MAX];
-				if (PATH_MAX <= strlen("+ mkdir ")
+				if (PATH_MAX <= strlen("! mkdir ")
 				              + strlen(buf)) {
 					printferr("PATH_MAX exceeded");
 					return EXIT_FAILURE;
 				}
-				snprintf(e, sizeof(e), "+ mkdir %s", buf);
+				snprintf(e, sizeof(e), "! mkdir %s", buf);
 				perror(e);
 				return EXIT_FAILURE;
 			}
@@ -677,7 +677,7 @@ mkdirrecursive(const char d[PATH_MAX])
 		}
 	}
 	if (mkdir(d, 0700) && errno != EEXIST) {
-		perror("+ mkdir");
+		perror("! mkdir");
 		return EXIT_FAILURE;
 	}
 
@@ -900,10 +900,10 @@ printferr(const char *m, ...)
 	va_list va;
 
 	if (DIE_MAX <= strlen(argv0) + strlen(": ") + strlen(m)) {
-		fprintf(stderr, "+ printferr: DIE_MAX exceeded\n");
+		fprintf(stderr, "! printferr: DIE_MAX exceeded\n");
 		return;
 	}
-	snprintf(pm, sizeof(pm), "+ %s: %s", argv0, m);
+	snprintf(pm, sizeof(pm), "! %s: %s", argv0, m);
 
 	va_start(va, m);
 
@@ -1091,7 +1091,7 @@ registerpackageinstall(struct Package p)
 		}
 
 		if (!(dpp = malloc(sizeof(struct Package)))) {
-			perror("+ malloc");
+			perror("! malloc");
 			return EXIT_FAILURE;
 		}
 		memcpy(dpp, &dp, sizeof(struct Package));
@@ -1110,7 +1110,7 @@ registerpackageinstall(struct Package p)
 			runp.build = 0;
 
 			if (!(runpp = malloc(sizeof(struct Package)))) {
-				perror("+ malloc");
+				perror("! malloc");
 				return EXIT_FAILURE;
 			}
 			memcpy(runpp, &runp, sizeof(struct Package));
@@ -1123,12 +1123,12 @@ registerpackageinstall(struct Package p)
 	}
 
 	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
-		perror("+ malloc");
+		perror("! malloc");
 		return EXIT_FAILURE;
 	}
 	if (!(newp = malloc(sizeof(struct Package)))) {
 		free(newpn);
-		perror("+ malloc");
+		perror("! malloc");
 		return EXIT_FAILURE;
 	}
 	memcpy(newp, &p, sizeof(struct Package));
@@ -1177,7 +1177,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	}
 
 	if (!(pkgs = malloc(sizeof(struct PackageNames)))) {
-		perror("+ malloc");
+		perror("! malloc");
 		return EXIT_FAILURE;
 	}
 	if (getpackages(pkgs)) {
@@ -1218,12 +1218,12 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	free(pkgs);
 
 	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
-		perror("+ malloc");
+		perror("! malloc");
 		return EXIT_FAILURE;
 	}
 	if (!(newp = malloc(sizeof(struct Package)))) {
 		free(newpn);
-		perror("+ malloc");
+		perror("! malloc");
 		return EXIT_FAILURE;
 	}
 	strncpy(newp->pname, p.pname, NAME_MAX);
@@ -1255,7 +1255,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		strncpy(newp.destd, p.destd, PATH_MAX);
 
 		if (!(newpp = malloc(sizeof(struct Package)))) {
-			perror("+ malloc");
+			perror("! malloc");
 			return EXIT_FAILURE;
 		}
 		memcpy(newpp, &newp, sizeof(struct Package));
@@ -1300,7 +1300,7 @@ rmdirrecursive(const char d[PATH_MAX])
 		}
 		if (!(f = malloc(fs))) {
 			closedir(dp);
-			perror("+ malloc");
+			perror("! malloc");
 			return EXIT_FAILURE;
 		}
 		snprintf(f, fs, "%s/%s", d, e->d_name);
@@ -1314,7 +1314,7 @@ rmdirrecursive(const char d[PATH_MAX])
 		} else if (remove(f)) {
 			free(f);
 			closedir(dp);
-			perror("+ remove");
+			perror("! remove");
 			return EXIT_FAILURE;
 		}
 
@@ -1324,7 +1324,7 @@ rmdirrecursive(const char d[PATH_MAX])
 	closedir(dp);
 
 	if (rmdir(d)) {
-		perror("+ rmdir");
+		perror("! rmdir");
 		return EXIT_FAILURE;
 	}
 
@@ -1363,7 +1363,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				printf("+ Hash of %s does not match:\n",
+				printf("! Hash of %s does not match:\n",
 				       srcs.a[i].url);
 				printf("  Expected: %s\n", eh);
 				printf("  Got:      %s\n", gh);
@@ -1403,7 +1403,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				sha256uint8tochar(h, eh);
 				sha256uint8tochar(srcs.a[i].sha256, gh);
 
-				printf("+ Hash of %s does not match:\n",
+				printf("! Hash of %s does not match:\n",
 				       srcs.a[i].url);
 				printf("  Expected: %s\n", eh);
 				printf("  Got:      %s\n", gh);
@@ -1461,7 +1461,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			if (mkdirrecursive(mvd)) return EXIT_FAILURE;
 
 			if (rename(sf, df)) {
-				perror("+ rename");
+				perror("! rename");
 				return EXIT_FAILURE;
 			}
 		}
@@ -1490,7 +1490,7 @@ sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH])
 	sha256_init(&ctx);
 
 	if (!(ff = fopen(f, "rb"))) {
-		perror("+ fopen");
+		perror("! fopen");
 		return EXIT_FAILURE;
 	}
 
@@ -1499,7 +1499,7 @@ sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH])
 
 	if (ferror(ff)) {
 		fclose(ff);
-		perror("+ ferror");
+		perror("! ferror");
 		return EXIT_FAILURE;
 	}
 
@@ -1550,7 +1550,7 @@ uninstallpackage(struct Package p)
 		if (!fileexists(f)) continue;
 
 		if (remove(f)) {
-			perror("\n+ remove");
+			perror("\n! remove");
 			return EXIT_FAILURE;
 		}
 	}

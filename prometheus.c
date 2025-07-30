@@ -1720,7 +1720,7 @@ main(int argc, char *argv[])
 	if (!direxists(prefix)) {
 		cleanup();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-		printferr("Prefix %s does not exist", prefix);
+		printferr("Prefix '%s' does not exist", prefix);
 		return EXIT_FAILURE;
 	}
 

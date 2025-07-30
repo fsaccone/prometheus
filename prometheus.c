@@ -1717,7 +1717,7 @@ main(int argc, char *argv[])
 	if (prefix[strlen(prefix) - 1] == '/')
 		prefix[strlen(prefix) - 1] = '\0';
 
-	if (strlen(prefix) && !direxists(prefix)) {
+	if (!direxists(prefix)) {
 		cleanup();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		printferr("Prefix %s does not exist", prefix);

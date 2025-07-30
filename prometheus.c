@@ -1642,7 +1642,8 @@ main(int argc, char *argv[])
 	    printinst = 0,
 	    printall = 0,
 	    prefixdef = 0;
-	char gprefix[PATH_MAX] = DEFAULT_PREFIX, log[PATH_MAX];
+	char gprefix[PATH_MAX] = DEFAULT_PREFIX, expprefix[PATH_MAX],
+	     log[PATH_MAX];
 	struct termios newt;
 	struct PackageNode *pn;
 	struct PathNode *tmpd;
@@ -1665,12 +1666,7 @@ main(int argc, char *argv[])
 		printinst = 1;
 		break;
 	case 'p':
-		const char *arg = EARGF(usage());
-		if (expandtilde(arg, gprefix)) {
-			cleanup();
-			return EXIT_FAILURE;
-		}
-		realpath(gprefix, prefix);
+		strncpy(gprefix, EARGF(usage()), PATH_MAX);
 		prefixdef = 1;
 		break;
 	case 'r':
@@ -1704,6 +1700,12 @@ main(int argc, char *argv[])
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
 	handlesignals(sigexit);
+
+	if (expandtilde(gprefix, expprefix)) {
+		cleanup();
+		return EXIT_FAILURE;
+	}
+	realpath(expprefix, prefix);
 
 	if (prefix[strlen(prefix) - 1] == '/')
 		prefix[strlen(prefix) - 1] = '\0';

@@ -462,8 +462,7 @@ getpackages(struct PackageNames *pkgs)
 
 		if ((pe = packageexists(e->d_name)) == -1) return EXIT_FAILURE;
 
-		if (e->d_name[0] == '.' || e->d_type != DT_DIR || !pe)
-			continue;
+		if (e->d_name[0] == '.' || !pe) continue;
 
 		strncpy(pkgs->a[i], e->d_name, NAME_MAX);
 		i++;

@@ -1707,15 +1707,15 @@ main(int argc, char *argv[])
 	}
 	realpath(expprefix, prefix);
 
-	if (prefix[strlen(prefix) - 1] == '/')
-		prefix[strlen(prefix) - 1] = '\0';
-
 	if (!strlen(prefix)) {
 		cleanup();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		printferr("Prefix %s could not be read", prefix);
 		return EXIT_FAILURE;
 	}
+
+	if (prefix[strlen(prefix) - 1] == '/')
+		prefix[strlen(prefix) - 1] = '\0';
 
 	if (strlen(prefix) && !direxists(prefix)) {
 		cleanup();

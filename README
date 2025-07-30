@@ -62,8 +62,6 @@ installed to the system.
 
 Empty lines and lines starting with # are ignored.
 
-Only files, and not directories, must be listed.
-
 When uninstalling, all listed files are removed from the system. A package is
 considered installed when all listed files exist.
 

@@ -501,11 +501,12 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 		}
 		snprintf(s, sizeof(s), "%s%s", sd, outs.a[i]);
 
-		if (!fileexists(s)) {
-			printferr("Out file %s has not been installed",
-			          outs.a[i]);
-			return EXIT_FAILURE;
-		}
+		if (fileexists(s)) continue;
+		if (direxists(s)) continue;
+
+		printferr("Out file %s has not been installed",
+		          outs.a[i]);
+		return EXIT_FAILURE;
 	}
 
 	for (i = 0; i < outs.l; i++) {
@@ -523,7 +524,11 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 		}
 		snprintf(d, sizeof(d), "%s%s", dd, outs.a[i]);
 
-		if (copyfile(s, d)) return EXIT_FAILURE;
+		if (fileexists(s)) {
+			if (copyfile(s, d)) return EXIT_FAILURE;
+		} else if (direxists(s) && copydirrecursive(s, d)) {
+			return EXIT_FAILURE;
+		}
 	}
 
 	return EXIT_SUCCESS;
@@ -819,9 +824,7 @@ packageisinstalled(char pname[NAME_MAX], const char destd[PATH_MAX])
 			return -1;
 		}
 		snprintf(f, sizeof(f), "%s%s", destd, outs.a[i]);
-		if (!fileexists(f)) {
-			return 0;
-		}
+		if (!fileexists(f) && !direxists(f)) return 0;
 	}
 
 	return 1;
@@ -1595,11 +1598,13 @@ uninstallpackage(struct Package p)
 		}
 		snprintf(f, sizeof(f), "%s%s", p.destd, outs.a[i]);
 
-		if (!fileexists(f)) continue;
-
-		if (remove(f)) {
-			fprintf(stderr, "\n");
-			printerrno("remove");
+		if (fileexists(f)) {
+			if (remove(f)) {
+				fprintf(stderr, "\n");
+				printerrno("remove");
+				return EXIT_FAILURE;
+			}
+		} else if (direxists(f) && rmdirrecursive(f)) {
 			return EXIT_FAILURE;
 		}
 	}

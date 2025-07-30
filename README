@@ -65,12 +65,6 @@ Empty lines and lines starting with # are ignored.
 When uninstalling, all listed files are removed from the system. A package is
 considered installed when all listed files exist.
 
-The recommended way to generate it is to install the package manually and use
-find to generate outs:
-
-	$ find $builddir -type f \
-	                 -exec echo {} \; | sed "s|^$builddir||" > outs
-
 - depends
 
 Each line of the depends file must be of the following format:

@@ -1710,7 +1710,7 @@ main(int argc, char *argv[])
 	if (!strlen(prefix)) {
 		cleanup();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-		printferr("Prefix %s could not be read", prefix);
+		printferr("Prefix is empty");
 		return EXIT_FAILURE;
 	}
 

@@ -490,7 +490,7 @@ handlesignals(void(*hdl)(int))
 int
 installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX];
@@ -813,7 +813,7 @@ int
 packageisinstalled(char pname[NAME_MAX], const char destd[PATH_MAX])
 {
 	struct Outs outs;
-	int i;
+	size_t i;
 
 	if (packageouts(pname, &outs)) return -1;
 
@@ -963,7 +963,7 @@ printferr(const char *m, ...)
 int
 printinstalled(struct PackageNames pkgs)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < pkgs.l; i++) {
 		int pii;
@@ -979,7 +979,7 @@ printinstalled(struct PackageNames pkgs)
 void
 printpackages(struct PackageNames pkgs)
 {
-	int i;
+	size_t i;
 	for (i = 0; i < pkgs.l; i++) printf("%s\n", pkgs.a[i]);
 }
 
@@ -1018,7 +1018,8 @@ registerpackageinstall(struct Package p)
 {
 	struct Depends deps;
 	struct Outs outs;
-	int i, pe, pii;
+	size_t i;
+	int pe, pii;
 	unsigned int nochr;
 	struct PackageNode *newpn, *tailpn;
 	struct Package *newp;
@@ -1204,7 +1205,8 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	struct PackageNames *pkgs;
 	struct Depends deps;
 	struct Outs outs;
-	int i, pe, pii;
+	size_t i;
+	int pe, pii;
 	struct PackageNode *newpn;
 	struct Package *newp;
 
@@ -1237,7 +1239,8 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		return EXIT_FAILURE;
 	}
 	for (i = 0; i < pkgs->l; i++) {
-		int pkgsii, j;
+		size_t j;
+		int pkgsii;
 		struct Depends pdeps;
 
 		if (!strncmp(pkgs->a[i], p.pname, NAME_MAX)) continue;
@@ -1386,7 +1389,7 @@ int
 retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
                 const char tmpd[PATH_MAX])
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < srcs.l; i++) {
 		const char *b = basename(srcs.a[i].url);
@@ -1582,7 +1585,7 @@ int
 uninstallpackage(struct Package p)
 {
 	struct Outs outs;
-	int i;
+	size_t i;
 
 	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
 

@@ -774,7 +774,6 @@ packagedepends(char pname[NAME_MAX], struct Depends *deps)
 				}
 				deps->a[i].runtime = 1;
 				break;
-			default:
 			}
 		}
 
@@ -919,7 +918,6 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 				strncpy(srcs->a[i].relpath, tok, PATH_MAX);
 				srcs->a[i].relpath[strlen(tok)] = '\0';
 				break;
-			default:
 			}
 		}
 

@@ -24,7 +24,7 @@
 #define LINES_MAX     MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
 #define MAX(a, b)     ((a) > (b) ? (a) : (b))
 #define TMPDIR        "/tmp/prXXXXXX"
-#define TMPDIR_SIZE   sizeof(TMPDIR)
+#define TMPDIR_SIZE   14
 
 struct Depend {
 	char pname[NAME_MAX];

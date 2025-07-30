@@ -1714,7 +1714,7 @@ main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	if (prefix[strlen(prefix) - 1] == '/')
+	if (strlen(prefix) > 1 && prefix[strlen(prefix) - 1] == '/')
 		prefix[strlen(prefix) - 1] = '\0';
 
 	if (!direxists(prefix)) {

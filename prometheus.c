@@ -80,6 +80,7 @@ struct Sources {
 };
 
 static void cleanup(void);
+static int copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int createtmpdir(char dir[TMPDIR_SIZE]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
@@ -154,6 +155,69 @@ cleanup(void)
 
 	printf("\r\033[K\r");
 	fflush(stdout);
+}
+
+int
+copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX])
+{
+	DIR *df;
+	struct dirent *e;
+
+	if (!direxists(d) && mkdirrecursive(d)) return EXIT_FAILURE;
+
+	if (!(df = opendir(s))) {
+		printerrno("opendir");
+		return EXIT_FAILURE;
+	}
+
+	while ((e = readdir(df))) {
+		char sp[PATH_MAX], dp[PATH_MAX];
+
+		if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
+			continue;
+
+		if (PATH_MAX <= strlen(s) + strlen("/") + strlen(e->d_name)) {
+			printferr("PATH_MAX exceeded");
+			return EXIT_FAILURE;
+		}
+		snprintf(sp, sizeof(sp), "%s/%s", s, e->d_name);
+
+		if (PATH_MAX <= strlen(d) + strlen("/") + strlen(e->d_name)) {
+			printferr("PATH_MAX exceeded");
+			return EXIT_FAILURE;
+		}
+		snprintf(dp, sizeof(dp), "%s/%s", d, e->d_name);
+
+		if (direxists(sp)) {
+			char *spc, *dpc;
+
+			if (!(spc = malloc(sizeof(sp)))) {
+				printerrno("malloc");
+				return EXIT_FAILURE;
+			}
+			if (!(dpc = malloc(sizeof(dp)))) {
+				free(spc);
+				printerrno("malloc");
+				return EXIT_FAILURE;
+			}
+
+			strncpy(spc, sp, PATH_MAX);
+			strncpy(dpc, dp, PATH_MAX);
+
+			if (copydirrecursive(spc, dpc)) {
+				free(spc);
+				free(dpc);
+				return EXIT_FAILURE;
+			}
+
+			free(spc);
+			free(dpc);
+		} else if (copyfile(sp, dp)) {
+			return EXIT_FAILURE;
+		}
+	}
+
+	return EXIT_SUCCESS;
 }
 
 int

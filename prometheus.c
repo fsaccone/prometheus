@@ -1018,7 +1018,6 @@ registerpackageinstall(struct Package p)
 	struct Outs outs;
 	size_t i;
 	int pe, pii;
-	unsigned int nochr;
 	struct PackageNode *newpn, *tailpn;
 	struct Package *newp;
 
@@ -1647,7 +1646,6 @@ main(int argc, char *argv[])
 	     log[PATH_MAX];
 	struct termios newt;
 	struct PackageNode *pn;
-	struct PathNode *tmpd;
 
 	if (getuid()) {
 		fprintf(stderr, "%s: Superuser privileges are required\n",

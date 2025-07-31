@@ -1640,12 +1640,12 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int install = 0,
-	    uninstall = 0,
-	    recuninstall = 0,
-	    printinst = 0,
-	    printall = 0,
-	    prefixdef = 0;
+	int aflag = 0,
+	    iflag = 0,
+	    lflag = 0,
+	    pflag = 0,
+	    rflag = 0,
+	    uflag = 0;
 	char gprefix[PATH_MAX] = DEFAULT_PREFIX, expprefix[PATH_MAX],
 	     log[PATH_MAX];
 	struct termios newt;
@@ -1660,41 +1660,41 @@ main(int argc, char *argv[])
 
 	ARGBEGIN {
 	case 'a':
-		printall = 1;
+		aflag = 1;
 		break;
 	case 'i':
-		install = 1;
+		iflag = 1;
 		break;
 	case 'l':
-		printinst = 1;
+		lflag = 1;
 		break;
 	case 'p':
 		strncpy(gprefix, EARGF(usage()), PATH_MAX);
-		prefixdef = 1;
+		pflag = 1;
 		break;
 	case 'r':
-		recuninstall = 1;
+		rflag = 1;
 		break;
 	case 'u':
-		uninstall = 1;
+		uflag = 1;
 		break;
 	default:
 		usage();
 	} ARGEND
 
-	if ((printinst || printall) && argc)
+	if ((lflag || aflag) && argc)
 		usage();
 
-	if (!(printinst || printall) && !argc)
+	if (!(lflag || aflag) && !argc)
 		usage();
 
-	if (install + printinst + uninstall + printall != 1)
+	if (iflag + lflag + uflag + aflag != 1)
 		usage();
 
-	if (recuninstall && !uninstall)
+	if (rflag && !uflag)
 		usage();
 
-	if (printall && prefixdef)
+	if (aflag && pflag)
 		usage();
 
 	tcgetattr(STDIN_FILENO, &oldt);
@@ -1743,7 +1743,7 @@ main(int argc, char *argv[])
 	}
 	printf("\r\033[K\r");
 
-	if (printinst) {
+	if (lflag) {
 		struct PackageNames pkgs;
 		if (getpackages(&pkgs)) {
 			cleanup();
@@ -1757,7 +1757,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (printall) {
+	if (aflag) {
 		struct PackageNames pkgs;
 		if (getpackages(&pkgs)) {
 			cleanup();
@@ -1767,20 +1767,20 @@ main(int argc, char *argv[])
 		printpackages(pkgs);
 	}
 
-	/* will not be evaluated when either printinst or prinstall is 1 */
+	/* will not be evaluated when either lflag or aflag is 1 */
 	for (; *argv; argc--, argv++) {
-		if (uninstall) {
+		if (uflag) {
 			struct Package p;
 
 			strncpy(p.pname, *argv, NAME_MAX);
 			strncpy(p.destd, prefix, PATH_MAX);
 
-			if (registerpackageuninstall(p, recuninstall)) {
+			if (registerpackageuninstall(p, rflag)) {
 				cleanup();
 				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
-		} else if (install) {
+		} else if (iflag) {
 			struct Package p;
 
 			strncpy(p.pname, *argv, NAME_MAX);
@@ -1797,12 +1797,12 @@ main(int argc, char *argv[])
 	}
 
 	for (pn = pkgshead; pn; pn = pn->n) {
-		if (install && installpackage(*pn->p)) {
+		if (iflag && installpackage(*pn->p)) {
 			cleanup();
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;
 		}
-		if (uninstall && uninstallpackage(*pn->p)) {
+		if (uflag && uninstallpackage(*pn->p)) {
 			cleanup();
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 			return EXIT_FAILURE;

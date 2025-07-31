@@ -1669,8 +1669,8 @@ main(int argc, char *argv[])
 		lflag = 1;
 		break;
 	case 'p':
-		strncpy(gprefix, EARGF(usage()), PATH_MAX);
 		pflag = 1;
+		strncpy(gprefix, EARGF(usage()), PATH_MAX);
 		break;
 	case 'r':
 		rflag = 1;

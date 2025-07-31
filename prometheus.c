@@ -1628,10 +1628,10 @@ urlisvalid(const char url[PATH_MAX])
 void
 usage(void)
 {
-	fprintf(stderr, "Usage: %s -i [-p prefix] package ...\n"
-	                "       %s -u [-p prefix] [-r] package ...\n"
+	fprintf(stderr, "Usage: %s -a\n"
+	                "       %s -i [-p prefix] package ...\n"
 	                "       %s -l [-p prefix]\n"
-	                "       %s -a\n",
+	                "       %s -u [-p prefix] [-r] package ...\n",
 	                argv0, argv0, argv0, argv0);
 	cleanup();
 	exit(EXIT_FAILURE);

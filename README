@@ -19,10 +19,10 @@ Installaton
 Usage
 -----
 
-	prometheus -i [-p prefix] package ...
-	prometheus -u [-p prefix] [-r] package ...
-	prometheus -l [-p prefix]
 	prometheus -a
+	prometheus -i [-p prefix] package ...
+	prometheus -l [-p prefix]
+	prometheus -u [-p prefix] [-r] package ...
 
 Repositories
 ------------

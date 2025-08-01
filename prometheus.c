@@ -680,6 +680,7 @@ installpackage(struct Package p)
 		if (WIFEXITED(s)) {
 			if (WEXITSTATUS(s)) {
 				char logd[PATH_MAX];
+				char logs[PATH_MAX];
 
 				if (PATH_MAX <= strlen(prefix)
 				              + strlen("/prometheus.log")) {
@@ -689,7 +690,15 @@ installpackage(struct Package p)
 				snprintf(logd, sizeof(logd),
 				         "%s/prometheus.log", prefix);
 
-				if (copyfile(log, logd)) return EXIT_FAILURE;
+				if (PATH_MAX <= strlen(p.srcd)
+				              + strlen("/prometheus.log")) {
+					printferr("PATH_MAX exceeded");
+					return EXIT_FAILURE;
+				}
+				snprintf(logs, sizeof(logs),
+				         "%s/prometheus.log", p.srcd);
+
+				if (copyfile(logs, logd)) return EXIT_FAILURE;
 
 				printf("\r\033[K\r");
 				fflush(stdout);

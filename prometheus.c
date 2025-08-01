@@ -585,7 +585,7 @@ installpackage(struct Package p)
 	if (packagesources(p.pname, &srcs)) return EXIT_FAILURE;
 	if (srcs.l && retrievesources(srcs, pdir, p.srcd)) return EXIT_FAILURE;
 
-	if (nochr && PATH_MAX <= strlen(p.srcd) + strlen("/prometheus.log")) {
+	if (PATH_MAX <= strlen(reltmpd) + strlen("/prometheus.log")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}

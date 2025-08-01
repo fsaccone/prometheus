@@ -111,7 +111,7 @@ static void printferr(const char *m, ...);
 static int printinstalled(struct PackageNames pkgs);
 static void printpackages(struct PackageNames pkgs);
 static int readlines(const char f[PATH_MAX], struct Lines *l);
-static int registerpackageinstall(struct Package p);
+static int registerpackageinstall(struct Package *p);
 static unsigned int relpathisvalid(char relpath[PATH_MAX]);
 static int rmdirrecursive(const char d[PATH_MAX]);
 static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
@@ -710,10 +710,14 @@ installpackage(struct Package p)
 int
 mkdirrecursive(const char d[PATH_MAX])
 {
-	char buf[PATH_MAX], *p = NULL;
+	char *buf, *p = NULL;
 
 	if (PATH_MAX <= strlen(d)) {
 		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	if (!(buf = malloc(sizeof(char) * PATH_MAX))) {
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
 	strncpy(buf, d, sizeof(buf));
@@ -723,12 +727,16 @@ mkdirrecursive(const char d[PATH_MAX])
 		if (*p == '/') {
 			*p = '\0';
 			if (mkdir(buf, 0700) && errno != EEXIST) {
+				free(buf);
 				printerrno("mkdir");
 				return EXIT_FAILURE;
 			}
 			*p = '/';
 		}
 	}
+
+	free(buf);
+
 	if (mkdir(d, 0700) && errno != EEXIST) {
 		printerrno("mkdir");
 		return EXIT_FAILURE;
@@ -1016,42 +1024,51 @@ readlines(const char f[PATH_MAX], struct Lines *l)
 }
 
 int
-registerpackageinstall(struct Package p)
+registerpackageinstall(struct Package *p)
 {
-	struct Depends deps;
-	struct Outs outs;
+	struct Depends *deps;
+	struct Outs *outs;
 	size_t i;
 	int pe, pii;
 	struct PackageNode *newpn, *tailpn;
 	struct Package *newp;
 
-	if ((pe = packageexists(p.pname)) == -1) return EXIT_FAILURE;
+	if ((pe = packageexists(p->pname)) == -1) return EXIT_FAILURE;
 	if (!pe) {
-		printferr("Package %s does not exist", p.pname);
+		printferr("Package %s does not exist", p->pname);
 		return EXIT_FAILURE;
 	}
 
-	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
-	if (!outs.l) {
-		printferr("Package %s has no outs", p.pname);
+	if (!(outs = malloc(sizeof(struct Outs)))) {
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
+	if (packageouts(p->pname, outs)) {
+		free(outs);
+		return EXIT_FAILURE;
+	}
+	if (!outs->l) {
+		free(outs);
+		printferr("Package %s has no outs", p->pname);
+		return EXIT_FAILURE;
+	}
+	free(outs);
 
 	/* cannot be reached by dependency since their installation is
 	   checked before registration */
-	if ((pii = packageisinstalled(p.pname, p.destd)) == -1)
+	if ((pii = packageisinstalled(p->pname, p->destd)) == -1)
 		return EXIT_FAILURE;
 	if (pii) {
 		printf("+ Skipping %s since it is already installed\n",
-		       p.pname);
+		       p->pname);
 		return EXIT_SUCCESS;
 	}
 
-	if (p.build && !strncmp(p.pname, "nochroot-", 9)) {
+	if (p->build && !strncmp(p->pname, "nochroot-", 9)) {
 		char yp;
 
 		printf("+ Package %s is a nochroot package: it will have full "
-		       "access over your machine while building\n", p.pname);
+		       "access over your machine while building\n", p->pname);
 		printf("> Continue? (y/n)\r");
 		fflush(stdout);
 
@@ -1067,53 +1084,81 @@ registerpackageinstall(struct Package p)
 		fflush(stdout);
 	}
 
-	if (!strlen(p.srcd)) {
+	if (!strlen(p->srcd)) {
 		char tmpd[TMPDIR_SIZE];
 		if (createtmpdir(tmpd)) return EXIT_FAILURE;
-		strncpy(p.srcd, tmpd, PATH_MAX);
+		strncpy(p->srcd, tmpd, PATH_MAX);
 	}
 
-	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;
-	for (i = 0; i < deps.l; i++) {
+	if (!(deps = malloc(sizeof(struct Depends)))) {
+		printerrno("malloc");
+		return EXIT_FAILURE;
+	}
+	if (packagedepends(p->pname, deps)) {
+		free(deps);
+		return EXIT_FAILURE;
+	}
+	for (i = 0; i < deps->l; i++) {
 		int dpe, dpii;
-		struct Outs douts;
-		struct Package dp, *dpp;
+		struct Outs *douts;
+		struct Package *dp;
 
-		/* if p.build == 0, only register runtime deps */
-		if (!p.build && !deps.a[i].runtime) continue;
+		/* if p->build == 0, only register runtime deps */
+		if (!p->build && !deps->a[i].runtime) continue;
 
 		printf("+ Found dependency %s for %s\n",
-		       deps.a[i].pname, p.pname);
+		       deps->a[i].pname, p->pname);
 
-		if ((dpe = packageexists(deps.a[i].pname)) == -1)
+		if ((dpe = packageexists(deps->a[i].pname)) == -1) {
+			free(deps);
 			return EXIT_FAILURE;
+		}
 		if (!dpe) {
+			free(deps);
 			printferr("Dependency %s does not exist\n",
-			          deps.a[i].pname);
+			          deps->a[i].pname);
 			return EXIT_FAILURE;
 		}
 
-		if (packageouts(deps.a[i].pname, &douts))
+		if (!(douts = malloc(sizeof(struct Outs)))) {
+			free(deps);
+			printerrno("malloc");
 			return EXIT_FAILURE;
-		if (!douts.l) {
+		}
+		if (packageouts(deps->a[i].pname, douts)) {
+			free(douts);
+			free(deps);
+			return EXIT_FAILURE;
+		}
+		if (!douts->l) {
+			free(douts);
+			free(deps);
 			printferr("Dependency %s has no outs\n",
-			          deps.a[i].pname);
+			          deps->a[i].pname);
+			return EXIT_FAILURE;
+		}
+		free(douts);
+
+		if ((dpii = packageisinstalled(deps->a[i].pname,
+		                               prefix)) == -1) {
+			free(deps);
 			return EXIT_FAILURE;
 		}
 
-		if ((dpii = packageisinstalled(deps.a[i].pname,
-		                               prefix)) == -1)
+		if (!(dp = malloc(sizeof(struct Package)))) {
+			printerrno("malloc");
 			return EXIT_FAILURE;
+		}
 
-		/* always install dependency to p.srcd, regardless of it
+		/* always install dependency to p->srcd, regardless of it
 		   being build or runtime */
-		strncpy(dp.pname, deps.a[i].pname, NAME_MAX);
-		strncpy(dp.destd, p.srcd, PATH_MAX);
+		strncpy(dp->pname, deps->a[i].pname, NAME_MAX);
+		strncpy(dp->destd, p->srcd, PATH_MAX);
 
 		if (dpii) {
 			/* if already installed to prefix, copy from prefix */
-			strncpy(dp.srcd, prefix, PATH_MAX);
-			dp.build = 0;
+			strncpy(dp->srcd, prefix, PATH_MAX);
+			dp->build = 0;
 		} else {
 			struct PackageNode *pn;
 			unsigned int reg = 0;
@@ -1121,11 +1166,11 @@ registerpackageinstall(struct Package p)
 			/* if already registered, register again to just copy
 			   from its srcd */
 			for (pn = pkgshead; pn; pn = pn->n) {
-				if (strncmp(deps.a[i].pname, pn->p->pname,
+				if (strncmp(deps->a[i].pname, pn->p->pname,
 				    NAME_MAX)) continue;
 
-				strncpy(dp.srcd, pn->p->srcd, PATH_MAX);
-				dp.build = 0;
+				strncpy(dp->srcd, pn->p->srcd, PATH_MAX);
+				dp->build = 0;
 
 				reg = 1;
 				break;
@@ -1136,44 +1181,46 @@ registerpackageinstall(struct Package p)
 			if (!reg) {
 				char dtmpd[TMPDIR_SIZE];
 
-				if (createtmpdir(dtmpd)) return EXIT_FAILURE;
+				if (createtmpdir(dtmpd)) {
+					free(dp);
+					return EXIT_FAILURE;
+				}
 
-				strncpy(dp.srcd, dtmpd, PATH_MAX);
-				dp.build = 1;
+				strncpy(dp->srcd, dtmpd, PATH_MAX);
+				dp->build = 1;
 			}
 		}
 
-		if (!(dpp = malloc(sizeof(struct Package)))) {
-			printerrno("malloc");
+		if (registerpackageinstall(dp)) {
+			free(dp);
+			free(deps);
 			return EXIT_FAILURE;
 		}
-		memcpy(dpp, &dp, sizeof(struct Package));
-		if (registerpackageinstall(*dpp)) {
-			free(dpp);
-			return EXIT_FAILURE;
-		}
-		free(dpp);
+		free(dp);
 
-		/* addionally, if runtime, copy from p.srcd to p.destd */
-		if (deps.a[i].runtime) {
-			struct Package runp, *runpp;
-			strncpy(runp.pname, deps.a[i].pname, NAME_MAX);
-			strncpy(runp.srcd, p.srcd, PATH_MAX);
-			strncpy(runp.destd, p.destd, PATH_MAX);
-			runp.build = 0;
+		/* addionally, if runtime, copy from p->srcd to p->destd */
+		if (deps->a[i].runtime) {
+			struct Package *runp;
 
-			if (!(runpp = malloc(sizeof(struct Package)))) {
+			if (!(runp = malloc(sizeof(struct Package)))) {
 				printerrno("malloc");
 				return EXIT_FAILURE;
 			}
-			memcpy(runpp, &runp, sizeof(struct Package));
-			if (registerpackageinstall(*runpp)) {
-				free(runpp);
+
+			strncpy(runp->pname, deps->a[i].pname, NAME_MAX);
+			strncpy(runp->srcd, p->srcd, PATH_MAX);
+			strncpy(runp->destd, p->destd, PATH_MAX);
+			runp->build = 0;
+
+			if (registerpackageinstall(runp)) {
+				free(runp);
+				free(deps);
 				return EXIT_FAILURE;
 			}
-			free(runpp);
+			free(runp);
 		}
 	}
+	free(deps);
 
 	if (!(newpn = malloc(sizeof(struct PackageNode)))) {
 		printerrno("malloc");
@@ -1184,7 +1231,7 @@ registerpackageinstall(struct Package p)
 		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
-	memcpy(newp, &p, sizeof(struct Package));
+	memcpy(newp, p, sizeof(struct Package));
 
 	newpn->p = newp;
 	newpn->n = NULL;
@@ -1201,32 +1248,38 @@ registerpackageinstall(struct Package p)
 }
 
 int
-registerpackageuninstall(struct Package p, unsigned int rec)
+registerpackageuninstall(struct Package *p, unsigned int rec)
 {
 	struct PackageNames *pkgs;
-	struct Depends deps;
-	struct Outs outs;
+	struct Depends *deps;
+	struct Outs *outs;
 	size_t i;
 	int pe, pii;
 	struct PackageNode *newpn;
 	struct Package *newp;
 
-	if ((pe = packageexists(p.pname)) == -1) return EXIT_FAILURE;
+	if ((pe = packageexists(p->pname)) == -1) return EXIT_FAILURE;
 	if (!pe) {
-		printferr("Package %s does not exist", p.pname);
+		printferr("Package %s does not exist", p->pname);
 		return EXIT_FAILURE;
 	}
 
-	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
-	if (!outs.l) {
-		printferr("Package %s has no outs", p.pname);
+	if (!(outs = malloc(sizeof(struct Outs)))) {
+		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
+	if (packageouts(p->pname, outs)) return EXIT_FAILURE;
+	if (!outs->l) {
+		free(outs);
+		printferr("Package %s has no outs", p->pname);
+		return EXIT_FAILURE;
+	}
+	free(outs);
 
-	if ((pii = packageisinstalled(p.pname, p.destd)) == -1)
+	if ((pii = packageisinstalled(p->pname, p->destd)) == -1)
 		return EXIT_FAILURE;
 	if (!pii) {
-		printf("+ Skipping %s since it is not installed\n", p.pname);
+		printf("+ Skipping %s since it is not installed\n", p->pname);
 		return EXIT_SUCCESS;
 	}
 
@@ -1242,33 +1295,39 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 	for (i = 0; i < pkgs->l; i++) {
 		size_t j;
 		int pkgsii;
-		struct Depends pdeps;
+		struct Depends *pdeps;
 
-		if (!strncmp(pkgs->a[i], p.pname, NAME_MAX)) continue;
+		if (!strncmp(pkgs->a[i], p->pname, NAME_MAX)) continue;
 
 		if ((pkgsii = packageisinstalled(pkgs->a[i],
-		                                 p.destd)) == -1) {
+		                                 p->destd)) == -1) {
 			free(pkgs);
 			return EXIT_FAILURE;
 		}
 		if (!pkgsii) continue;
 
-		if (packagedepends(pkgs->a[i], &pdeps)) {
+		if (!(pdeps = malloc(sizeof(struct Depends)))) {
+			printerrno("malloc");
+			return EXIT_FAILURE;
+		}
+		if (packagedepends(pkgs->a[i], pdeps)) {
+			free(pdeps);
 			free(pkgs);
 			return EXIT_FAILURE;
 		}
-
-		for (j = 0; j < pdeps.l; j++) {
-			if (strncmp(pdeps.a[j].pname, p.pname, NAME_MAX))
+		for (j = 0; j < pdeps->l; j++) {
+			if (strncmp(pdeps->a[j].pname, p->pname, NAME_MAX))
 				continue;
-			if (!pdeps.a[j].runtime) continue;
+			if (!pdeps->a[j].runtime) continue;
 
 			printf("+ Skipping %s since %s depends on it\n",
-			       p.pname, pkgs->a[i]);
+			       p->pname, pkgs->a[i]);
 
+			free(pdeps);
 			free(pkgs);
 			return EXIT_SUCCESS;
 		}
+		free(pdeps);
 	}
 	free(pkgs);
 
@@ -1281,8 +1340,7 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
-	strncpy(newp->pname, p.pname, NAME_MAX);
-	strncpy(newp->destd, p.destd, PATH_MAX);
+	memcpy(newp, p, sizeof(struct Package));
 
 	newpn->p = newp;
 	newpn->n = NULL;
@@ -1297,29 +1355,38 @@ registerpackageuninstall(struct Package p, unsigned int rec)
 
 	if (!rec) return EXIT_SUCCESS;
 
-	if (packagedepends(p.pname, &deps)) return EXIT_FAILURE;
-	for (i = 0; i < deps.l; i++) {
-		struct Package newp, *newpp;
+	if (!(deps = malloc(sizeof(struct Depends)))) {
+		printerrno("malloc");
+		return EXIT_FAILURE;
+	}
+	if (packagedepends(p->pname, deps)) {
+		free(deps);
+		return EXIT_FAILURE;
+	}
+	for (i = 0; i < deps->l; i++) {
+		struct Package *newp;
 
-		if (!deps.a[i].runtime) continue;
+		if (!deps->a[i].runtime) continue;
 
 		printf("+ Found dependency %s for %s\n",
-		       deps.a[i].pname, p.pname);
+		       deps->a[i].pname, p->pname);
 
-		strncpy(newp.pname, deps.a[i].pname, NAME_MAX);
-		strncpy(newp.destd, p.destd, PATH_MAX);
-
-		if (!(newpp = malloc(sizeof(struct Package)))) {
+		if (!(newp = malloc(sizeof(struct Package)))) {
 			printerrno("malloc");
 			return EXIT_FAILURE;
 		}
-		memcpy(newpp, &newp, sizeof(struct Package));
-		if (registerpackageuninstall(*newpp, rec)) {
-			free(newpp);
+
+		strncpy(newp->pname, deps->a[i].pname, NAME_MAX);
+		strncpy(newp->destd, p->destd, PATH_MAX);
+
+		if (registerpackageuninstall(newp, rec)) {
+			free(newp);
+			free(deps);
 			return EXIT_FAILURE;
 		}
-		free(newpp);
+		free(newp);
 	}
+	free(deps);
 
 	return EXIT_SUCCESS;
 }
@@ -1770,29 +1837,43 @@ main(int argc, char *argv[])
 	/* will not be evaluated when either lflag or aflag is 1 */
 	for (; *argv; argc--, argv++) {
 		if (uflag) {
-			struct Package p;
+			struct Package *p;
 
-			strncpy(p.pname, *argv, NAME_MAX);
-			strncpy(p.destd, prefix, PATH_MAX);
+			if (!(p = malloc(sizeof(struct Package)))) {
+				printerrno("malloc");
+				return EXIT_FAILURE;
+			}
+
+			strncpy(p->pname, *argv, NAME_MAX);
+			strncpy(p->destd, prefix, PATH_MAX);
 
 			if (registerpackageuninstall(p, rflag)) {
+				free(p);
 				cleanup();
 				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
+			free(p);
 		} else if (iflag) {
-			struct Package p;
+			struct Package *p;
 
-			strncpy(p.pname, *argv, NAME_MAX);
-			strncpy(p.srcd, "", 1);
-			strncpy(p.destd, prefix, PATH_MAX);
-			p.build = 1;
+			if (!(p = malloc(sizeof(struct Package)))) {
+				printerrno("malloc");
+				return EXIT_FAILURE;
+			}
+
+			strncpy(p->pname, *argv, NAME_MAX);
+			strncpy(p->srcd, "", 1);
+			strncpy(p->destd, prefix, PATH_MAX);
+			p->build = 1;
 
 			if (registerpackageinstall(p)) {
+				free(p);
 				cleanup();
 				tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 				return EXIT_FAILURE;
 			}
+			free(p);
 		}
 	}
 

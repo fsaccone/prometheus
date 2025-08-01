@@ -717,12 +717,12 @@ mkdirrecursive(const char d[PATH_MAX])
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	if (!(buf = malloc(sizeof(char) * PATH_MAX))) {
+	if (!(buf = malloc(sizeof(char) * PATH_MAX + 1))) {
 		printerrno("malloc");
 		return EXIT_FAILURE;
 	}
-	strncpy(buf, d, sizeof(buf));
-	buf[sizeof(buf) - 1] = '\0';
+	strncpy(buf, d, PATH_MAX);
+	buf[PATH_MAX] = '\0';
 
 	for (p = buf + 1; *p; p++) {
 		if (*p == '/') {

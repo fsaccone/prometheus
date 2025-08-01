@@ -112,6 +112,7 @@ static int printinstalled(struct PackageNames pkgs);
 static void printpackages(struct PackageNames pkgs);
 static int readlines(const char f[PATH_MAX], struct Lines *l);
 static int registerpackageinstall(struct Package *p);
+static int registerpackageuninstall(struct Package *p, unsigned int rec);
 static unsigned int relpathisvalid(char relpath[PATH_MAX]);
 static int rmdirrecursive(const char d[PATH_MAX]);
 static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],

@@ -1040,7 +1040,7 @@ registerpackageinstall(struct Package *p)
 	struct Outs *outs;
 	size_t i;
 	int pe, pii;
-	struct PackageNode *newpn, *tailpn;
+	struct PackageNode *pn, *newpn, *tailpn;
 	struct Package *newp;
 
 	if ((pe = packageexists(p->pname)) == -1) return EXIT_FAILURE;
@@ -1073,6 +1073,39 @@ registerpackageinstall(struct Package *p)
 		       p->pname);
 		return EXIT_SUCCESS;
 	}
+
+	/* if already registered, register again to just copy from its srcd */
+	for (pn = pkgshead; pn; pn = pn->n) {
+		if (strncmp(p->pname, pn->p->pname, NAME_MAX)) continue;
+
+		if (!(newpn = malloc(sizeof(struct PackageNode)))) {
+			printerrno("malloc");
+			return EXIT_FAILURE;
+		}
+		if (!(newp = malloc(sizeof(struct Package)))) {
+			free(newpn);
+			printerrno("malloc");
+			return EXIT_FAILURE;
+		}
+		strncpy(newp->pname, p->pname, NAME_MAX);
+		strncpy(newp->srcd, pn->p->srcd, PATH_MAX);
+		strncpy(newp->destd, p->destd, PATH_MAX);
+		newp->build = 0;
+
+		newpn->p = newp;
+		newpn->n = NULL;
+		if (!pkgshead) {
+			pkgshead = newpn;
+			return EXIT_SUCCESS;
+		}
+
+		tailpn = pkgshead;
+		while (tailpn->n) tailpn = tailpn->n;
+		tailpn->n = newpn;
+
+		return EXIT_SUCCESS;
+	}
+
 
 	if (p->build && !strncmp(p->pname, "nochroot-", 9)) {
 		char yp;

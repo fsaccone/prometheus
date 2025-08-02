@@ -130,6 +130,7 @@ static void usage(void);
 static struct termios oldt;
 static struct PackageNode *pkgshead = NULL;
 static char prefix[PATH_MAX];
+static char repository[PATH_MAX];
 static struct PathNode *tmpdirhead = NULL;
 
 void
@@ -456,7 +457,7 @@ getpackages(struct PackageNames *pkgs)
 	DIR *d;
 	const struct dirent *e;
 
-	if (!(d = opendir(PACKAGE_REPOSITORY))) {
+	if (!(d = opendir(repository))) {
 		pkgs->l = 0;
 		return EXIT_SUCCESS;
 	};
@@ -561,12 +562,11 @@ installpackage(struct Package p)
 
 	reltmpd = nochr ? p.srcd : "";
 
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen("/")
-	              + strlen(p.pname)) {
+	if (PATH_MAX <= strlen(repository) + strlen("/") + strlen(p.pname)) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(pdir, sizeof(pdir), "%s/%s", PACKAGE_REPOSITORY, p.pname);
+	snprintf(pdir, sizeof(pdir), "%s/%s", repository, p.pname);
 
 	if (PATH_MAX <= strlen(pdir) + strlen("/build")) {
 		printferr("PATH_MAX exceeded");
@@ -762,12 +762,12 @@ packagedepends(char pname[NAME_MAX], struct Depends *deps)
 	char f[PATH_MAX];
 	struct Lines l;
 
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
+	if (PATH_MAX <= strlen(repository) + strlen(pname)
 	              + strlen("//depends")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(f, sizeof(f), "%s/%s/depends", PACKAGE_REPOSITORY, pname);
+	snprintf(f, sizeof(f), "%s/%s/depends", repository, pname);
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
@@ -817,13 +817,13 @@ packageexists(const char pname[NAME_MAX])
 {
 	char bf[PATH_MAX], of[PATH_MAX];
 
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
+	if (PATH_MAX <= strlen(repository) + strlen(pname)
 	              + strlen("//build")) { /* the longest one */
 		printferr("PATH_MAX exceeded");
 		return -1;
 	}
-	snprintf(bf, sizeof(bf), "%s/%s/build", PACKAGE_REPOSITORY, pname);
-	snprintf(of, sizeof(of), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
+	snprintf(bf, sizeof(bf), "%s/%s/build", repository, pname);
+	snprintf(of, sizeof(of), "%s/%s/outs", repository, pname);
 
 	if (fileexists(bf) && fileexists(of)) return 1;
 
@@ -858,12 +858,12 @@ packageouts(char pname[NAME_MAX], struct Outs *outs)
 	struct Lines l;
 	char f[PATH_MAX];
 
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
+	if (PATH_MAX <= strlen(repository) + strlen(pname)
 	              + strlen("//outs")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(f, sizeof(f), "%s/%s/outs", PACKAGE_REPOSITORY, pname);
+	snprintf(f, sizeof(f), "%s/%s/outs", repository, pname);
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
@@ -887,12 +887,12 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 	char f[PATH_MAX];
 	struct Lines l;
 
-	if (PATH_MAX <= strlen(PACKAGE_REPOSITORY) + strlen(pname)
+	if (PATH_MAX <= strlen(repository) + strlen(pname)
 	              + strlen("//sources")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(f, sizeof(f), "%s/%s/sources", PACKAGE_REPOSITORY, pname);
+	snprintf(f, sizeof(f), "%s/%s/sources", repository, pname);
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
@@ -1738,10 +1738,10 @@ urlisvalid(const char url[PATH_MAX])
 void
 usage(void)
 {
-	fprintf(stderr, "Usage: %s -a\n"
-	                "       %s -i [-p prefix] package ...\n"
-	                "       %s -l [-p prefix]\n"
-	                "       %s -u [-p prefix] [-r] package ...\n",
+	fprintf(stderr, "Usage: %s -a [-s repo]\n"
+	                "       %s -i [-s repo] [-p prefix] package ...\n"
+	                "       %s -l [-s repo] [-p prefix]\n"
+	                "       %s -u [-s repo] [-p prefix] [-r] package ...\n",
 	                argv0, argv0, argv0, argv0);
 	cleanup();
 	exit(EXIT_FAILURE);
@@ -1755,8 +1755,12 @@ main(int argc, char *argv[])
 	    lflag = 0,
 	    pflag = 0,
 	    rflag = 0,
+	    sflag = 0,
 	    uflag = 0;
-	char gprefix[PATH_MAX] = DEFAULT_PREFIX, expprefix[PATH_MAX],
+	char gprefix[PATH_MAX] = DEFAULT_PREFIX,
+	     grepository[PATH_MAX] = PACKAGE_REPOSITORY,
+	     expprefix[PATH_MAX],
+	     exprepository[PATH_MAX],
 	     log[PATH_MAX];
 	struct termios newt;
 	struct PackageNode *pn;
@@ -1784,6 +1788,10 @@ main(int argc, char *argv[])
 		break;
 	case 'r':
 		rflag = 1;
+		break;
+	case 's':
+		sflag = 1;
+		strncpy(grepository, EARGF(usage()), PATH_MAX);
 		break;
 	case 'u':
 		uflag = 1;
@@ -1820,10 +1828,23 @@ main(int argc, char *argv[])
 	}
 	realpath(expprefix, prefix);
 
+	if (expandtilde(grepository, exprepository)) {
+		cleanup();
+		return EXIT_FAILURE;
+	}
+	realpath(exprepository, repository);
+
 	if (!strlen(prefix)) {
 		cleanup();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		printferr("Prefix is empty");
+		return EXIT_FAILURE;
+	}
+
+	if (!strlen(repository)) {
+		cleanup();
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+		printferr("Repository path is empty");
 		return EXIT_FAILURE;
 	}
 
@@ -1834,8 +1855,18 @@ main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	if (!direxists(repository)) {
+		cleanup();
+		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+		printferr("Repository directory '%s' does not exist", prefix);
+		return EXIT_FAILURE;
+	}
+
 	if (prefix[strlen(prefix) - 1] == '/')
 		prefix[strlen(prefix) - 1] = '\0';
+
+	if (repository[strlen(repository) - 1] == '/')
+		repository[strlen(repository) - 1] = '\0';
 
 	if (PATH_MAX <= strlen(prefix) + strlen("/prometheus.log")) {
 		cleanup();

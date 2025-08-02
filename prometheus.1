@@ -7,15 +7,19 @@
 .Sh SYNOPSIS
 .Nm
 .Fl a
+.Op Fl s Ar repo
 .Nm
 .Fl i
+.Op Fl s Ar repo
 .Op Fl p Ar prefix
 .Ar package ...
 .Nm
 .Fl l
+.Op Fl s Ar repo
 .Op Fl p Ar prefix
 .Nm
 .Fl u
+.Op Fl s Ar repo
 .Op Fl p Ar prefix
 .Op Fl r
 .Ar package ...
@@ -42,6 +46,10 @@ Uninstall
 .Ar package
 and all its dependencies. Requires
 .Fl u .
+.It Fl s
+Use
+.Ar repo
+as the package repository. The default is defined at compile time.
 .It Fl u
 Uninstall
 .Ar package .

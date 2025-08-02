@@ -1794,15 +1794,15 @@ main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	if (strlen(prefix) > 1 && prefix[strlen(prefix) - 1] == '/')
-		prefix[strlen(prefix) - 1] = '\0';
-
 	if (!direxists(prefix)) {
 		cleanup();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		printferr("Prefix '%s' does not exist", prefix);
 		return EXIT_FAILURE;
 	}
+
+	if (prefix[strlen(prefix) - 1] == '/')
+		prefix[strlen(prefix) - 1] = '\0';
 
 	if (PATH_MAX <= strlen(prefix) + strlen("/prometheus.log")) {
 		cleanup();

@@ -8,5 +8,5 @@
 #define PACKAGES_MAX 2000 /* number of packages in a repo */
 #define SOURCES_MAX  100  /* number of sources entries for a package */
 
-#define PACKAGE_REPOSITORY "/opt/prometheus" /* the package repository */
-#define DEFAULT_PREFIX     "/"               /* the default prefix */
+#define PACKAGE_REPOSITORY "/src" /* the package repository */
+#define DEFAULT_PREFIX     "/"    /* the default prefix */

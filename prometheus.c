@@ -1514,6 +1514,13 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 	for (i = 0; i < srcs.l; i++) {
 		const char *b = basename(srcs.a[i].url);
 
+		if (!strncmp(b, "build", PATH_MAX)
+		 && !strlen(srcs.a[i].relpath)) {
+			printferr("Source file %s is named 'build': add a "
+			          "RELPATH field", srcs.a[i].url);
+			return EXIT_FAILURE;
+		}
+
 		if (urlisvalid(srcs.a[i].url)) {
 			char df[PATH_MAX];
 			uint8_t h[SHA256_DIGEST_LENGTH];

@@ -1580,7 +1580,8 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 
 		if (strlen(srcs.a[i].relpath)) {
 			char sf[PATH_MAX], df[PATH_MAX], mvd[PATH_MAX],
-			     dc[PATH_MAX], *tok, buf[PATH_MAX];
+			     dc[PATH_MAX], *c, buf[PATH_MAX];
+			size_t cl = 0;
 			const char *dn;
 
 			strncpy(dc, srcs.a[i].relpath, PATH_MAX);
@@ -1601,19 +1602,27 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			snprintf(df, sizeof(df), "%s/src/%s",
 			         tmpd, srcs.a[i].relpath);
 
-			strncpy(buf, df, PATH_MAX);
-			tok = strtok(buf + strlen(tmpd)
-			                 + strlen("/src/"), "/");
-			for (; tok; tok = strtok(NULL, "/")) {
+			for (c = df; *c; c++) {
 				char f[PATH_MAX];
-				snprintf(f, sizeof(f), "%s/src/%s", tmpd, tok);
-				if (fileexists(f) /* any comp is not dir */
-				 && strncmp(f, df, PATH_MAX)) {
-					printferr("One of the components of "
-					          "RELPATH %s already exists",
-					          srcs.a[i].relpath);
-					return EXIT_FAILURE;
-				}
+				buf[cl++] = *c;
+
+				if (*c != '/') continue;
+
+				buf[cl] = '\0';
+
+				/* remove trailing slash */
+				strncpy(f, buf, strlen(buf) - 1);
+				f[strlen(buf) - 1] = '\0';
+
+				if (!strlen(buf)) continue;
+				if (!strncmp(f, df, PATH_MAX)) continue;
+
+				if (!fileexists(f)) continue;
+
+				printferr("One of the components of RELPATH "
+				          "%s already exists",
+				          srcs.a[i].relpath);
+				return EXIT_FAILURE;
 			}
 
 			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")

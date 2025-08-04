@@ -1447,8 +1447,8 @@ unsigned int
 relpathisvalid(char relpath[PATH_MAX])
 {
 	return (!strstr(relpath, "..") && !strstr(relpath, ":")
-	     && relpath[0] != '/' && relpath[0] != '.' && relpath[0] != '\0'
-	     && relpath[strlen(relpath) - 1] != '/');
+	     && relpath[0] != '/' && strncmp(relpath, "./", 2)
+	     && relpath[0] != '\0' && relpath[strlen(relpath) - 1] != '/');
 }
 
 int

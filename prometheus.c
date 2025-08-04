@@ -354,7 +354,7 @@ unsigned int
 direxists(const char f[PATH_MAX])
 {
 	struct stat buf;
-	if (stat(f, &buf)) return 0;
+	if (lstat(f, &buf)) return 0;
 	if (S_ISDIR(buf.st_mode)) return 1;
 	return 0;
 }

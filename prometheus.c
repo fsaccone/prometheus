@@ -1602,6 +1602,12 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			snprintf(df, sizeof(df), "%s/src/%s",
 			         tmpd, srcs.a[i].relpath);
 
+			if (direxists(df)) {
+				printferr("RELPATH %s already exists and is a "
+				          "directory", srcs.a[i].relpath);
+				return EXIT_FAILURE;
+			}
+
 			for (c = df; *c; c++) {
 				char f[PATH_MAX];
 				buf[cl++] = *c;

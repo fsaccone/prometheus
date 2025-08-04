@@ -937,6 +937,15 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 					          tok);
 					return EXIT_FAILURE;
 				}
+				if (!strncmp(tok, "build", PATH_MAX)) {
+					printferr("RELPATH cannot be 'build'");
+					return EXIT_FAILURE;
+				}
+				if (!strncmp(tok, "build/", 6)) {
+					printferr("RELPATH cannot be in the "
+					          "'build' directory");
+					return EXIT_FAILURE;
+				}
 				strncpy(srcs->a[i].relpath, tok, PATH_MAX);
 				srcs->a[i].relpath[strlen(tok)] = '\0';
 				break;

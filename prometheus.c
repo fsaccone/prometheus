@@ -141,7 +141,7 @@ cleanup(void)
 
 	for (pn = pkgshead; pn; pn = pnn) {
 		pnn = pn->n;
-		free(pn->p);
+		if (pn->p) free(pn->p);
 		free(pn);
 	}
 

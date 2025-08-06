@@ -522,6 +522,11 @@ getpackages(struct PackageNames *pkgs)
 			char subd[PATH_MAX];
 			char subpn[NAME_MAX];
 
+			if (PACKAGES_MAX <= i + 1) {
+				printferr("PACKAGES_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+
 			if (e->d_name[0] == '.') continue;
 
 			if ((pe = packageexists(e->d_name)) == -1) {

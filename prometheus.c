@@ -1788,7 +1788,6 @@ main(int argc, char *argv[])
 	    lflag = 0,
 	    pflag = 0,
 	    rflag = 0,
-	    sflag = 0,
 	    uflag = 0;
 	char gprefix[PATH_MAX] = DEFAULT_PREFIX,
 	     grepository[PATH_MAX] = PACKAGE_REPOSITORY,
@@ -1823,7 +1822,6 @@ main(int argc, char *argv[])
 		rflag = 1;
 		break;
 	case 's':
-		sflag = 1;
 		strncpy(grepository, EARGF(usage()), PATH_MAX);
 		break;
 	case 'u':

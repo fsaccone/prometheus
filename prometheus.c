@@ -1528,7 +1528,12 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 
 			if (fetchfile(srcs.a[i].url, df)) return EXIT_FAILURE;
 
+			printf("- Computing the hash of %s\r",
+			       srcs.a[i].url);
+			fflush(stdout);
 			if (sha256hash(df, h)) return EXIT_FAILURE;
+			printf("\r\033[K\r");
+			fflush(stdout);
 			if (memcmp(h,
 			           srcs.a[i].sha256,
 			           SHA256_DIGEST_LENGTH)) {
@@ -1569,7 +1574,12 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				return EXIT_FAILURE;
 			}
 
+			printf("- Computing the hash of %s\r",
+			       srcs.a[i].url);
+			fflush(stdout);
 			if (sha256hash(sf, h)) return EXIT_FAILURE;
+			printf("\r\033[K\r");
+			fflush(stdout);
 			if (memcmp(h, srcs.a[i].sha256,
 			           SHA256_DIGEST_LENGTH)) {
 				char eh[2 * SHA256_DIGEST_LENGTH + 1],

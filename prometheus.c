@@ -2019,6 +2019,11 @@ main(int argc, char *argv[])
 
 	/* will not be evaluated when either lflag or aflag is 1 */
 	for (; *argv; argc--, argv++) {
+		if (!relpathisvalid(*argv)) {
+			printferr("Invalid package %s", *argv);
+			return EXIT_FAILURE;
+		}
+
 		if (uflag) {
 			struct Package *p;
 

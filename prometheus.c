@@ -524,8 +524,14 @@ getpackages(struct PackageNames *pkgs)
 
 			if (e->d_name[0] == '.') continue;
 
-			if ((pe = packageexists(e->d_name)) == -1)
+			if ((pe = packageexists(e->d_name)) == -1) {
+				struct PathNode *dn;
+				for (d = dhead.n; d; d = dn) {
+					dn = d->n;
+					free(dn);
+				}
 				return EXIT_FAILURE;
+			}
 
 			if (pe) {
 				strncpy(pkgs->a[i], e->d_name, NAME_MAX);
@@ -535,6 +541,11 @@ getpackages(struct PackageNames *pkgs)
 
 			if (PATH_MAX <= strlen(d->p) + strlen("/")
 			              + strlen(e->d_name)) {
+				struct PathNode *dn;
+				for (d = dhead.n; d; d = dn) {
+					dn = d->n;
+					free(dn);
+				}
 				printferr("PATH_MAX exceeded");
 				return EXIT_FAILURE;
 			}
@@ -546,7 +557,14 @@ getpackages(struct PackageNames *pkgs)
 			        NAME_MAX);
 
 			subpe = packageexists(subpn);
-			if (subpe == -1) return EXIT_FAILURE;
+			if (subpe == -1) {
+				struct PathNode *dn;
+				for (d = dhead.n; d; d = dn) {
+					dn = d->n;
+					free(dn);
+				}
+				return EXIT_FAILURE;
+			}
 
 			if (subpe) {
 				strncpy(pkgs->a[i], subpn, NAME_MAX);
@@ -558,6 +576,11 @@ getpackages(struct PackageNames *pkgs)
 				struct PathNode *new, *tail = d;
 
 				if (!(new = malloc(sizeof(struct PathNode)))) {
+					struct PathNode *dn;
+					for (d = dhead.n; d; d = dn) {
+						dn = d->n;
+						free(dn);
+					}
 					printerrno("malloc");
 					return EXIT_FAILURE;
 				}

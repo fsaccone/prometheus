@@ -593,7 +593,6 @@ installpackage(struct Package p)
 	snprintf(src, sizeof(src), "%s/src", reltmpd);
 
 	if ((pid = fork()) < 0) {
-		fprintf(stderr, "\n");
 		printerrno("fork");
 		return EXIT_FAILURE;
 	}
@@ -603,7 +602,6 @@ installpackage(struct Package p)
 		int logf;
 
 		if (!nochr && chroot(p.srcd)) {
-			fprintf(stderr, "\n");
 			printerrno("chroot");
 			exit(EXIT_FAILURE);
 		}
@@ -613,18 +611,15 @@ installpackage(struct Package p)
 		fflush(stdout);
 
 		if ((logf = open(log, O_WRONLY, 0700)) == -1) {
-			fprintf(stderr, "\n");
 			printerrno("fopen");
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDOUT_FILENO) == -1) {
-			fprintf(stderr, "\n");
 			printerrno("dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
 		}
 		if (dup2(logf, STDERR_FILENO) == -1) {
-			fprintf(stderr, "\n");
 			printerrno("dup2");
 			close(logf);
 			exit(EXIT_FAILURE);
@@ -645,7 +640,6 @@ installpackage(struct Package p)
 				char np[PATH_MAX];
 				if (PATH_MAX <= strlen(path) + strlen(p.srcd)
 				              + strlen("://bin")) {
-					fprintf(stderr, "\n");
 					printferr("PATH_MAX exceeded");
 					exit(EXIT_FAILURE);
 				}
@@ -1737,7 +1731,6 @@ uninstallpackage(struct Package p)
 		char f[PATH_MAX];
 
 		if (PATH_MAX <= strlen(p.destd) + strlen(outs.a[i])) {
-			fprintf(stderr, "\n");
 			printferr("PATH_MAX exceeded");
 			return EXIT_FAILURE;
 		}
@@ -1745,7 +1738,6 @@ uninstallpackage(struct Package p)
 
 		if (fileexists(f)) {
 			if (remove(f)) {
-				fprintf(stderr, "\n");
 				printerrno("remove");
 				return EXIT_FAILURE;
 			}

@@ -245,8 +245,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
 
 	if (!ressym && S_ISLNK(sbuf.st_mode)) {
 		char sc[PATH_MAX], *sdn, lnk[PATH_MAX];
-		size_t lnkl;
-		int sdd;
+		int lnkl, sdd;
 
 		strncpy(sc, s, PATH_MAX);
 		sdn = dirname(sc);

@@ -85,7 +85,8 @@ struct Sources {
 
 static void cleanup(void);
 static int copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX]);
-static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX]);
+static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
+                    unsigned int ressym);
 static int createtmpdir(char dir[TMPDIR_SIZE]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
                         curl_off_t utot, curl_off_t upl);
@@ -218,7 +219,7 @@ copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX])
 
 			free(spc);
 			free(dpc);
-		} else if (copyfile(sp, dp)) {
+		} else if (copyfile(sp, dp, 1)) {
 			return EXIT_FAILURE;
 		}
 	}
@@ -227,12 +228,48 @@ copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX])
 }
 
 int
-copyfile(const char s[PATH_MAX], const char d[PATH_MAX])
+copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
+         unsigned int ressym)
 {
 	int sfd, dfd;
 	char buf[1024], rs[PATH_MAX], dc[PATH_MAX];
+	struct stat sbuf;
 	const char *dn;
 	ssize_t b;
+
+	if (lstat(s, &sbuf)) {
+		printerrno("lstat");
+		return EXIT_FAILURE;
+	}
+
+	if (!ressym && S_ISLNK(sbuf.st_mode)) {
+		char sc[PATH_MAX], *sdn, lnk[PATH_MAX];
+		size_t lnkl;
+		int sdd;
+
+		strncpy(sc, s, PATH_MAX);
+		sdn = dirname(sc);
+
+		if ((sdd = open(sdn, O_DIRECTORY)) == -1) {
+			printerrno("open");
+			return EXIT_FAILURE;
+		}
+
+		if ((lnkl = readlinkat(sdd, s, lnk, PATH_MAX)) == -1) {
+			close(sdd);
+			printerrno("readlinkat");
+			return EXIT_FAILURE;
+		}
+		lnk[lnkl] = '\0';
+		close(sdd);
+
+		if (symlink(lnk, d)) {
+			printerrno("symlink");
+			return EXIT_FAILURE;
+		}
+
+		return EXIT_SUCCESS;
+	}
 
 	if (!realpath(s, rs)) {
 		printerrno("realpath");
@@ -531,7 +568,7 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 		snprintf(d, sizeof(d), "%s%s", dd, outs.a[i]);
 
 		if (fileexists(s)) {
-			if (copyfile(s, d)) return EXIT_FAILURE;
+			if (copyfile(s, d, 0)) return EXIT_FAILURE;
 		} else if (direxists(s) && copydirrecursive(s, d)) {
 			return EXIT_FAILURE;
 		}
@@ -580,7 +617,7 @@ installpackage(struct Package p)
 	}
 	snprintf(db, sizeof(db), "%s/src/build", p.srcd);
 
-	if (copyfile(b, db)) return EXIT_FAILURE;
+	if (copyfile(b, db, 1)) return EXIT_FAILURE;
 
 	if (packagesources(p.pname, &srcs)) return EXIT_FAILURE;
 	if (srcs.l && retrievesources(srcs, pdir, p.srcd)) return EXIT_FAILURE;
@@ -692,7 +729,8 @@ installpackage(struct Package p)
 				snprintf(logs, sizeof(logs),
 				         "%s/prometheus.log", p.srcd);
 
-				if (copyfile(logs, logd)) return EXIT_FAILURE;
+				if (copyfile(logs, logd, 1))
+					return EXIT_FAILURE;
 
 				printf("\r\033[K\r");
 				fflush(stdout);
@@ -1595,7 +1633,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 
 				return EXIT_FAILURE;
 			}
-			if (copyfile(sf, df)) return EXIT_FAILURE;
+			if (copyfile(sf, df, 1)) return EXIT_FAILURE;
 		}
 
 		if (strlen(srcs.a[i].relpath)) {

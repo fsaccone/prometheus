@@ -105,6 +105,7 @@ static int packagedepends(char pname[NAME_MAX], struct Depends *deps);
 static int packageexists(const char pname[NAME_MAX]);
 static int packageisinstalled(char pname[NAME_MAX],
                               const char destd[PATH_MAX]);
+static unsigned int packageisnochroot(char pname[NAME_MAX]);
 static int packageouts(char pname[NAME_MAX], struct Outs *outs);
 static int packagesources(char pname[NAME_MAX], struct Sources *srcs);
 static void printerrno(const char *s);
@@ -600,7 +601,7 @@ installpackage(struct Package p)
 	struct Sources srcs;
 	struct Outs outs;
 	pid_t pid;
-	unsigned int nochr = 0;
+	unsigned int nochr = packageisnochroot(p.pname);
 
 	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
 
@@ -608,8 +609,6 @@ installpackage(struct Package p)
 		if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
 		return EXIT_SUCCESS;
 	}
-
-	if (!strncmp(p.pname, "nochroot-", 9)) nochr = 1;
 
 	reltmpd = nochr ? p.srcd : "";
 
@@ -897,6 +896,32 @@ packageisinstalled(char pname[NAME_MAX], const char destd[PATH_MAX])
 	return 1;
 }
 
+unsigned int
+packageisnochroot(char pname[NAME_MAX])
+{
+	FILE *fp;
+	char f[PATH_MAX], buf[LINE_MAX];
+
+	if (PATH_MAX <= strlen(repository) + strlen(pname)
+	              + strlen("//outs")) {
+		printferr("PATH_MAX exceeded");
+		return EXIT_FAILURE;
+	}
+	snprintf(f, sizeof(f), "%s/%s/outs", repository, pname);
+
+	fp = fopen(f, "r");
+	if (!fp) return 0;
+
+	if (!fgets(buf, sizeof(buf), fp)) return 0;
+
+	buf[strcspn(buf, "\n")] = '\0';
+
+	if (!strncmp(buf, "#no-chroot", LINE_MAX)) return 1;
+
+	fclose(fp);
+	return 0;
+}
+
 int
 packageouts(char pname[NAME_MAX], struct Outs *outs)
 {
@@ -1162,11 +1187,12 @@ registerpackageinstall(struct Package *p)
 	}
 
 
-	if (p->build && !strncmp(p->pname, "nochroot-", 9)) {
+	if (p->build && packageisnochroot(p->pname)) {
 		char yp;
 
-		printf("+ Package %s is a nochroot package: it will have full "
-		       "access over your machine while building\n", p->pname);
+		printf("+ Package %s is a no-chroot package: it will have "
+		       "full access over your machine while building\n",
+		       p->pname);
 		printf("> Continue? (y/n)\r");
 		fflush(stdout);
 

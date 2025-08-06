@@ -505,28 +505,74 @@ int
 getpackages(struct PackageNames *pkgs)
 {
 	size_t i;
-	DIR *d;
+	struct PathNode dhead, *d;
 	const struct dirent *e;
 
-	if (!(d = opendir(repository))) {
-		pkgs->l = 0;
-		return EXIT_SUCCESS;
-	};
+	strncpy(dhead.p, repository, PATH_MAX);
+	dhead.n = NULL;
 
 	i = 0;
-	while ((e = readdir(d))) {
-		int pe;
+	for (d = &dhead; d; d = d->n) {
+		DIR *dd;
 
-		if ((pe = packageexists(e->d_name)) == -1) return EXIT_FAILURE;
+		if (!(dd = opendir(d->p))) continue;
 
-		if (e->d_name[0] == '.' || !pe) continue;
+		while ((e = readdir(dd))) {
+			int pe, subpe;
+			char subd[PATH_MAX];
+			char subpn[NAME_MAX];
 
-		strncpy(pkgs->a[i], e->d_name, NAME_MAX);
-		i++;
+			if (e->d_name[0] == '.') continue;
+
+			if ((pe = packageexists(e->d_name)) == -1)
+				return EXIT_FAILURE;
+
+			if (pe) {
+				strncpy(pkgs->a[i], e->d_name, NAME_MAX);
+				i++;
+				continue;
+			}
+
+			if (PATH_MAX <= strlen(d->p) + strlen("/")
+			              + strlen(e->d_name)) {
+				printferr("PATH_MAX exceeded");
+				return EXIT_FAILURE;
+			}
+			snprintf(subd, sizeof(subd), "%s/%s", d->p, e->d_name);
+
+			/* skip length of repository + / to get the package
+			   name */
+			strncpy(subpn, subd + strlen(repository) + 1,
+			        NAME_MAX);
+
+			subpe = packageexists(subpn);
+			if (subpe == -1) return EXIT_FAILURE;
+
+			if (subpe) {
+				strncpy(pkgs->a[i], subpn, NAME_MAX);
+				i++;
+				continue;
+			}
+			
+			if (direxists(subd)) {
+				struct PathNode *new, *tail = d;
+
+				if (!(new = malloc(sizeof(struct PathNode)))) {
+					printerrno("malloc");
+					return EXIT_FAILURE;
+				}
+				strncpy(new->p, subd, PATH_MAX);
+				new->n = NULL;
+
+				while (tail->n) tail = tail->n;
+				tail->n = new;
+			}
+		}
+
+		closedir(dd);
 	}
 	pkgs->l = i;
 
-	closedir(d);
 	return EXIT_SUCCESS;
 }
 

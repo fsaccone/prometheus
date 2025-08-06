@@ -1311,7 +1311,7 @@ registerpackageinstall(struct Package *p)
 			return EXIT_FAILURE;
 		}
 		if (!dpe) {
-			printferr("Dependency %s does not exist\n",
+			printferr("Dependency %s does not exist",
 			          deps->a[i].pname);
 			free(deps);
 			return EXIT_FAILURE;
@@ -1329,7 +1329,7 @@ registerpackageinstall(struct Package *p)
 		}
 		if (!douts->l) {
 			free(douts);
-			printferr("Dependency %s has no outs\n",
+			printferr("Dependency %s has no outs",
 			          deps->a[i].pname);
 			free(deps);
 			return EXIT_FAILURE;

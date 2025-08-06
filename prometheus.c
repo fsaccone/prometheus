@@ -130,7 +130,7 @@ static unsigned int urlisvalid(const char url[PATH_MAX]);
 static void usage(void);
 
 static struct termios oldt;
-static struct PackageNode *pkgshead = NULL;
+static struct PackageNode *reqpkgshead = NULL;
 static char prefix[PATH_MAX];
 static char repository[PATH_MAX];
 static struct PathNode *tmpdirhead = NULL;
@@ -141,7 +141,7 @@ cleanup(void)
 	struct PackageNode *pn, *pnn;
 	struct PathNode *tmpd, *tmpdn;
 
-	for (pn = pkgshead; pn; pn = pnn) {
+	for (pn = reqpkgshead; pn; pn = pnn) {
 		pnn = pn->n;
 		if (pn->p) free(pn->p);
 		free(pn);
@@ -1200,7 +1200,7 @@ registerpackageinstall(struct Package *p)
 	}
 
 	/* if already registered, register again to just copy from its srcd */
-	for (pn = pkgshead; pn; pn = pn->n) {
+	for (pn = reqpkgshead; pn; pn = pn->n) {
 		if (strncmp(p->pname, pn->p->pname, NAME_MAX)) continue;
 
 		if (!(newpn = malloc(sizeof(struct PackageNode)))) {
@@ -1219,12 +1219,12 @@ registerpackageinstall(struct Package *p)
 
 		newpn->p = newp;
 		newpn->n = NULL;
-		if (!pkgshead) {
-			pkgshead = newpn;
+		if (!reqpkgshead) {
+			reqpkgshead = newpn;
 			return EXIT_SUCCESS;
 		}
 
-		tailpn = pkgshead;
+		tailpn = reqpkgshead;
 		while (tailpn->n) tailpn = tailpn->n;
 		tailpn->n = newpn;
 
@@ -1334,7 +1334,7 @@ registerpackageinstall(struct Package *p)
 
 			/* if already registered, register again to just copy
 			   from its srcd */
-			for (pn = pkgshead; pn; pn = pn->n) {
+			for (pn = reqpkgshead; pn; pn = pn->n) {
 				if (strncmp(deps->a[i].pname, pn->p->pname,
 				    NAME_MAX)) continue;
 
@@ -1404,12 +1404,12 @@ registerpackageinstall(struct Package *p)
 
 	newpn->p = newp;
 	newpn->n = NULL;
-	if (!pkgshead) {
-		pkgshead = newpn;
+	if (!reqpkgshead) {
+		reqpkgshead = newpn;
 		return EXIT_SUCCESS;
 	}
 
-	tailpn = pkgshead;
+	tailpn = reqpkgshead;
 	while (tailpn->n) tailpn = tailpn->n;
 	tailpn->n = newpn;
 
@@ -1513,11 +1513,11 @@ registerpackageuninstall(struct Package *p, unsigned int rec)
 
 	newpn->p = newp;
 	newpn->n = NULL;
-	if (!pkgshead) {
-		pkgshead = newpn;
+	if (!reqpkgshead) {
+		reqpkgshead = newpn;
 	} else {
 		struct PackageNode *tailpn;
-		tailpn = pkgshead;
+		tailpn = reqpkgshead;
 		while (tailpn->n) tailpn = tailpn->n;
 		tailpn->n = newpn;
 	}
@@ -2110,7 +2110,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	for (pn = pkgshead; pn; pn = pn->n) {
+	for (pn = reqpkgshead; pn; pn = pn->n) {
 		if (iflag && installpackage(*pn->p)) {
 			cleanup();
 			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);

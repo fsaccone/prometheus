@@ -263,6 +263,13 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
 		lnk[lnkl] = '\0';
 		close(sdd);
 
+		if (fileexists(d) && remove(d)) {
+			printerrno("remove");
+			return EXIT_FAILURE;
+		}
+
+		if (direxists(d) && rmdirrecursive(d)) return EXIT_FAILURE;
+
 		if (symlink(lnk, d)) {
 			printerrno("symlink");
 			return EXIT_FAILURE;
@@ -284,6 +291,13 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
 	strncpy(dc, d, PATH_MAX);
 	dn = dirname(dc);
 	if (mkdirrecursive(dn)) return EXIT_FAILURE;
+
+	if (fileexists(d) && remove(d)) {
+		printerrno("remove");
+		return EXIT_FAILURE;
+	}
+
+	if (direxists(d) && rmdirrecursive(d)) return EXIT_FAILURE;
 
 	if ((dfd = open(d, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		close(sfd);

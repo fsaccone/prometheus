@@ -498,7 +498,7 @@ unsigned int
 fileexists(const char f[PATH_MAX])
 {
 	struct stat buf;
-	return (!stat(f, &buf) && !S_ISDIR(buf.st_mode));
+	return (!lstat(f, &buf) && !S_ISDIR(buf.st_mode));
 }
 
 int

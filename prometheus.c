@@ -1516,8 +1516,16 @@ registerpackageuninstall(struct Package *p, unsigned int rec)
 		size_t j;
 		int pkgsii;
 		struct Depends *pdeps;
+		struct PackageNode *pn = NULL;
 
 		if (!strncmp(pkgs->a[i], p->pname, NAME_MAX)) continue;
+
+		/* skip if pkg is registered for uninstall */
+		for (pn = reqpkgshead; pn; pn = pn->n) {
+			if (!strncmp(pn->p->pname, pkgs->a[i], NAME_MAX))
+				break;
+		}
+		if (pn) continue; /* if for loop broke */
 
 		if ((pkgsii = packageisinstalled(pkgs->a[i],
 		                                 p->destd)) == -1) {

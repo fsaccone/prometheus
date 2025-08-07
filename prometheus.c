@@ -1263,22 +1263,18 @@ registerpackageinstall(struct Package *p)
 	if (p->build && packageisnochroot(p->pname)) {
 		char yp;
 
-		printf("+ Package %s is a no-chroot package: it will have "
-		       "full access over your machine while building\n",
-		       p->pname);
-		printf("> Continue? (y/n)\r");
-		fflush(stdout);
+		printf("+ Package %s will not use chroot, meaning it will "
+		       "have no restrictions during the build\n", p->pname);
+		printf("> Continue? (y/n) ");
 
 		while ((yp = getchar()) != EOF) {
 			if (yp == '\n') continue;
 			if (yp == 'y' || yp == 'Y') break;
-			printf("\r\033[K\r");
-			fflush(stdout);
+			printf("n\n");
 			return EXIT_FAILURE;
 		}
 
-		printf("\r\033[K\r");
-		fflush(stdout);
+		printf("y\n");
 	}
 
 	if (!strlen(p->srcd)) {

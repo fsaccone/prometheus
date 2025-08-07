@@ -1295,15 +1295,24 @@ registerpackageinstall(struct Package *p)
 		int dpe, dpii;
 		struct Outs *douts;
 		struct Package *dp;
+		char *ppname;
 
 		/* if p->build == 0, only register runtime deps */
 		if (!p->build && !deps->a[i].runtime) continue;
 
-		if (!relpathisvalid(deps->a[i].pname)) {
-			printferr("Invalid dependency %s", deps->a[i].pname);
+		if (!(ppname = malloc(sizeof(char) * PATH_MAX))) {
+			printerrno("malloc");
 			free(deps);
 			return EXIT_FAILURE;
 		}
+		strncpy(ppname, deps->a[i].pname, PATH_MAX);
+		if (!relpathisvalid(ppname)) {
+			printferr("Invalid dependency %s", deps->a[i].pname);
+			free(ppname);
+			free(deps);
+			return EXIT_FAILURE;
+		}
+		free(ppname);
 
 		printf("+ Found dependency %s for %s\n",
 		       deps->a[i].pname, p->pname);

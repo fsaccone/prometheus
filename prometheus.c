@@ -533,7 +533,7 @@ getpackages(struct PackageNames *pkgs)
 				struct PathNode *dn;
 				for (d = dhead.n; d; d = dn) {
 					dn = d->n;
-					free(dn);
+					free(d);
 				}
 				return EXIT_FAILURE;
 			}
@@ -549,7 +549,7 @@ getpackages(struct PackageNames *pkgs)
 				struct PathNode *dn;
 				for (d = dhead.n; d; d = dn) {
 					dn = d->n;
-					free(dn);
+					free(d);
 				}
 				printferr("PATH_MAX exceeded");
 				return EXIT_FAILURE;
@@ -566,7 +566,7 @@ getpackages(struct PackageNames *pkgs)
 				struct PathNode *dn;
 				for (d = dhead.n; d; d = dn) {
 					dn = d->n;
-					free(dn);
+					free(d);
 				}
 				return EXIT_FAILURE;
 			}
@@ -584,7 +584,7 @@ getpackages(struct PackageNames *pkgs)
 					struct PathNode *dn;
 					for (d = dhead.n; d; d = dn) {
 						dn = d->n;
-						free(dn);
+						free(d);
 					}
 					printerrno("malloc");
 					return EXIT_FAILURE;

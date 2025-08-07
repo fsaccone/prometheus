@@ -341,11 +341,11 @@ createtmpdir(char dir[TMPDIR_SIZE])
 		return EXIT_FAILURE;
 	}
 
-	if (PATH_MAX <= strlen(dir) + strlen("/prometheus.log")) {
+	if (PATH_MAX <= strlen(dir) + strlen("/log")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(log, sizeof(log), "%s/prometheus.log", dir);
+	snprintf(log, sizeof(log), "%s/log", dir);
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		printerrno("open");
 		return EXIT_FAILURE;
@@ -718,11 +718,11 @@ installpackage(struct Package p)
 	if (packagesources(p.pname, &srcs)) return EXIT_FAILURE;
 	if (srcs.l && retrievesources(srcs, pdir, p.srcd)) return EXIT_FAILURE;
 
-	if (PATH_MAX <= strlen(reltmpd) + strlen("/prometheus.log")) {
+	if (PATH_MAX <= strlen(reltmpd) + strlen("/log")) {
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(log, sizeof(log), "%s/prometheus.log", reltmpd);
+	snprintf(log, sizeof(log), "%s/log", reltmpd);
 	snprintf(src, sizeof(src), "%s/src", reltmpd);
 
 	if ((pid = fork()) < 0) {
@@ -739,8 +739,8 @@ installpackage(struct Package p)
 			exit(EXIT_FAILURE);
 		}
 
-		printf("- Building %s: logs can be viewed in "
-		       "%s/prometheus.log\r", p.pname, p.srcd);
+		printf("- Building %s: logs can be viewed in %s/log\r",
+		       p.pname, p.srcd);
 		fflush(stdout);
 
 		if ((logf = open(log, O_WRONLY, 0700)) == -1) {
@@ -810,20 +810,20 @@ installpackage(struct Package p)
 				char logs[PATH_MAX];
 
 				if (PATH_MAX <= strlen(prefix)
-				              + strlen("/prometheus.log")) {
+				              + strlen("/log")) {
 					printferr("PATH_MAX exceeded");
 					return EXIT_FAILURE;
 				}
 				snprintf(logd, sizeof(logd),
-				         "%s/prometheus.log", prefix);
+				         "%s/log", prefix);
 
 				if (PATH_MAX <= strlen(p.srcd)
-				              + strlen("/prometheus.log")) {
+				              + strlen("/log")) {
 					printferr("PATH_MAX exceeded");
 					return EXIT_FAILURE;
 				}
 				snprintf(logs, sizeof(logs),
-				         "%s/prometheus.log", p.srcd);
+				         "%s/log", p.srcd);
 
 				if (copyfile(logs, logd, 1))
 					return EXIT_FAILURE;
@@ -2110,13 +2110,13 @@ main(int argc, char *argv[])
 	if (repository[strlen(repository) - 1] == '/')
 		repository[strlen(repository) - 1] = '\0';
 
-	if (PATH_MAX <= strlen(prefix) + strlen("/prometheus.log")) {
+	if (PATH_MAX <= strlen(prefix) + strlen("/log")) {
 		cleanup();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		printferr("PATH_MAX exceeded");
 		return EXIT_FAILURE;
 	}
-	snprintf(log, sizeof(log), "%s/prometheus.log", prefix);
+	snprintf(log, sizeof(log), "%s/log", prefix);
 	printf("- Cleaning up\r");
 	if (fileexists(log) && remove(log)) {
 		cleanup();

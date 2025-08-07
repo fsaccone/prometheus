@@ -40,7 +40,7 @@ Each package directory may also contain the following optional files:
 - sources
 
 The program chroots in a temporary directory before building a package: it is
-initialized with a /src directory and a /prometheus.log file.
+initialized with a /src directory and a /log file.
 
 - build
 

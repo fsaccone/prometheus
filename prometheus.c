@@ -809,14 +809,6 @@ installpackage(struct Package p)
 				char logd[PATH_MAX];
 				char logs[PATH_MAX];
 
-				if (PATH_MAX <= strlen(prefix)
-				              + strlen("/log")) {
-					printferr("PATH_MAX exceeded");
-					return EXIT_FAILURE;
-				}
-				snprintf(logd, sizeof(logd),
-				         "%s/log", prefix);
-
 				if (PATH_MAX <= strlen(p.srcd)
 				              + strlen("/log")) {
 					printferr("PATH_MAX exceeded");
@@ -824,6 +816,12 @@ installpackage(struct Package p)
 				}
 				snprintf(logs, sizeof(logs),
 				         "%s/log", p.srcd);
+
+				strncpy(logd, TMPFILE, TMPFILE_SIZE);
+				if (mkstemp(logd) == -1) {
+					printerrno("mkstemp");
+					return EXIT_FAILURE;
+				}
 
 				if (copyfile(logs, logd, 1))
 					return EXIT_FAILURE;
@@ -2003,8 +2001,7 @@ main(int argc, char *argv[])
 	char gprefix[PATH_MAX] = DEFAULT_PREFIX,
 	     grepository[PATH_MAX] = PACKAGE_REPOSITORY,
 	     expprefix[PATH_MAX],
-	     exprepository[PATH_MAX],
-	     log[PATH_MAX];
+	     exprepository[PATH_MAX];
 	struct termios newt;
 	struct PackageNode *pn;
 
@@ -2109,22 +2106,6 @@ main(int argc, char *argv[])
 
 	if (repository[strlen(repository) - 1] == '/')
 		repository[strlen(repository) - 1] = '\0';
-
-	if (PATH_MAX <= strlen(prefix) + strlen("/log")) {
-		cleanup();
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(log, sizeof(log), "%s/log", prefix);
-	printf("- Cleaning up\r");
-	if (fileexists(log) && remove(log)) {
-		cleanup();
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-		printerrno("remove");
-		return EXIT_FAILURE;
-	}
-	printf("\r\033[K\r");
 
 	if (lflag) {
 		struct PackageNames pkgs;

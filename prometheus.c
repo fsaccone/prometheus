@@ -1591,9 +1591,13 @@ registerpackageuninstall(struct Package *p, unsigned int rec)
 unsigned int
 relpathisvalid(char relpath[PATH_MAX])
 {
-	return (!strstr(relpath, "..") && !strstr(relpath, ":")
-	     && relpath[0] != '/' && strncmp(relpath, "./", 2)
-	     && relpath[0] != '\0' && relpath[strlen(relpath) - 1] != '/');
+	return (!strstr(relpath, "..")
+	     && !strstr(relpath, ":")
+	     && !strstr(relpath, "//")
+	     && relpath[0] != '/'
+	     && strncmp(relpath, "./", 2)
+	     && relpath[0] != '\0'
+	     && relpath[strlen(relpath) - 1] != '/');
 }
 
 int

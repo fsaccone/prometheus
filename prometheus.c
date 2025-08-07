@@ -27,8 +27,8 @@
 
 #define LINES_MAX     MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)
 #define MAX(a, b)     ((a) > (b) ? (a) : (b))
-#define TMPDIR        "/tmp/prXXXXXX"
-#define TMPDIR_SIZE   14
+#define TMPFILE       "/tmp/prXXXXXX"
+#define TMPFILE_SIZE  14
 
 struct Depend {
 	char pname[NAME_MAX];
@@ -88,7 +88,7 @@ static int pnamecmp(const char **a, const char **b);
 static int copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
                     unsigned int ressym);
-static int createtmpdir(char dir[TMPDIR_SIZE]);
+static int createtmpdir(char dir[TMPFILE_SIZE]);
 static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
                         curl_off_t utot, curl_off_t upl);
 static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
@@ -324,7 +324,7 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
 }
 
 int
-createtmpdir(char dir[TMPDIR_SIZE])
+createtmpdir(char dir[TMPFILE_SIZE])
 {
 	char log[PATH_MAX], src[PATH_MAX];
 	int logfd;
@@ -335,7 +335,7 @@ createtmpdir(char dir[TMPDIR_SIZE])
 		return EXIT_FAILURE;
 	}
 
-	strncpy(dir, TMPDIR, TMPDIR_SIZE);
+	strncpy(dir, TMPFILE, TMPFILE_SIZE);
 	if (!mkdtemp(dir)) {
 		printerrno("mkdtemp");
 		return EXIT_FAILURE;
@@ -1288,7 +1288,7 @@ registerpackageinstall(struct Package *p)
 	}
 
 	if (!strlen(p->srcd)) {
-		char tmpd[TMPDIR_SIZE];
+		char tmpd[TMPFILE_SIZE];
 		if (createtmpdir(tmpd)) return EXIT_FAILURE;
 		strncpy(p->srcd, tmpd, PATH_MAX);
 	}
@@ -1397,7 +1397,7 @@ registerpackageinstall(struct Package *p)
 			/* if not installed or registered, build and install
 			   it */
 			if (!reg) {
-				char dtmpd[TMPDIR_SIZE];
+				char dtmpd[TMPFILE_SIZE];
 
 				if (createtmpdir(dtmpd)) {
 					free(dp);

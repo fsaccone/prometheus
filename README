@@ -60,11 +60,10 @@ Empty lines and lines starting with # are ignored.
 When uninstalling, all listed files are removed from the system. A package is
 considered installed when all listed files exist.
 
-If the first line of the outs file is "#no-chroot", the package is considered a
-no-chroot package: before building this package, the PREFIX environment
-variable will be set to the temporary directory, and the program will not
-chroot to it. Since this is potentially unsafe, the user is prompted before
-installing it.
+If the first line of the outs file is "#no-chroot", before building this
+package, the PREFIX environment variable will be set to the temporary
+directory, and the program will not chroot to it. Since this is potentially
+unsafe, the user is prompted before installing it.
 
 - depends
 

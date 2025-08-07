@@ -1303,6 +1303,12 @@ registerpackageinstall(struct Package *p)
 		/* if p->build == 0, only register runtime deps */
 		if (!p->build && !deps->a[i].runtime) continue;
 
+		if (!relpathisvalid(deps->a[i].pname)) {
+			printferr("Invalid dependency %s", deps->a[i].pname);
+			free(deps);
+			return EXIT_FAILURE;
+		}
+
 		printf("+ Found dependency %s for %s\n",
 		       deps->a[i].pname, p->pname);
 

@@ -278,6 +278,10 @@ copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
 
 		if (direxists(d) && rmdirrecursive(d)) return EXIT_FAILURE;
 
+		strncpy(dc, d, PATH_MAX);
+		dn = dirname(dc);
+		if (mkdirrecursive(dn)) return EXIT_FAILURE;
+
 		if (symlink(lnk, d)) {
 			printerrno("symlink");
 			return EXIT_FAILURE;

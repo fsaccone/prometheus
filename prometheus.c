@@ -84,6 +84,7 @@ struct Sources {
 };
 
 static void cleanup(void);
+static int pnamecmp(const char **a, const char **b);
 static int copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
                     unsigned int ressym);
@@ -125,6 +126,7 @@ static int sha256hash(const char f[PATH_MAX], uint8_t h[SHA256_DIGEST_LENGTH]);
 static void sha256uint8tochar(const uint8_t u[SHA256_DIGEST_LENGTH],
                               char c[2 * SHA256_DIGEST_LENGTH + 1]);
 static void sigexit();
+static int sortpackages(struct PackageNames *pkgs);
 static int uninstallpackage(struct Package p);
 static unsigned int urlisvalid(const char url[PATH_MAX]);
 static void usage(void);
@@ -163,6 +165,12 @@ cleanup(void)
 
 	printf("\r\033[K\r");
 	fflush(stdout);
+}
+
+int
+pnamecmp(const char **a, const char **b)
+{
+	return strncmp(*a, *b, NAME_MAX);
 }
 
 int
@@ -600,6 +608,8 @@ getpackages(struct PackageNames *pkgs)
 		closedir(dd);
 	}
 	pkgs->l = i;
+
+	if (sortpackages(pkgs)) return EXIT_FAILURE;
 
 	return EXIT_SUCCESS;
 }
@@ -1891,6 +1901,41 @@ sigexit()
 	cleanup();
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	exit(EXIT_FAILURE);
+}
+
+int
+sortpackages(struct PackageNames *pkgs)
+{
+	char **a;
+	size_t i;
+	struct PackageNames *res;
+
+	if (!pkgs->l) return EXIT_SUCCESS;
+
+	if (!(a = malloc(sizeof(char *) * pkgs->l))) {
+		printerrno("malloc");
+		return EXIT_FAILURE;
+	}
+
+	for (i = 0; i < pkgs->l; i++) a[i] = pkgs->a[i];
+
+	qsort(a, pkgs->l, sizeof(char *),
+	      (int (*)(const void *, const void *))pnamecmp);
+
+	if (!(res = malloc(sizeof(struct PackageNames)))) {
+		free(a);
+		printerrno("malloc");
+		return EXIT_FAILURE;
+	}
+	res->l = pkgs->l;
+
+	for (i = 0; i < pkgs->l; i++) strncpy(res->a[i], a[i], NAME_MAX);
+	free(a);
+
+	memcpy(pkgs, res, sizeof(struct PackageNames));
+	free(res);
+
+	return EXIT_SUCCESS;
 }
 
 int

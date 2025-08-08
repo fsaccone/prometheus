@@ -1183,14 +1183,14 @@ readlines(const char f[PATH_MAX], struct Lines *l)
 
 	i = 0;
 	while (fgets(buf, sizeof(buf), fp)) {
-		if (buf[0] == '\n' || buf[0] == '#') continue;
-		buf[strcspn(buf, "\n")] = '\0';
-		strncpy(l->a[i], buf, LINE_MAX);
-		i++;
 		if (i >= LINES_MAX) {
 			printferr("LINES_MAX exceeded");
 			return EXIT_FAILURE;
 		}
+		if (buf[0] == '\n' || buf[0] == '#') continue;
+		buf[strcspn(buf, "\n")] = '\0';
+		strncpy(l->a[i], buf, LINE_MAX);
+		i++;
 	}
 	l->l = i;
 

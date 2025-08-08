@@ -904,6 +904,11 @@ packagedepends(char pname[NAME_MAX], struct Depends *deps)
 		const char *tok;
 		int nfields;
 
+		if (i >= DEPENDS_MAX) {
+			printferr("DEPENDS_MAX exceeded");
+			return EXIT_FAILURE;
+		}
+
 		for (tok = strtok(l.a[i], " \t"), nfields = 0;
 		     tok && nfields < 2;
 		     tok = strtok(NULL, " \t"), nfields++) {
@@ -1023,6 +1028,10 @@ packageouts(char pname[NAME_MAX], struct Outs *outs)
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
+		if (i >= OUTS_MAX) {
+			printferr("OUTS_MAX exceeded");
+			return EXIT_FAILURE;
+		}
 		if (l.a[i][0] != '/') {
 			printferr("Non-absolute path found in %s's outs",
 			    pname);
@@ -1054,6 +1063,11 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 	for (i = 0; i < l.l; i++) {
 		char *tok;
 		int nfields;
+
+		if (i >= SOURCES_MAX) {
+			printferr("SOURCES_MAX exceeded");
+			return EXIT_FAILURE;
+		}
 
 		for (tok = strtok(l.a[i], " \t"), nfields = 0;
 		     tok && nfields < 3;

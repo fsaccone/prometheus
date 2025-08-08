@@ -1923,6 +1923,7 @@ void
 sigexit()
 {
 	cleanup();
+	printferr("Interrupted");
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	exit(EXIT_FAILURE);
 }

@@ -8,7 +8,7 @@ Requirements
 
 - C99 compiler
 - C POSIX library
-- libcurl
+- OpenSSL
 
 Installaton
 -----------
@@ -90,8 +90,8 @@ Each line of the sources file must be of the following format:
 
 Empty lines and lines starting with # are ignored.
 
-A valid URL is the relative path to a file in the package directory, a
-HTTP/HTTPS address or a FTP address.
+A valid URL is the relative path to a file in the package directory or a
+HTTP/HTTPS address.
 
 If URL is a local file, it must not be a directory.
 

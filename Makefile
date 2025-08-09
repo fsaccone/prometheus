@@ -2,8 +2,8 @@
 
 include config.mk
 
-SRCS = prometheus.c sha256.c
-BIN = prometheus
+SRCS = pr.c sha256.c
+BIN = pr
 
 OBJS = $(SRCS:.c=.o)
 

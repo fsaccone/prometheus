@@ -1,5 +1,5 @@
 /* See LICENSE file for copyright and license details. */
-#define PROJECT_NAME "Prometheus"
+#define PROJECT_NAME "pr"
 #define VERSION      "0.2"
 
 /* maximum limit for package resources */

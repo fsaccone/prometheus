@@ -1,5 +1,5 @@
-Prometheus
-==========
+pr
+==
 
 Simple package manager for POSIX systems.
 
@@ -19,10 +19,10 @@ Installaton
 Usage
 -----
 
-	prometheus -a [-s repo]
-	prometheus -i [-s repo] [-p prefix] package ...
-	prometheus -l [-s repo] [-p prefix]
-	prometheus -u [-s repo] [-p prefix] [-r] package ...
+	pr -a [-s repo]
+	pr -i [-s repo] [-p prefix] package ...
+	pr -l [-s repo] [-p prefix]
+	pr -u [-s repo] [-p prefix] [-r] package ...
 
 Repositories
 ------------

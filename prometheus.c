@@ -25,6 +25,7 @@
 
 #include "arg.h"
 #include "config.h"
+#undef SHA256_DIGEST_LENGTH
 #include "sha256.h"
 
 #define LINES_MAX     MAX(MAX(DEPENDS_MAX, OUTS_MAX), SOURCES_MAX)

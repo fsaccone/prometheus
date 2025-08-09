@@ -19,7 +19,8 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <curl/curl.h>
+#define REQUESTS_IMPLEMENTATION
+#include "requests.h"
 
 #include "arg.h"
 #include "config.h"
@@ -89,9 +90,6 @@ static int copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX]);
 static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
                     unsigned int ressym);
 static int createtmpdir(char dir[TMPFILE_SIZE]);
-static int curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow,
-                        curl_off_t utot, curl_off_t upl);
-static size_t curlwrite(void *d, size_t dl, size_t n, FILE *f);
 static unsigned int direxists(const char f[PATH_MAX]);
 static int expandtilde(const char f[PATH_MAX], char ef[PATH_MAX]);
 static int fetchfile(const char url[PATH_MAX], const char f[PATH_MAX]);
@@ -117,6 +115,7 @@ static int readlines(const char f[PATH_MAX], struct Lines *l);
 static int registerpackageinstall(struct Package *p);
 static int registerpackageuninstall(struct Package *p, unsigned int rec);
 static unsigned int relpathisvalid(char relpath[PATH_MAX]);
+static void requestscallback(struct download_state* s, char *p[PATH_MAX]);
 static int rmdirrecursive(const char d[PATH_MAX]);
 static int retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
                            const char tmpd[PATH_MAX]);
@@ -377,42 +376,6 @@ createtmpdir(char dir[TMPFILE_SIZE])
 	return EXIT_SUCCESS;
 }
 
-int
-curlprogress(void *p, curl_off_t dltot, curl_off_t dlnow, curl_off_t utot,
-             curl_off_t upl)
-{
-	(void)utot;
-	(void)upl;
-
-	printf("\r\033[K");
-
-	if (dltot > 0) {
-		const int bl = 20;
-		double per = (double)dlnow / dltot * 100.0;
-		int i, bpos = bl * dlnow / dltot;
-
-		printf("- Downloading %s: [", (char *)p);
-		for (i = 0; i < bl; i++) {
-			if (i < bpos)
-				printf("#");
-			else
-				printf("-");
-		}
-		printf("] %.2f%%\r", per);
-	} else {
-		printf("- Downloading %s: ?\r", (char *)p);
-	}
-
-	fflush(stdout);
-	return 0;
-}
-
-size_t
-curlwrite(void *d, size_t dl, size_t n, FILE *f)
-{
-	return fwrite(d, dl, n, f);
-}
-
 unsigned int
 direxists(const char f[PATH_MAX])
 {
@@ -446,62 +409,69 @@ expandtilde(const char f[PATH_MAX], char ef[PATH_MAX])
 int
 fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
 {
-	CURL *c;
-	CURLcode cc;
-	FILE *ff;
-	long r;
-	char ua[sizeof(PROJECT_NAME) + sizeof(VERSION)]; /* -2^\0 +/ +\0 */
+	struct request_options o;
+	struct response *r;
+	struct url u;
+	char ua[sizeof(PROJECT_NAME) + sizeof(VERSION)], /* -2^\0 +/ +\0 */
+	     cf[PATH_MAX];
+
+	printf("- Downloading %s\r", url);
+	fflush(stdout);
 
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
-	if (!(c = curl_easy_init())) {
-		printferr("curl: Failed to initialize");
+	o.data_callback = (requests_user_cb_t)requestscallback;
+	o.http_version = 0;
+	o.user_data = &url;
+
+	header_add(&o.header, "User-Agent", ua);
+
+	u = resolve_url(url);
+	o.url = &u;
+
+	strncpy(cf, f, PATH_MAX);
+
+	r = requests_get_file(NULL, cf, &o);
+
+	if (!r) {
+		free_url(o.url);
+		requests_free_tls_context();
 		return EXIT_FAILURE;
 	}
 
-	if (!(ff = fopen(f, "wb"))) {
-		curl_easy_cleanup(c);
-		printerrno("fopen");
+	if (r->status_code >= 400) {
+		printferr("Response code of %s is %u", url, r->status_code);
+		free_url(o.url);
+		requests_free_tls_context();
 		return EXIT_FAILURE;
 	}
 
-	curl_easy_setopt(c, CURLOPT_CONNECTTIMEOUT, 60L);
-	curl_easy_setopt(c, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(c, CURLOPT_FTP_RESPONSE_TIMEOUT, 60L);
-	curl_easy_setopt(c, CURLOPT_FTP_USE_EPSV, 1L);
-	curl_easy_setopt(c, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
-	curl_easy_setopt(c, CURLOPT_NOPROGRESS, 0L);
-	curl_easy_setopt(c, CURLOPT_SSL_VERIFYHOST, 2L);
-	curl_easy_setopt(c, CURLOPT_SSL_VERIFYPEER, 1L);
-	curl_easy_setopt(c, CURLOPT_TIMEOUT, 0L);
-	curl_easy_setopt(c, CURLOPT_URL, url);
-	curl_easy_setopt(c, CURLOPT_USE_SSL, CURLUSESSL_ALL);
-	curl_easy_setopt(c, CURLOPT_USERAGENT, ua);
-	curl_easy_setopt(c, CURLOPT_WRITEDATA, ff);
-	curl_easy_setopt(c, CURLOPT_WRITEFUNCTION, curlwrite);
-	curl_easy_setopt(c, CURLOPT_XFERINFODATA, url);
-	curl_easy_setopt(c, CURLOPT_XFERINFOFUNCTION,
-	                 (curl_xferinfo_callback)curlprogress);
+	while (r->status_code > 300 && r->status_code < 307) {
+		char *newloc = header_get_value(&r->header, "Location");
 
-	if ((cc = curl_easy_perform(c)) != CURLE_OK) {
-		fclose(ff);
-		curl_easy_cleanup(c);
-		printferr("curl %s: %s", url, curl_easy_strerror(cc));
-		return EXIT_FAILURE;
+		if (!newloc) {
+			printferr("Reponse code of %s is %u and no Location "
+			          "header was provided", url, r->status_code);
+			free_url(o.url);
+			requests_free_tls_context();
+			return EXIT_FAILURE;
+		}
+		free_url(o.url);
+		*o.url = url_redirect(r->url, newloc);
+
+		free_response(r);
+
+		r = requests_get_file(NULL, cf, &o);
+
+		if (!r) {
+			free_url(o.url);
+			requests_free_tls_context();
+			return EXIT_FAILURE;
+		}
 	}
 
-	curl_easy_getinfo(c, CURLINFO_RESPONSE_CODE, &r);
-
-	if (r >= 400) {
-		printferr("curl %s: Response code %ld", url, r);
-		fclose(ff);
-		curl_easy_cleanup(c);
-		return EXIT_FAILURE;
-	}
-
-	printf("\r\033[K+ Downloaded %s\n", url);
-	fclose(ff);
-	curl_easy_cleanup(c);
+	free_url(o.url);
+	requests_free_tls_context();
 
 	return EXIT_SUCCESS;
 }
@@ -1645,6 +1615,24 @@ relpathisvalid(char relpath[PATH_MAX])
 	     && relpath[strlen(relpath) - 1] != '/');
 }
 
+void
+requestscallback(struct download_state* s, char *p[PATH_MAX])
+{
+	const int bl = 20;
+	uint64_t rtot = s->content_length - s->bytes_left;
+	double pr = (double)rtot / (double)s->content_length;
+	int bfull = pr * bl, i,
+	    bemp = (1.0f - pr) * bl;
+
+	printf("\r\033[K- Downloading %s: [", *p);
+
+	for (i = 0; i < bfull; i++) putchar('#');
+	for (i = 0; i < bemp; i++) putchar('-');
+
+	printf("] %.2f%%\r", pr * 100.0f);
+	fflush(stdout);
+}
+
 int
 rmdirrecursive(const char d[PATH_MAX])
 {
@@ -2000,8 +1988,7 @@ unsigned int
 urlisvalid(const char url[PATH_MAX])
 {
 	return (!strncmp(url, "http://", 7)
-	     || !strncmp(url, "https://", 8)
-	     || !strncmp(url, "ftp://", 6));
+	     || !strncmp(url, "https://", 8));
 }
 
 void

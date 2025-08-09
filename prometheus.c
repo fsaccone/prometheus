@@ -1718,7 +1718,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 
 			if (fetchfile(srcs.a[i].url, df)) return EXIT_FAILURE;
 
-			printf("- Computing the hash of %s\r",
+			printf("\033[K- Computing the hash of %s\r",
 			       srcs.a[i].url);
 			fflush(stdout);
 			if (sha256hash(df, h)) return EXIT_FAILURE;

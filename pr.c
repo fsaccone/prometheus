@@ -94,7 +94,7 @@ static int copyfile(const char s[PATH_MAX], const char d[PATH_MAX],
 static int createtmpdir(char dir[TMPFILE_SIZE]);
 static unsigned int direxists(const char f[PATH_MAX]);
 static int expandtilde(const char f[PATH_MAX], char ef[PATH_MAX]);
-static int fetchfile(const char url[PATH_MAX], const char f[PATH_MAX]);
+static int fetchfile(char url[PATH_MAX], const char f[PATH_MAX]);
 static unsigned int fileexists(const char f[PATH_MAX]);
 static int getpackages(struct PackageNames *pkgs);
 static void handlesignals(void(*hdl)(int));
@@ -409,7 +409,7 @@ expandtilde(const char f[PATH_MAX], char ef[PATH_MAX])
 }
 
 int
-fetchfile(const char url[PATH_MAX], const char f[PATH_MAX])
+fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 {
 	struct request_options o;
 	struct response *r;

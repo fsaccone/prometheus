@@ -150,13 +150,12 @@ cleanup(void)
 		free(pn);
 	}
 
-	printf("\r\033[K\r");
+	printf("\r\033[K");
 	fflush(stdout);
 
 	if (!tmpdirhead) return;
 
-	printf("- Cleaning up\r");
-	fflush(stdout);
+	printf("- Cleaning up");
 
 	for (tmpd = tmpdirhead; tmpd; tmpd = tmpdn) {
 		tmpdn = tmpd->n;
@@ -164,7 +163,7 @@ cleanup(void)
 		free(tmpd);
 	}
 
-	printf("\r\033[K\r");
+	printf("\r\033[K");
 	fflush(stdout);
 }
 
@@ -417,7 +416,7 @@ fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 	char ua[sizeof(PROJECT_NAME) + sizeof(VERSION)], /* -2^\0 +/ +\0 */
 	     cf[PATH_MAX];
 
-	printf("- Downloading %s\r", url);
+	printf("\r\033[K- Downloading %s", url);
 	fflush(stdout);
 
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
@@ -715,7 +714,7 @@ installpackage(struct Package p)
 			exit(EXIT_FAILURE);
 		}
 
-		printf("- Building %s: logs can be viewed in %s/log\r",
+		printf("\r\033[K- Building %s: logs can be viewed in %s/log",
 		       p.pname, p.srcd);
 		fflush(stdout);
 
@@ -802,8 +801,6 @@ installpackage(struct Package p)
 				if (copyfile(logs, logd, 1))
 					return EXIT_FAILURE;
 
-				printf("\r\033[K\r");
-				fflush(stdout);
 				printferr("Failed to build %s: see %s",
 				          p.pname, logd);
 				return EXIT_FAILURE;
@@ -811,7 +808,7 @@ installpackage(struct Package p)
 		}
 	}
 
-	printf("\r\033[K- Installing %s\r", p.pname);
+	printf("\r\033[K- Installing %s", p.pname);
 	fflush(stdout);
 	if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
 	printf("\r\033[K+ Package %s installed\n", p.pname);
@@ -1633,7 +1630,7 @@ requestscallback(struct download_state* s, char *p[PATH_MAX])
 	if (bfull >= 1) putchar('>');
 	for (i = 0; i < bemp; i++) putchar(' ');
 
-	printf("] %.2f%%\r", pr * 100.0f);
+	printf("] %.2f%%", pr * 100.0f);
 	fflush(stdout);
 }
 
@@ -1720,11 +1717,11 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 
 			if (fetchfile(srcs.a[i].url, df)) return EXIT_FAILURE;
 
-			printf("\033[K- Computing the hash of %s\r",
+			printf("\r\033[K- Computing the hash of %s",
 			       srcs.a[i].url);
 			fflush(stdout);
 			if (sha256hash(df, h)) return EXIT_FAILURE;
-			printf("\r\033[K\r");
+			printf("\r\033[K");
 			fflush(stdout);
 			if (memcmp(h,
 			           srcs.a[i].sha256,
@@ -1766,11 +1763,11 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				return EXIT_FAILURE;
 			}
 
-			printf("- Computing the hash of %s\r",
+			printf("\r\033[K- Computing the hash of %s",
 			       srcs.a[i].url);
 			fflush(stdout);
 			if (sha256hash(sf, h)) return EXIT_FAILURE;
-			printf("\r\033[K\r");
+			printf("\r\033[K");
 			fflush(stdout);
 			if (memcmp(h, srcs.a[i].sha256,
 			           SHA256_DIGEST_LENGTH)) {
@@ -1963,7 +1960,7 @@ uninstallpackage(struct Package p)
 
 	if (packageouts(p.pname, &outs)) return EXIT_FAILURE;
 
-	printf("- Uninstalling %s\r", p.pname);
+	printf("\r\033[K- Uninstalling %s", p.pname);
 	fflush(stdout);
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];

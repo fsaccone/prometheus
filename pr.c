@@ -1111,7 +1111,7 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 void
 printerrno(const char *s)
 {
-	printferr("\033[K%s: %s", s, strerror(errno));
+	printferr("%s: %s", s, strerror(errno));
 }
 
 void
@@ -1121,9 +1121,10 @@ printferr(const char *m, ...)
 
 	va_start(va, m);
 
-	fprintf(stderr, "\033[K! ");
+	fprintf(stderr, "\r\033[K! ");
 	vfprintf(stderr, m, va);
 	putc('\n', stderr);
+	fflush(stderr);
 
 	va_end(va);
 }

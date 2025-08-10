@@ -815,7 +815,8 @@ installpackage(struct Package p)
 	printf("\r\033[K- Installing %s", p.pname);
 	fflush(stdout);
 	if (installouts(outs, p.srcd, p.destd)) return EXIT_FAILURE;
-	printf("\r\033[K+ Package %s installed\n", p.pname);
+	if (!strncmp(p.destd, prefix, PATH_MAX))
+		printf("\r\033[K+ Package %s installed\n", p.pname);
 
 	return EXIT_SUCCESS;
 }

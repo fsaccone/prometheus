@@ -413,12 +413,16 @@ fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 	struct request_options o = { 0 };
 	struct response *r;
 	struct url u;
-	char ua[sizeof(PROJECT_NAME) + sizeof(VERSION)], /* -2^\0 +/ +\0 */
-	     cf[PATH_MAX];
+	char ua[NAME_MAX], cf[PATH_MAX];
 
 	printf("\r\033[K- Downloading %s", url);
 	fflush(stdout);
 
+	if (NAME_MAX <= strlen(PROJECT_NAME) + strlen("/")
+	              + strlen(VERSION)) {
+		printferr("NAME_MAX exceeded");
+		return EXIT_FAILURE;
+	}
 	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
 
 	o.data_callback = (requests_user_cb_t)requestscallback;

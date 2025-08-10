@@ -1264,6 +1264,7 @@ registerpackageinstall(struct Package *p)
 		printf("+ Package %s will not use chroot, meaning it will "
 		       "have no restrictions during the build\n", p->pname);
 		printf("> Continue? (y/n) ");
+		fflush(stdout);
 
 		while ((yp = getchar()) != EOF) {
 			if (yp == '\n') continue;

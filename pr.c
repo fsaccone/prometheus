@@ -1629,8 +1629,9 @@ requestscallback(struct download_state* s, char *p[PATH_MAX])
 
 	printf("\r\033[K- Downloading %s: [", *p);
 
-	for (i = 0; i < bfull; i++) putchar('#');
-	for (i = 0; i < bemp; i++) putchar('-');
+	for (i = 0; i < bfull - 1; i++) putchar('=');
+	if (bfull >= 1) putchar('>');
+	for (i = 0; i < bemp; i++) putchar(' ');
 
 	printf("] %.2f%%\r", pr * 100.0f);
 	fflush(stdout);

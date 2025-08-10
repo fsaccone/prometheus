@@ -410,7 +410,7 @@ expandtilde(const char f[PATH_MAX], char ef[PATH_MAX])
 int
 fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 {
-	struct request_options o;
+	struct request_options o = { 0 };
 	struct response *r;
 	struct url u;
 	char ua[sizeof(PROJECT_NAME) + sizeof(VERSION)], /* -2^\0 +/ +\0 */

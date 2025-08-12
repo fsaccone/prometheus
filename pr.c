@@ -439,6 +439,7 @@ fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 	r = requests_get_file(NULL, cf, &o);
 
 	if (!r) {
+		printferr("Failed to fetch %s", url);
 		free_url(o.url);
 		requests_free_tls_context();
 		return EXIT_FAILURE;
@@ -469,6 +470,7 @@ fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 		r = requests_get_file(NULL, cf, &o);
 
 		if (!r) {
+			printferr("Failed to fetch %s", url);
 			free_url(o.url);
 			requests_free_tls_context();
 			return EXIT_FAILURE;

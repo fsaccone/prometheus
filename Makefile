@@ -1,5 +1,3 @@
-.POSIX:
-
 include config.mk
 
 SRCS = pr.c sha256.c

@@ -7,16 +7,12 @@ BIN = pr
 
 OBJS = $(SRCS:.c=.o)
 
+.PHONY: clean install uninstall
+
 all: $(BIN)
 
-$(BIN): $(OBJS)
-	$(CC) -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
-
-%.o: %.c config.h
-	$(CC) $(CFLAGS) -o $@ -c $<
-
-config.h: config.def.h
-	cp $^ $@
+clean:
+	rm -f $(BIN) $(OBJS) config.h
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
@@ -28,8 +24,11 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/$(BIN).1
 
-clean:
-	rm -f $(BIN) $(OBJS) config.h
+$(BIN): $(OBJS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
 
-.PHONY:
-	clean install uninstall
+config.h: config.def.h
+	cp $^ $@
+
+%.o: %.c config.h
+	$(CC) $(CFLAGS) -o $@ -c $<

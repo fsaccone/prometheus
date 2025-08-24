@@ -1,16 +1,16 @@
 include config.mk
 
 SRCS = pr.c sha256.c
-BIN = pr
+OUT = pr
 
 OBJS = $(SRCS:.c=.o)
 
 .PHONY: clean install uninstall
 
-all: $(BIN)
+all: $(OUT)
 
 clean:
-	rm -f $(BIN) $(OBJS) config.h
+	rm -f $(OUT) $(OBJS) config.h
 
 install: all
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
@@ -22,7 +22,7 @@ uninstall:
 	rm -f $(DESTDIR)$(PREFIX)/bin/$(BIN)
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/$(BIN).1
 
-$(BIN): $(OBJS)
+$(OUT): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
 
 config.h: config.def.h

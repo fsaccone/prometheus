@@ -1,9 +1,9 @@
 include config.mk
 
-SRCS = pr.c sha256.c
-OUT = pr
+OBJS = pr.o sha256.o
+OUT  = pr
 
-OBJS = $(SRCS:.c=.o)
+CCCMD = $(CC) $(CFLAGS) -c -o $@
 
 .PHONY: clean install uninstall
 
@@ -28,5 +28,8 @@ $(OUT): $(OBJS)
 config.h: config.def.h
 	cp $^ $@
 
-%.o: %.c config.h
-	$(CC) $(CFLAGS) -o $@ -c $<
+pr.o: config.h
+	$(CCCMD) pr.c
+
+sha256.o:
+	$(CCCMD) sha256.c

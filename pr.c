@@ -830,7 +830,7 @@ int
 packagedepends(char pname[NAME_MAX], struct Depends *deps)
 {
 	size_t i;
-	char f[PATH_MAX];
+	char f[PATH_MAX] = "";
 	struct Lines l;
 
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);
@@ -890,7 +890,8 @@ packagedepends(char pname[NAME_MAX], struct Depends *deps)
 int
 packageexists(const char pname[NAME_MAX])
 {
-	char bf[PATH_MAX], of[PATH_MAX];
+	char bf[PATH_MAX] = "",
+	     of[PATH_MAX] = "";
 
 	strncat(bf, repository, sizeof(bf) - strlen(bf) - 1);
 	strncat(bf, "/",        sizeof(bf) - strlen(bf) - 1);
@@ -931,7 +932,7 @@ unsigned int
 packageisnochroot(char pname[NAME_MAX])
 {
 	FILE *fp;
-	char f[PATH_MAX], buf[LINE_MAX];
+	char f[PATH_MAX] = "", buf[LINE_MAX];
 
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);
 	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
@@ -956,7 +957,7 @@ packageouts(char pname[NAME_MAX], struct Outs *outs)
 {
 	size_t i;
 	struct Lines l;
-	char f[PATH_MAX];
+	char f[PATH_MAX] = "";
 
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);
 	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
@@ -987,7 +988,7 @@ int
 packagesources(char pname[NAME_MAX], struct Sources *srcs)
 {
 	size_t i;
-	char f[PATH_MAX];
+	char f[PATH_MAX] = "";
 	struct Lines l;
 
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);

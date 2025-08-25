@@ -192,17 +192,13 @@ copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX])
 		if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
 			continue;
 
-		if (PATH_MAX <= strlen(s) + strlen("/") + strlen(e->d_name)) {
-			printferr("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		snprintf(sp, sizeof(sp), "%s/%s", s, e->d_name);
+		strncat(sp, s,         sizeof(sp) - strlen(sp) - 1);
+		strncat(sp, "/",       sizeof(sp) - strlen(sp) - 1);
+		strncat(sp, e->d_name, sizeof(sp) - strlen(sp) - 1);
 
-		if (PATH_MAX <= strlen(d) + strlen("/") + strlen(e->d_name)) {
-			printferr("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		snprintf(dp, sizeof(dp), "%s/%s", d, e->d_name);
+		strncat(dp, d,         sizeof(dp) - strlen(dp) - 1);
+		strncat(dp, "/",       sizeof(dp) - strlen(dp) - 1);
+		strncat(dp, e->d_name, sizeof(dp) - strlen(dp) - 1);
 
 		if (direxists(sp)) {
 			char *spc, *dpc;
@@ -345,22 +341,18 @@ createtmpdir(char dir[TMPFILE_SIZE])
 		return EXIT_FAILURE;
 	}
 
-	if (PATH_MAX <= strlen(dir) + strlen("/log")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(log, sizeof(log), "%s/log", dir);
+	strncat(log, dir,    sizeof(log) - strlen(log) - 1);
+	strncat(log, "/log", sizeof(log) - strlen(log) - 1);
+
 	if ((logfd = open(log, O_WRONLY | O_CREAT | O_TRUNC, 0700)) == -1) {
 		printerrno("open");
 		return EXIT_FAILURE;
 	}
 	close(logfd);
 
-	if (PATH_MAX <= strlen(dir) + strlen("/src")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(src, sizeof(src), "%s/src", dir);
+	strncat(src, dir,    sizeof(src) - strlen(src) - 1);
+	strncat(src, "/src", sizeof(src) - strlen(src) - 1);
+
 	if (mkdir(src, 0700) == -1 && errno != EEXIST) {
 		printerrno("mkdir");
 		return EXIT_FAILURE;
@@ -418,12 +410,9 @@ fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 	printf("\r\033[K- Downloading %s", url);
 	fflush(stdout);
 
-	if (NAME_MAX <= strlen(PROJECT_NAME) + strlen("/")
-	              + strlen(VERSION)) {
-		printferr("NAME_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(ua, sizeof(ua), "%s/%s", PROJECT_NAME, VERSION);
+	strncat(ua, PROJECT_NAME, sizeof(ua) - strlen(ua) - 1);
+	strncat(ua, "/",          sizeof(ua) - strlen(ua) - 1);
+	strncat(ua, VERSION,      sizeof(ua) - strlen(ua) - 1);
 
 	o.data_callback = (requests_user_cb_t)requestscallback;
 	o.http_version = 0;
@@ -533,17 +522,10 @@ getpackages(struct PackageNames *pkgs)
 				continue;
 			}
 
-			if (PATH_MAX <= strlen(d->p) + strlen("/")
-			              + strlen(e->d_name)) {
-				struct PathNode *dn;
-				for (d = dhead.n; d; d = dn) {
-					dn = d->n;
-					free(d);
-				}
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(subd, sizeof(subd), "%s/%s", d->p, e->d_name);
+			strncat(subd, d->p, sizeof(subd) - strlen(subd) - 1);
+			strncat(subd, "/",  sizeof(subd) - strlen(subd) - 1);
+			strncat(subd, e->d_name,
+			        sizeof(subd) - strlen(subd) - 1);
 
 			/* skip length of repository + / to get the package
 			   name */
@@ -617,11 +599,8 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX];
 
-		if (PATH_MAX <= strlen(sd) + strlen(outs.a[i])) {
-			printferr("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		snprintf(s, sizeof(s), "%s%s", sd, outs.a[i]);
+		strncat(s, sd,        sizeof(s) - strlen(s) - 1);
+		strncat(s, outs.a[i], sizeof(s) - strlen(s) - 1);
 
 		if (fileexists(s)) continue;
 		if (direxists(s)) continue;
@@ -634,17 +613,11 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX], d[PATH_MAX];
 
-		if (PATH_MAX <= strlen(sd) + strlen(outs.a[i])) {
-			printferr("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		snprintf(s, sizeof(s), "%s%s", sd, outs.a[i]);
+		strncat(s, sd,        sizeof(s) - strlen(s) - 1);
+		strncat(s, outs.a[i], sizeof(s) - strlen(s) - 1);
 
-		if (PATH_MAX <= strlen(dd) + strlen(outs.a[i])) {
-			printferr("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		snprintf(d, sizeof(d), "%s%s", dd, outs.a[i]);
+		strncat(d, dd,        sizeof(d) - strlen(d) - 1);
+		strncat(d, outs.a[i], sizeof(d) - strlen(d) - 1);
 
 		if (fileexists(s)) {
 			if (copyfile(s, d, 0)) return EXIT_FAILURE;
@@ -676,35 +649,26 @@ installpackage(struct Package p)
 
 	reltmpd = nochr ? p.srcd : "";
 
-	if (PATH_MAX <= strlen(repository) + strlen("/") + strlen(p.pname)) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(pdir, sizeof(pdir), "%s/%s", repository, p.pname);
+	strncat(pdir, repository, sizeof(pdir) - strlen(pdir) - 1);
+	strncat(pdir, "/",        sizeof(pdir) - strlen(pdir) - 1);
+	strncat(pdir, p.pname,    sizeof(pdir) - strlen(pdir) - 1);
 
-	if (PATH_MAX <= strlen(pdir) + strlen("/build")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(b, sizeof(b), "%s/build", pdir);
+	strncat(b, pdir,     sizeof(b) - strlen(b) - 1);
+	strncat(b, "/build", sizeof(b) - strlen(b) - 1);
 
-	if (PATH_MAX <= strlen(p.srcd) + strlen("/src/build")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(db, sizeof(db), "%s/src/build", p.srcd);
+	strncat(db, p.srcd,       sizeof(db) - strlen(db) - 1);
+	strncat(db, "/src/build", sizeof(db) - strlen(db) - 1);
 
 	if (copyfile(b, db, 1)) return EXIT_FAILURE;
 
 	if (packagesources(p.pname, &srcs)) return EXIT_FAILURE;
 	if (srcs.l && retrievesources(srcs, pdir, p.srcd)) return EXIT_FAILURE;
 
-	if (PATH_MAX <= strlen(reltmpd) + strlen("/log")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(log, sizeof(log), "%s/log", reltmpd);
-	snprintf(src, sizeof(src), "%s/src", reltmpd);
+	strncat(log, reltmpd, sizeof(log) - strlen(log) - 1);
+	strncat(log, "/log",  sizeof(log) - strlen(log) - 1);
+
+	strncat(src, reltmpd, sizeof(src) - strlen(src) - 1);
+	strncat(src, "/src",  sizeof(src) - strlen(src) - 1);
 
 	if ((pid = fork()) < 0) {
 		printerrno("fork");
@@ -752,13 +716,16 @@ installpackage(struct Package p)
 				exit(EXIT_FAILURE);
 			} else {
 				char np[PATH_MAX];
-				if (PATH_MAX <= strlen(path) + strlen(p.srcd)
-				              + strlen("://bin")) {
-					printferr("PATH_MAX exceeded");
-					exit(EXIT_FAILURE);
-				}
-				snprintf(np, sizeof(np), "%s:%s/bin",
-				         path, p.srcd);
+
+				strncat(np, path,
+				        sizeof(np) - strlen(np) - 1);
+				strncat(np, ":",
+				        sizeof(np) - strlen(np) - 1);
+				strncat(np, p.srcd,
+				        sizeof(np) - strlen(np) - 1);
+				strncat(np, "/bin",
+				        sizeof(np) - strlen(np) - 1);
+
 				if (setenv("PATH", np, 1)) {
 					perror("setenv");
 					exit(EXIT_FAILURE);
@@ -790,15 +757,13 @@ installpackage(struct Package p)
 				char logd[PATH_MAX];
 				char logs[PATH_MAX];
 
-				if (PATH_MAX <= strlen(p.srcd)
-				              + strlen("/log")) {
-					printferr("PATH_MAX exceeded");
-					return EXIT_FAILURE;
-				}
-				snprintf(logs, sizeof(logs),
-				         "%s/log", p.srcd);
+				strncat(logs, p.srcd,
+				        sizeof(logs) - strlen(logs) - 1);
+				strncat(logs, "/log",
+				        sizeof(logs) - strlen(logs) - 1);
 
 				strncpy(logd, TMPFILE, TMPFILE_SIZE);
+
 				if (mkstemp(logd) == -1) {
 					printerrno("mkstemp");
 					return EXIT_FAILURE;
@@ -868,12 +833,11 @@ packagedepends(char pname[NAME_MAX], struct Depends *deps)
 	char f[PATH_MAX];
 	struct Lines l;
 
-	if (PATH_MAX <= strlen(repository) + strlen(pname)
-	              + strlen("//depends")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(f, sizeof(f), "%s/%s/depends", repository, pname);
+	strncat(f, repository, sizeof(f) - strlen(f) - 1);
+	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
+	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
+	strncat(f, "/depends", sizeof(f) - strlen(f) - 1);
+
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
@@ -928,13 +892,15 @@ packageexists(const char pname[NAME_MAX])
 {
 	char bf[PATH_MAX], of[PATH_MAX];
 
-	if (PATH_MAX <= strlen(repository) + strlen(pname)
-	              + strlen("//build")) { /* the longest one */
-		printferr("PATH_MAX exceeded");
-		return -1;
-	}
-	snprintf(bf, sizeof(bf), "%s/%s/build", repository, pname);
-	snprintf(of, sizeof(of), "%s/%s/outs", repository, pname);
+	strncat(bf, repository, sizeof(bf) - strlen(bf) - 1);
+	strncat(bf, "/",        sizeof(bf) - strlen(bf) - 1);
+	strncat(bf, pname,      sizeof(bf) - strlen(bf) - 1);
+	strncat(bf, "/build",   sizeof(bf) - strlen(bf) - 1);
+
+	strncat(of, repository, sizeof(of) - strlen(of) - 1);
+	strncat(of, "/",        sizeof(of) - strlen(of) - 1);
+	strncat(of, pname,      sizeof(of) - strlen(of) - 1);
+	strncat(of, "/outs",    sizeof(of) - strlen(of) - 1);
 
 	if (fileexists(bf) && fileexists(of)) return 1;
 
@@ -951,11 +917,10 @@ packageisinstalled(char pname[NAME_MAX], const char destd[PATH_MAX])
 
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
-		if (PATH_MAX <= strlen(destd) + strlen(outs.a[i])) {
-			printferr("PATH_MAX exceeded");
-			return -1;
-		}
-		snprintf(f, sizeof(f), "%s%s", destd, outs.a[i]);
+
+		strncat(f, destd,     sizeof(f) - strlen(f) - 1);
+		strncat(f, outs.a[i], sizeof(f) - strlen(f) - 1);
+
 		if (!fileexists(f) && !direxists(f)) return 0;
 	}
 
@@ -968,12 +933,10 @@ packageisnochroot(char pname[NAME_MAX])
 	FILE *fp;
 	char f[PATH_MAX], buf[LINE_MAX];
 
-	if (PATH_MAX <= strlen(repository) + strlen(pname)
-	              + strlen("//outs")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(f, sizeof(f), "%s/%s/outs", repository, pname);
+	strncat(f, repository, sizeof(f) - strlen(f) - 1);
+	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
+	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
+	strncat(f, "/outs",    sizeof(f) - strlen(f) - 1);
 
 	fp = fopen(f, "r");
 	if (!fp) return 0;
@@ -995,12 +958,11 @@ packageouts(char pname[NAME_MAX], struct Outs *outs)
 	struct Lines l;
 	char f[PATH_MAX];
 
-	if (PATH_MAX <= strlen(repository) + strlen(pname)
-	              + strlen("//outs")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(f, sizeof(f), "%s/%s/outs", repository, pname);
+	strncat(f, repository, sizeof(f) - strlen(f) - 1);
+	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
+	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
+	strncat(f, "/outs",    sizeof(f) - strlen(f) - 1);
+
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
@@ -1028,12 +990,11 @@ packagesources(char pname[NAME_MAX], struct Sources *srcs)
 	char f[PATH_MAX];
 	struct Lines l;
 
-	if (PATH_MAX <= strlen(repository) + strlen(pname)
-	              + strlen("//sources")) {
-		printferr("PATH_MAX exceeded");
-		return EXIT_FAILURE;
-	}
-	snprintf(f, sizeof(f), "%s/%s/sources", repository, pname);
+	strncat(f, repository, sizeof(f) - strlen(f) - 1);
+	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
+	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
+	strncat(f, "/sources", sizeof(f) - strlen(f) - 1);
+
 	if (readlines(f, &l)) return EXIT_FAILURE;
 
 	for (i = 0; i < l.l; i++) {
@@ -1658,17 +1619,14 @@ rmdirrecursive(const char d[PATH_MAX])
 			continue;
 
 		fs = strlen(d) + strlen("/") + strlen(e->d_name) + 1;
-		if (PATH_MAX < fs) {
-			closedir(dp);
-			printferr("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
 		if (!(f = malloc(fs))) {
 			closedir(dp);
 			printerrno("malloc");
 			return EXIT_FAILURE;
 		}
-		snprintf(f, fs, "%s/%s", d, e->d_name);
+		strncat(f, d,         fs - strlen(f) - 1);
+		strncat(f, "/",       fs - strlen(f) - 1);
+		strncat(f, e->d_name, fs - strlen(f) - 1);
 
 		if (direxists(f)) {
 			if (rmdirrecursive(f)) {
@@ -1716,12 +1674,9 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			char df[PATH_MAX];
 			uint8_t h[SHA256_DIGEST_LENGTH];
 
-			if (PATH_MAX <= strlen(tmpd) + strlen(b)
-			              + strlen("/src/")) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
+			strncat(df, tmpd,    sizeof(df) - strlen(df) - 1);
+			strncat(df, "/src/", sizeof(df) - strlen(df) - 1);
+			strncat(df, b,       sizeof(df) - strlen(df) - 1);
 
 			if (fetchfile(srcs.a[i].url, df)) return EXIT_FAILURE;
 
@@ -1751,19 +1706,14 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			char sf[PATH_MAX], df[PATH_MAX];
 			uint8_t h[SHA256_DIGEST_LENGTH];
 
-			if (PATH_MAX <= strlen(pdir) + strlen("/")
-			              + strlen(srcs.a[i].url)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(sf, sizeof(sf), "%s/%s", pdir, srcs.a[i].url);
+			strncat(sf, pdir, sizeof(sf) - strlen(sf) - 1);
+			strncat(sf, "/",  sizeof(sf) - strlen(sf) - 1);
+			strncat(sf, srcs.a[i].url,
+			        sizeof(sf) - strlen(sf) - 1);
 
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(b)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(df, sizeof(df), "%s/src/%s", tmpd, b);
+			strncat(df, tmpd,    sizeof(df) - strlen(df) - 1);
+			strncat(df, "/src/", sizeof(df) - strlen(df) - 1);
+			strncat(df, b,       sizeof(df) - strlen(df) - 1);
 
 			if (!fileexists(sf)) {
 				printferr("URL %s does not exist",
@@ -1804,20 +1754,14 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			strncpy(dc, srcs.a[i].relpath, PATH_MAX);
 			dn = dirname(dc);
 
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(b)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(sf, sizeof(sf), "%s/src/%s", tmpd, b);
+			strncat(sf, tmpd,    sizeof(sf) - strlen(sf) - 1);
+			strncat(sf, "/src/", sizeof(sf) - strlen(sf) - 1);
+			strncat(sf, b,       sizeof(sf) - strlen(sf) - 1);
 
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(srcs.a[i].relpath)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(df, sizeof(df), "%s/src/%s",
-			         tmpd, srcs.a[i].relpath);
+			strncat(df, tmpd,    sizeof(df) - strlen(df) - 1);
+			strncat(df, "/src/", sizeof(df) - strlen(df) - 1);
+			strncat(df, srcs.a[i].relpath,
+			        sizeof(df) - strlen(df) - 1);
 
 			if (direxists(df)) {
 				printferr("RELPATH %s already exists and is a "
@@ -1848,12 +1792,9 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				return EXIT_FAILURE;
 			}
 
-			if (PATH_MAX <= strlen(tmpd) + strlen("/src/")
-			              + strlen(dn)) {
-				printferr("PATH_MAX exceeded");
-				return EXIT_FAILURE;
-			}
-			snprintf(mvd, sizeof(mvd), "%s/src/%s", tmpd, dn);
+			strncat(mvd, tmpd,    sizeof(mvd) - strlen(mvd) - 1);
+			strncat(mvd, "/src/", sizeof(mvd) - strlen(mvd) - 1);
+			strncat(mvd, dn,      sizeof(mvd) - strlen(mvd) - 1);
 
 			if (mkdirrecursive(mvd)) return EXIT_FAILURE;
 
@@ -1973,11 +1914,8 @@ uninstallpackage(struct Package p)
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
 
-		if (PATH_MAX <= strlen(p.destd) + strlen(outs.a[i])) {
-			printferr("PATH_MAX exceeded");
-			return EXIT_FAILURE;
-		}
-		snprintf(f, sizeof(f), "%s%s", p.destd, outs.a[i]);
+		strncat(f, p.destd,   sizeof(f) - strlen(f) - 1);
+		strncat(f, outs.a[i], sizeof(f) - strlen(f) - 1);
 
 		if (fileexists(f)) {
 			if (remove(f)) {

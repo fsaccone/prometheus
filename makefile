@@ -21,7 +21,7 @@ uninstall:
 	rm -f $(DESTDIR)$(MANPREFIX)/man1/$(BIN).1
 
 $(OUT): $(OBJS)
-	$(LD) $(LDFLAGS) -e main -o $@ $^ $(LIBS)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 config.h: config.def.h
 	cp $^ $@

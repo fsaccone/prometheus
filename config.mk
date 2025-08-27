@@ -5,6 +5,6 @@ CC = cc
 LD = ld
 
 CFLAGS  = -std=c99 -Wall -Wextra -Wpedantic
-LDFLAGS = -s
+LDFLAGS = -s -static
 
 LIBS = -lssl -lcrypto -lc

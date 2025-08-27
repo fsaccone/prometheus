@@ -1001,6 +1001,12 @@ packageouts(char pname[NAME_MAX], struct Outs *outs)
 
 		strncpy(outs->a[i], l.a[i], PATH_MAX);
 	}
+
+	if (!i) {
+		printferr("Package %s has no outs", pname);
+		return EXIT_FAILURE;
+	}
+
 	outs->l = i;
 
 	return EXIT_SUCCESS;
@@ -1178,7 +1184,6 @@ int
 registerpackageinstall(struct Package *p)
 {
 	struct Depends *deps;
-	struct Outs *outs;
 	size_t i;
 	int pe, pii;
 	struct PackageNode *pn, *newpn, *tailpn;
@@ -1189,21 +1194,6 @@ registerpackageinstall(struct Package *p)
 		printferr("Package %s does not exist", p->pname);
 		return EXIT_FAILURE;
 	}
-
-	if (!(outs = malloc(sizeof(struct Outs)))) {
-		printerrno("malloc");
-		return EXIT_FAILURE;
-	}
-	if (packageouts(p->pname, outs)) {
-		free(outs);
-		return EXIT_FAILURE;
-	}
-	if (!outs->l) {
-		free(outs);
-		printferr("Package %s has no outs", p->pname);
-		return EXIT_FAILURE;
-	}
-	free(outs);
 
 	/* cannot be reached by dependency since their installation is
 	   checked before registration */
@@ -1322,19 +1312,6 @@ registerpackageinstall(struct Package *p)
 			printerrno("malloc");
 			return EXIT_FAILURE;
 		}
-		if (packageouts(deps->a[i].pname, douts)) {
-			free(douts);
-			free(deps);
-			return EXIT_FAILURE;
-		}
-		if (!douts->l) {
-			free(douts);
-			printferr("Dependency %s has no outs",
-			          deps->a[i].pname);
-			free(deps);
-			return EXIT_FAILURE;
-		}
-		free(douts);
 
 		if ((dpii = packageisinstalled(deps->a[i].pname,
 		                               prefix)) == -1) {
@@ -1449,7 +1426,6 @@ registerpackageuninstall(struct Package *p, unsigned int rec)
 {
 	struct PackageNames *pkgs;
 	struct Depends *deps;
-	struct Outs *outs;
 	size_t i;
 	int pe, pii;
 	struct PackageNode *newpn;
@@ -1460,18 +1436,6 @@ registerpackageuninstall(struct Package *p, unsigned int rec)
 		printferr("Package %s does not exist", p->pname);
 		return EXIT_FAILURE;
 	}
-
-	if (!(outs = malloc(sizeof(struct Outs)))) {
-		printerrno("malloc");
-		return EXIT_FAILURE;
-	}
-	if (packageouts(p->pname, outs)) return EXIT_FAILURE;
-	if (!outs->l) {
-		free(outs);
-		printferr("Package %s has no outs", p->pname);
-		return EXIT_FAILURE;
-	}
-	free(outs);
 
 	if ((pii = packageisinstalled(p->pname, p->destd)) == -1)
 		return EXIT_FAILURE;

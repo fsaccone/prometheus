@@ -26,5 +26,5 @@ $(OUT): $(OBJS)
 config.h: config.def.h
 	cp $^ $@
 
-$(OBJS):
+$(OBJS): config.h
 	$(CC) $(CFLAGS) -c -o $@ $(@:.o=.c)

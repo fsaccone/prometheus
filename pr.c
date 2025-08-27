@@ -192,10 +192,12 @@ copydirrecursive(const char s[PATH_MAX], const char d[PATH_MAX])
 		if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."))
 			continue;
 
+		sp[0] = '\0';
 		strncat(sp, s,         sizeof(sp) - strlen(sp) - 1);
 		strncat(sp, "/",       sizeof(sp) - strlen(sp) - 1);
 		strncat(sp, e->d_name, sizeof(sp) - strlen(sp) - 1);
 
+		dp[0] = '\0';
 		strncat(dp, d,         sizeof(dp) - strlen(dp) - 1);
 		strncat(dp, "/",       sizeof(dp) - strlen(dp) - 1);
 		strncat(dp, e->d_name, sizeof(dp) - strlen(dp) - 1);
@@ -341,6 +343,7 @@ createtmpdir(char dir[TMPFILE_SIZE])
 		return EXIT_FAILURE;
 	}
 
+	log[0] = '\0';
 	strncat(log, dir,    sizeof(log) - strlen(log) - 1);
 	strncat(log, "/log", sizeof(log) - strlen(log) - 1);
 
@@ -350,6 +353,7 @@ createtmpdir(char dir[TMPFILE_SIZE])
 	}
 	close(logfd);
 
+	src[0] = '\0';
 	strncat(src, dir,    sizeof(src) - strlen(src) - 1);
 	strncat(src, "/src", sizeof(src) - strlen(src) - 1);
 
@@ -410,6 +414,7 @@ fetchfile(char url[PATH_MAX], const char f[PATH_MAX])
 	printf("\r\033[K- Downloading %s", url);
 	fflush(stdout);
 
+	ua[0] = '\0';
 	strncat(ua, PROJECT_NAME, sizeof(ua) - strlen(ua) - 1);
 	strncat(ua, "/",          sizeof(ua) - strlen(ua) - 1);
 	strncat(ua, VERSION,      sizeof(ua) - strlen(ua) - 1);
@@ -522,6 +527,7 @@ getpackages(struct PackageNames *pkgs)
 				continue;
 			}
 
+			subd[0] = '\0';
 			strncat(subd, d->p, sizeof(subd) - strlen(subd) - 1);
 			strncat(subd, "/",  sizeof(subd) - strlen(subd) - 1);
 			strncat(subd, e->d_name,
@@ -599,6 +605,7 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX];
 
+		s[0] = '\0';
 		strncat(s, sd,        sizeof(s) - strlen(s) - 1);
 		strncat(s, outs.a[i], sizeof(s) - strlen(s) - 1);
 
@@ -613,9 +620,11 @@ installouts(struct Outs outs, const char sd[PATH_MAX], const char dd[PATH_MAX])
 	for (i = 0; i < outs.l; i++) {
 		char s[PATH_MAX], d[PATH_MAX];
 
+		s[0] = '\0';
 		strncat(s, sd,        sizeof(s) - strlen(s) - 1);
 		strncat(s, outs.a[i], sizeof(s) - strlen(s) - 1);
 
+		d[0] = '\0';
 		strncat(d, dd,        sizeof(d) - strlen(d) - 1);
 		strncat(d, outs.a[i], sizeof(d) - strlen(d) - 1);
 
@@ -649,13 +658,16 @@ installpackage(struct Package p)
 
 	reltmpd = nochr ? p.srcd : "";
 
+	pdir[0] = '\0';
 	strncat(pdir, repository, sizeof(pdir) - strlen(pdir) - 1);
 	strncat(pdir, "/",        sizeof(pdir) - strlen(pdir) - 1);
 	strncat(pdir, p.pname,    sizeof(pdir) - strlen(pdir) - 1);
 
+	b[0] = '\0';
 	strncat(b, pdir,     sizeof(b) - strlen(b) - 1);
 	strncat(b, "/build", sizeof(b) - strlen(b) - 1);
 
+	db[0] = '\0';
 	strncat(db, p.srcd,       sizeof(db) - strlen(db) - 1);
 	strncat(db, "/src/build", sizeof(db) - strlen(db) - 1);
 
@@ -664,9 +676,11 @@ installpackage(struct Package p)
 	if (packagesources(p.pname, &srcs)) return EXIT_FAILURE;
 	if (srcs.l && retrievesources(srcs, pdir, p.srcd)) return EXIT_FAILURE;
 
+	log[0] = '\0';
 	strncat(log, reltmpd, sizeof(log) - strlen(log) - 1);
 	strncat(log, "/log",  sizeof(log) - strlen(log) - 1);
 
+	src[0] = '\0';
 	strncat(src, reltmpd, sizeof(src) - strlen(src) - 1);
 	strncat(src, "/src",  sizeof(src) - strlen(src) - 1);
 
@@ -717,6 +731,7 @@ installpackage(struct Package p)
 			} else {
 				char np[PATH_MAX];
 
+				np[0] = '\0';
 				strncat(np, path,
 				        sizeof(np) - strlen(np) - 1);
 				strncat(np, ":",
@@ -757,6 +772,7 @@ installpackage(struct Package p)
 				char logd[PATH_MAX];
 				char logs[PATH_MAX];
 
+				logs[0] = '\0';
 				strncat(logs, p.srcd,
 				        sizeof(logs) - strlen(logs) - 1);
 				strncat(logs, "/log",
@@ -830,9 +846,10 @@ int
 packagedepends(char pname[NAME_MAX], struct Depends *deps)
 {
 	size_t i;
-	char f[PATH_MAX] = "";
+	char f[PATH_MAX];
 	struct Lines l;
 
+	f[0] = '\0';
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);
 	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
 	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
@@ -890,14 +907,16 @@ packagedepends(char pname[NAME_MAX], struct Depends *deps)
 int
 packageexists(const char pname[NAME_MAX])
 {
-	char bf[PATH_MAX] = "",
-	     of[PATH_MAX] = "";
+	char bf[PATH_MAX],
+	     of[PATH_MAX];
 
+	bf[0] = '\0';
 	strncat(bf, repository, sizeof(bf) - strlen(bf) - 1);
 	strncat(bf, "/",        sizeof(bf) - strlen(bf) - 1);
 	strncat(bf, pname,      sizeof(bf) - strlen(bf) - 1);
 	strncat(bf, "/build",   sizeof(bf) - strlen(bf) - 1);
 
+	of[0] = '\0';
 	strncat(of, repository, sizeof(of) - strlen(of) - 1);
 	strncat(of, "/",        sizeof(of) - strlen(of) - 1);
 	strncat(of, pname,      sizeof(of) - strlen(of) - 1);
@@ -919,6 +938,7 @@ packageisinstalled(char pname[NAME_MAX], const char destd[PATH_MAX])
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
 
+		f[0] = '\0';
 		strncat(f, destd,     sizeof(f) - strlen(f) - 1);
 		strncat(f, outs.a[i], sizeof(f) - strlen(f) - 1);
 
@@ -932,8 +952,9 @@ unsigned int
 packageisnochroot(char pname[NAME_MAX])
 {
 	FILE *fp;
-	char f[PATH_MAX] = "", buf[LINE_MAX];
+	char f[PATH_MAX], buf[LINE_MAX];
 
+	f[0] = '\0';
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);
 	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
 	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
@@ -957,8 +978,9 @@ packageouts(char pname[NAME_MAX], struct Outs *outs)
 {
 	size_t i;
 	struct Lines l;
-	char f[PATH_MAX] = "";
+	char f[PATH_MAX];
 
+	f[0] = '\0';
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);
 	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
 	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
@@ -988,9 +1010,10 @@ int
 packagesources(char pname[NAME_MAX], struct Sources *srcs)
 {
 	size_t i;
-	char f[PATH_MAX] = "";
+	char f[PATH_MAX];
 	struct Lines l;
 
+	f[0] = '\0';
 	strncat(f, repository, sizeof(f) - strlen(f) - 1);
 	strncat(f, "/",        sizeof(f) - strlen(f) - 1);
 	strncat(f, pname,      sizeof(f) - strlen(f) - 1);
@@ -1625,6 +1648,7 @@ rmdirrecursive(const char d[PATH_MAX])
 			printerrno("malloc");
 			return EXIT_FAILURE;
 		}
+		f[0] = '\0';
 		strncat(f, d,         fs - strlen(f) - 1);
 		strncat(f, "/",       fs - strlen(f) - 1);
 		strncat(f, e->d_name, fs - strlen(f) - 1);
@@ -1675,6 +1699,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			char df[PATH_MAX];
 			uint8_t h[SHA256_DIGEST_LENGTH];
 
+			df[0] = '\0';
 			strncat(df, tmpd,    sizeof(df) - strlen(df) - 1);
 			strncat(df, "/src/", sizeof(df) - strlen(df) - 1);
 			strncat(df, b,       sizeof(df) - strlen(df) - 1);
@@ -1707,11 +1732,13 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			char sf[PATH_MAX], df[PATH_MAX];
 			uint8_t h[SHA256_DIGEST_LENGTH];
 
+			sf[0] = '\0';
 			strncat(sf, pdir, sizeof(sf) - strlen(sf) - 1);
 			strncat(sf, "/",  sizeof(sf) - strlen(sf) - 1);
 			strncat(sf, srcs.a[i].url,
 			        sizeof(sf) - strlen(sf) - 1);
 
+			df[0] = '\0';
 			strncat(df, tmpd,    sizeof(df) - strlen(df) - 1);
 			strncat(df, "/src/", sizeof(df) - strlen(df) - 1);
 			strncat(df, b,       sizeof(df) - strlen(df) - 1);
@@ -1755,10 +1782,12 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 			strncpy(dc, srcs.a[i].relpath, PATH_MAX);
 			dn = dirname(dc);
 
+			sf[0] = '\0';
 			strncat(sf, tmpd,    sizeof(sf) - strlen(sf) - 1);
 			strncat(sf, "/src/", sizeof(sf) - strlen(sf) - 1);
 			strncat(sf, b,       sizeof(sf) - strlen(sf) - 1);
 
+			df[0] = '\0';
 			strncat(df, tmpd,    sizeof(df) - strlen(df) - 1);
 			strncat(df, "/src/", sizeof(df) - strlen(df) - 1);
 			strncat(df, srcs.a[i].relpath,
@@ -1793,6 +1822,7 @@ retrievesources(struct Sources srcs, const char pdir[PATH_MAX],
 				return EXIT_FAILURE;
 			}
 
+			mvd[0] = '\0';
 			strncat(mvd, tmpd,    sizeof(mvd) - strlen(mvd) - 1);
 			strncat(mvd, "/src/", sizeof(mvd) - strlen(mvd) - 1);
 			strncat(mvd, dn,      sizeof(mvd) - strlen(mvd) - 1);
@@ -1915,6 +1945,7 @@ uninstallpackage(struct Package p)
 	for (i = 0; i < outs.l; i++) {
 		char f[PATH_MAX];
 
+		f[0] = '\0';
 		strncat(f, p.destd,   sizeof(f) - strlen(f) - 1);
 		strncat(f, outs.a[i], sizeof(f) - strlen(f) - 1);
 
